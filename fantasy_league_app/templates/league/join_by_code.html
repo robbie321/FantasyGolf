@@ -1,0 +1,17 @@
+{% extends 'base.html' %} {% block content %}
+<h1>Join League by Code</h1>
+<form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+  <label for="league_code">Enter League Code:</label><br />
+  <input
+    type="text"
+    id="league_code"
+    name="league_code"
+    value="{{ form.league_code if form else '' }}"
+    required
+    autofocus
+  /><br /><br />
+  <p>Please obtain the league code from your golf club administrator.</p>
+  <input type="submit" value="Submit Code" />
+</form>
+{% endblock %}

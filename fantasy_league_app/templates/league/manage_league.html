@@ -1,0 +1,304 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  .page-wrapper {
+    padding: 4rem 1rem;
+    background-color: #f7f7f7;
+  }
+  .content-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 3rem;
+  }
+  .header {
+    text-align: center;
+    border-bottom: 2px solid #006a4e;
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .header h1 {
+    font-family: "Merriweather", serif;
+    margin: 0;
+    font-size: 2.5rem;
+  }
+  .header p {
+    font-size: 1.2rem;
+    color: #555;
+    margin: 0.5rem 0 0 0;
+  }
+  .entries-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2rem;
+  }
+  .entries-table th,
+  .entries-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  .entries-table thead th {
+    background-color: #f2f2f2;
+    font-family: "Merriweather", serif;
+  }
+
+  .finalize-container {
+    margin-top: 3rem;
+  }
+  .finalize-toggle-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #006a4e;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  /* UPDATED: CSS to use a class for toggling */
+  .finalize-section {
+    margin-top: 1rem;
+    padding: 2rem;
+    border: 2px solid #006a4e;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    display: none; /* Hidden by default */
+  }
+  .finalize-section.is-open {
+    display: block; /* Show when 'is-open' class is present */
+  }
+
+  .finalize-section h2 {
+    font-family: "Merriweather", serif;
+    text-align: center;
+    margin-top: 0;
+  }
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  .form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+  .form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+  }
+  .btn-submit {
+    width: 100%;
+    padding: 12px;
+    background-color: #006a4e;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .danger-zone {
+    margin-top: 3rem;
+    padding: 2rem;
+    border: 2px solid #dc3545;
+    border-radius: 8px;
+    background-color: #fdf2f2;
+  }
+  .danger-zone h2 {
+    font-family: "Merriweather", serif;
+    text-align: center;
+    margin-top: 0;
+    color: #dc3545;
+  }
+  .btn-danger {
+    width: 100%;
+    padding: 12px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+  }
+</style>
+
+<div class="page-wrapper">
+  <div class="content-container">
+    <div class="header">
+      <h1>Manage League</h1>
+      <p>{{ league.name }}</p>
+      <p>
+        <strong>Payout Status:</strong>
+        {% if league.payout_status == 'paid' %}
+        <span style="color: #28a745; font-weight: bold">Paid Out</span>
+        {% else %}
+        <span style="color: #ffc107; font-weight: bold">Pending</span>
+        {% endif %}
+      </p>
+    </div>
+
+    {% if league.has_ended and not league.is_finalized %} {% elif
+    league.is_finalized and league.payout_status == 'pending' %}
+    <div class="finalize-container">
+      <div class="finalize-section is-open">
+        <h2>Payout Winner</h2>
+        <p>
+          This league is finalized. The winner is
+          <strong>{{ league.winner.full_name }}</strong>.
+        </p>
+        <p>
+          Click the button below to transfer the prize money (€{{
+          (league.entry_fee * league.entries|length)|round(2) }}) to the
+          winner's account.
+        </p>
+        <form
+          method="POST"
+          action="{{ url_for('league.mark_as_paid', league_id=league.id) }}"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button type="submit" class="btn-submit">
+            Confirm and Pay Out Winner
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %} {% if league.has_ended and not league.is_finalized %}
+    <div class="finalize-container">
+      <button id="finalize-toggle-btn" class="finalize-toggle-btn">
+        Finalize League ▼
+      </button>
+
+      <div id="finalize-content" class="finalize-section">
+        <h2>Finalize League & Declare Winner</h2>
+        <p>
+          The tournament has finished. Please enter the official tie-breaker
+          answer below to calculate the final standings and determine the
+          winner.
+        </p>
+        <form
+          method="POST"
+          action="{{ url_for('league.finalize_league', league_id=league.id) }}"
+        >
+          <div class="form-group">
+            <label for="tie_breaker_actual_answer"
+              >{{ league.tie_breaker_question }}</label
+            >
+            <input
+              type="number"
+              id="tie_breaker_actual_answer"
+              name="tie_breaker_actual_answer"
+              required
+            />
+          </div>
+          <button type="submit" class="btn-submit">
+            Finalize and Find Winner
+          </button>
+        </form>
+      </div>
+
+      <div class="finalize-section is-open">
+        <h2>Payout Winner</h2>
+        <p>
+          This league is finalized. The winner is
+          <strong>{{ league.winner.full_name }}</strong>.
+        </p>
+        <p>
+          Click the button below to transfer the prize money of
+          <strong>€{{ "%.2f"|format(league.prize_amount) }}</strong> to the
+          winner's account.
+        </p>
+        <form
+          method="POST"
+          action="{{ url_for('league.mark_as_paid', league_id=league.id) }}"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button type="submit" class="btn-submit">
+            Confirm and Pay Out Winner
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    <h2>League Entries ({{ entries|length }})</h2>
+    <table class="entries-table">
+      <thead>
+        <tr>
+          <th>Player Name</th>
+          <th>Player 1</th>
+          <th>Player 2</th>
+          <th>Player 3</th>
+          <th>Tie-Breaker Answer</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr>
+          <td>{{ entry.user.full_name }}</td>
+          <td>{{ entry.player1.full_name() }}</td>
+          <td>{{ entry.player2.full_name() }}</td>
+          <td>{{ entry.player3.full_name() }}</td>
+          <td>{{ entry.tie_breaker_answer }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" style="text-align: center; padding: 2rem">
+            There are no entries in this league yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if not league.entries or league.has_ended %}
+    <div class="danger-zone">
+      <h2>Danger Zone</h2>
+      <p>
+        Deleting a league is a permanent action and cannot be undone. All
+        associated entries will also be removed.
+      </p>
+      <form
+        method="POST"
+        action="{{ url_for('league.delete_league', league_id=league.id) }}"
+        onsubmit="return confirm('Are you absolutely sure you want to permanently delete this league?');"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="btn-danger">Delete This League</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- UPDATED: More robust JavaScript for the dropdown toggle -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const toggleBtn = document.getElementById("finalize-toggle-btn");
+    const content = document.getElementById("finalize-content");
+
+    if (toggleBtn && content) {
+      toggleBtn.addEventListener("click", function () {
+        // Toggle a class on the content div
+        content.classList.toggle("is-open");
+
+        // Update the button text and arrow based on the class
+        if (content.classList.contains("is-open")) {
+          toggleBtn.innerHTML = "Finalize League ▲";
+        } else {
+          toggleBtn.innerHTML = "Finalize League ▼";
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

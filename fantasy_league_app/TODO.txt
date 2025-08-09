@@ -1,0 +1,17 @@
+Start App:
+flask --app fantasy_league_app:create_app run
+
+Tasks []
+
+[] Test the create bucket feature again. Find the correct API url for gathering tournament data .i.e players
+[] Ability for site admin to updates users/clubs emails and passwords
+[] Ability for users and clubs to reset their passwords securly
+[]
+[]
+[]
+
+hide league standing until club lauches the league -> countdown timer to tournament commencment.
+
+export STRIPE_PUBLIC_KEY="pk_test_51Rt4YFAAtiw6IkD3q6QEunjHZZIlhDBfKvpefcbEHafQqqKV0En2Eu5QJaxomlGgk4CYA8Jk9nBH9hQu3Amsstf800E0bzTL1S"
+export STRIPE_SECRET_KEY="sk_test_51Rt4YFAAtiw6IkD3N2CNruve7zbaafKruqfMuJNeudIYNoL0eljrySxsoN9J2TGRDcYRCQFsRrz94roJF9hiaxXy00NwhqsECS"
+

@@ -1,0 +1,140 @@
+<!-- This file is almost identical to create_league.html, just with a different title and form action -->
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    .page-wrapper {
+        padding: 4rem 1rem;
+        background-color: #f7f7f7;
+    }
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        padding: 3rem;
+    }
+    .form-container h1 {
+        font-family: 'Merriweather', serif;
+        text-align: center;
+        margin-top: 0;
+        margin-bottom: 2rem;
+    }
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    @media (min-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    .full-width {
+        grid-column: 1 / -1;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+        font-family: 'Roboto', sans-serif;
+        font-size: 1rem;
+    }
+    .form-group textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+    .btn-submit {
+        width: 100%;
+        padding: 12px;
+        background-color: #006a4e;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+    }
+</style>
+<div class="page-wrapper">
+    <div class="form-container">
+        <h1>Create a New Public League</h1>
+        <form method="POST" action="{{ url_for('admin.create_public_league') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label for="name">League Name</label>
+                    <input type="text" id="name" name="name" value="{{ form_data.name if form_data }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="tour">Select Tour</label>
+                    <select id="tour" name="tour" required>
+                        <option value="pga" {% if form_data and form_data.tour == 'pga' %}selected{% endif %}>PGA Tour</option>
+                        <option value="euro" {% if form_data and form_data.tour == 'euro' %}selected{% endif %}>DP World Tour</option>
+                        <option value="liv" {% if form_data and form_data.tour == 'liv' %}selected{% endif %}>LIV Golf</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="start_date">Tournament Start Date & Time</label>
+                    <input type="datetime-local" id="start_date" name="start_date" value="{{ form_data.start_date if form_data }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="player_bucket_id">Player Pool</label>
+                    <select id="player_bucket_id" name="player_bucket_id" required>
+                        <option value="">-- Select a Player Pool --</option>
+                        {% for bucket in player_buckets %}
+                        <option value="{{ bucket.id }}" {% if form_data and form_data.player_bucket_id|int == bucket.id %}selected{% endif %}>
+                            {{ bucket.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label for="entry_fee">Entry Fee (€)</label>
+                    <input type="number" id="entry_fee" name="entry_fee" min="0" step="0.01" value="{{ form_data.entry_fee if form_data else '0.00' }}" oninput="validateFee(this)" required>
+                    <small id="fee-warning" style="color: red; display: none; margin-top: 5px;">The entry fee must be €0.00 or at least €5.00.</small>
+                </div>
+                <div class="form-group full-width">
+                    <label for="prize_details">Prize Details</label>
+                    <textarea id="prize_details" name="prize_details">{{ form_data.prize_details if form_data }}</textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label for="rules">Rules</label>
+                    <textarea id="rules" name="rules">{{ form_data.rules if form_data }}</textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label for="tie_breaker_question">Tie-Breaker Question</label>
+                    <input type="text" id="tie_breaker_question" name="tie_breaker_question" value="{{ form_data.tie_breaker_question if form_data else 'How many total shots will Rory McIlroy take to complete the 4 days of the tournament?' }}" required>
+                </div>
+                <div class="form-group full-width">
+                    <button type="submit" class="btn-submit">Create League</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+ document.addEventListener('DOMContentLoaded', function() {
+        // Fee validation still runs on page load
+        validateFee(document.getElementById('entry_fee'));
+    });
+    function validateFee(input) {
+        const warning = document.getElementById('fee-warning');
+        const value = parseFloat(input.value);
+        if (value > 0 && value < 5) { warning.style.display = 'block'; } else { warning.style.display = 'none'; }
+    }
+</script>
+{% endblock %}

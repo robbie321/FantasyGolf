@@ -1,0 +1,270 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  .page-wrapper {
+    padding: 4rem 1rem;
+    background-color: #f7f7f7;
+  }
+  .admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .admin-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  .admin-header h1 {
+    font-family: "Merriweather", serif;
+  }
+
+  /* Stats Grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+  .stat-card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+  }
+  .stat-card .stat-title {
+    font-size: 1rem;
+    color: #666;
+    margin: 0 0 0.5rem 0;
+  }
+  .stat-card .stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #006a4e;
+  }
+
+  /* Management Section */
+  .management-section {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 2rem;
+  }
+  .management-section h2 {
+    font-family: "Merriweather", serif;
+    margin-top: 0;
+    text-align: center;
+  }
+  .management-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  /* UPDATED: Styling for the management cards to fix alignment */
+  .management-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    display: flex; /* Use flexbox for alignment */
+    flex-direction: column; /* Stack content vertically */
+  }
+  .management-card h3 {
+    font-family: "Merriweather", serif;
+    margin-top: 0;
+  }
+  .management-card p {
+    color: #555;
+    flex-grow: 1; /* This pushes the button group to the bottom */
+  }
+  .management-card .btn-group {
+    margin-top: 1rem;
+  }
+  .management-card .btn {
+    display: inline-block;
+    background-color: #006a4e;
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    margin: 5px;
+  }
+
+  /* Revenue Filter */
+  .revenue-filter {
+    text-align: center;
+    margin-top: 1rem;
+  }
+  .revenue-filter a {
+    text-decoration: none;
+    color: #333;
+    padding: 8px 12px;
+    border-radius: 5px;
+    margin: 0 5px;
+    font-weight: bold;
+  }
+  .revenue-filter a.active {
+    background-color: #006a4e;
+    color: white;
+  }
+</style>
+
+<div class="page-wrapper">
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1>Site Administration Dashboard</h1>
+      <p>Welcome, {{ current_user.username }}.</p>
+    </div>
+
+    <!-- Analytics Section -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3 class="stat-title">Total Players</h3>
+        <p class="stat-value">{{ stats.total_users }}</p>
+      </div>
+      <div class="stat-card">
+        <h3 class="stat-title">Total Clubs</h3>
+        <p class="stat-value">{{ stats.total_clubs }}</p>
+      </div>
+      <div class="stat-card">
+        <h3 class="stat-title">Active Leagues</h3>
+        <p class="stat-value">{{ stats.active_leagues }}</p>
+      </div>
+      <div class="stat-card">
+        <h3 class="stat-title">Total Entries</h3>
+        <p class="stat-value">{{ stats.total_entries }}</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <h3 class="stat-title">Total Revenue</h3>
+      <p class="stat-value">€{{ "%.2f"|format(stats.total_revenue) }}</p>
+      <div class="revenue-filter">
+        <a
+          href="{{ url_for('admin.admin_dashboard', revenue_timeframe='day') }}"
+          class="{{ 'active' if stats.selected_timeframe == 'day' }}"
+          >24 Hrs</a
+        >
+        <a
+          href="{{ url_for('admin.admin_dashboard', revenue_timeframe='week') }}"
+          class="{{ 'active' if stats.selected_timeframe == 'week' }}"
+          >7 Days</a
+        >
+        <a
+          href="{{ url_for('admin.admin_dashboard', revenue_timeframe='month') }}"
+          class="{{ 'active' if stats.selected_timeframe == 'month' }}"
+          >30 Days</a
+        >
+        <a
+          href="{{ url_for('admin.admin_dashboard', revenue_timeframe='year') }}"
+          class="{{ 'active' if stats.selected_timeframe == 'year' }}"
+          >Year</a
+        >
+        <a
+          href="{{ url_for('admin.admin_dashboard', revenue_timeframe='all') }}"
+          class="{{ 'active' if stats.selected_timeframe == 'all' }}"
+          >All Time</a
+        >
+      </div>
+    </div>
+
+    <!-- Management Links Section -->
+    <div class="management-section">
+      <h2>Management Tools</h2>
+      <div class="management-grid">
+        <div class="management-card">
+          <h3>User Management</h3>
+          <p>View, activate, and deactivate player and club accounts.</p>
+          <div class="btn-group">
+            <a href="{{ url_for('admin.manage_users') }}" class="btn"
+              >Manage Users</a
+            >
+          </div>
+        </div>
+        <div class="management-card">
+          <h3>Tournament Importer</h3>
+          <p>
+            Fetch active tournaments from the API to create player buckets
+            automatically.
+          </p>
+          <div class="btn-group">
+            <a href="{{ url_for('admin.import_tournaments') }}" class="btn"
+              >Import Tournaments</a
+            >
+          </div>
+        </div>
+        <div class="management-card">
+          <h3>Player Management</h3>
+          <p>
+            Add new players individually or upload them in bulk from a CSV file.
+          </p>
+          <div class="btn-group">
+            <a href="{{ url_for('admin.add_individual_player') }}" class="btn"
+              >Add Player</a
+            >
+            <a href="{{ url_for('admin.upload_players_csv') }}" class="btn"
+              >Upload CSV</a
+            >
+          </div>
+        </div>
+        <div class="management-card">
+          <h3>Player Buckets</h3>
+          <p>Create and manage player pools for leagues.</p>
+          <div class="btn-group">
+            <a href="{{ url_for('admin.manage_player_buckets') }}" class="btn"
+              >Manage Buckets</a
+            >
+          </div>
+        </div>
+        <div class="management-card">
+          <h3>League Management</h3>
+          <p>View and manage all leagues created by clubs.</p>
+          <div class="btn-group">
+            <a href="{{ url_for('admin.manage_leagues') }}" class="btn"
+              >Manage Leagues</a
+            >
+          </div>
+        </div>
+
+        <div class="management-card">
+          <h3>Public Leagues</h3>
+          <p>
+            Create official, site-wide public leagues for all users to join.
+          </p>
+          <div class="btn-group">
+            <a href="{{ url_for('admin.create_public_league') }}" class="btn"
+              >Create Public League</a
+            >
+          </div>
+        </div>
+
+        <div class="management-card">
+          <h3>Testing Mode</h3>
+          {% if stats.testing_mode_active %}
+          <p style="color: #dc3545; font-weight: bold">ACTIVE</p>
+          <p>Users can join leagues after the entry deadline has passed.</p>
+          <form
+            method="POST"
+            action="{{ url_for('admin.toggle_testing_mode') }}"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-warning">Deactivate</button>
+          </form>
+          {% else %}
+          <p style="font-weight: bold">INACTIVE</p>
+          <p>Entry deadlines are being enforced for all users.</p>
+          <form
+            method="POST"
+            action="{{ url_for('admin.toggle_testing_mode') }}"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-success">Activate</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

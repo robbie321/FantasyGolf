@@ -1,0 +1,123 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  .page-wrapper {
+    padding: 4rem 1rem;
+    background-color: #f7f7f7;
+  }
+  .content-container {
+    max-width: 900px;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 3rem;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #006a4e;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+  }
+  .header h1 {
+    font-family: "Merriweather", serif;
+    margin: 0;
+  }
+  .btn {
+    background-color: #006a4e;
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+  }
+  .buckets-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .buckets-table th,
+  .buckets-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  .buckets-table thead th {
+    background-color: #f2f2f2;
+  }
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  .action-buttons .btn {
+    font-size: 0.9rem;
+    padding: 8px 15px;
+  }
+  /* NEW: Styling for the delete button */
+  .btn-danger {
+    background-color: #dc3545;
+    border: none;
+    cursor: pointer;
+  }
+</style>
+
+<div class="page-wrapper">
+  <div class="content-container">
+    <div class="header">
+      <h1>Manage Player Buckets</h1>
+      <a href="{{ url_for('admin.create_player_bucket') }}" class="btn"
+        >Create New Bucket</a
+      >
+    </div>
+
+    <table class="buckets-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Bucket Name</th>
+          <th>Players</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for bucket in buckets %}
+        <tr>
+          <td>{{ bucket.id }}</td>
+          <td>{{ bucket.name }}</td>
+          <td>{{ bucket.players|length }}</td>
+          <td>
+            <div class="action-buttons">
+              <a
+                href="{{ url_for('admin.add_players_to_bucket', bucket_id=bucket.id) }}"
+                class="btn"
+                >Manage Players</a
+              >
+              <!-- NEW: Delete Button and Form -->
+              <form
+                method="POST"
+                action="{{ url_for('admin.delete_player_bucket', bucket_id=bucket.id) }}"
+                onsubmit="return confirm('Are you sure you want to delete this bucket? This action cannot be undone.');"
+              >
+                <input
+                  type="hidden"
+                  name="csrf_token"
+                  value="{{ csrf_token() }}"
+                />
+                <button type="submit" class="btn btn-danger">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" style="text-align: center; padding: 2rem">
+            No player buckets have been created yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

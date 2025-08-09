@@ -1,0 +1,446 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  .page-wrapper {
+    padding: 4rem 1rem;
+    background-color: #f7f7f7;
+  }
+  .league-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 3rem;
+  }
+  .league-header {
+    text-align: center;
+    border-bottom: 2px solid #006a4e;
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .league-header h1 {
+    font-family: "Merriweather", serif;
+    margin: 0;
+    font-size: 2.5rem;
+  }
+  .league-header p {
+    font-size: 1.2rem;
+    color: #555;
+    margin: 0.5rem 0 0 0;
+  }
+  .winner-banner {
+    background-color: #ffd700;
+    color: #333;
+    text-align: center;
+    padding: 2rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 2px solid #e6c200;
+  }
+  .winner-banner h2 {
+    font-family: "Merriweather", serif;
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+  }
+  .winner-banner p {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  .league-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+  .detail-card {
+    padding: 1.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+  }
+  .detail-card h3 {
+    font-family: "Merriweather", serif;
+    margin-top: 0;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.5rem;
+  }
+  .leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2rem;
+  }
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  .leaderboard-table thead th {
+    background-color: #f2f2f2;
+  }
+  .leaderboard-table .rank,
+  .leaderboard-table .score {
+    font-weight: bold;
+    font-size: 1.2rem;
+    text-align: center;
+  }
+  .my-entry {
+    background-color: #e8f5e9;
+    border-left: 4px solid #006a4e;
+  }
+  .leaderboard-locked {
+    text-align: center;
+    padding: 2rem;
+    border: 1px dashed #ccc;
+    border-radius: 8px;
+  }
+
+  /* Styles for the player stats modal */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+  }
+  .modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 2rem;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 8px;
+    position: relative;
+  }
+  .close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .close-btn:hover,
+  .close-btn:focus {
+    color: black;
+  }
+  .player-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+  }
+  .player-stat-label {
+    font-weight: bold;
+    color: #555;
+  }
+  .player-stat-value {
+    font-weight: bold;
+    color: #006a4e;
+  }
+  .player-name-link {
+    cursor: pointer;
+    text-decoration: underline;
+    color: #006a4e;
+  }
+
+  /* NEW: Styling for the Join button */
+  .btn-join {
+    display: inline-block;
+    margin-top: 1rem;
+    background-color: #006a4e;
+    color: white;
+    text-decoration: none;
+    padding: 12px 25px;
+    border-radius: 5px;
+    font-weight: bold;
+  }
+
+  .player-selections {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .player-selections li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+  }
+  .player-name-link {
+    cursor: pointer;
+    text-decoration: underline;
+    color: #006a4e;
+  }
+  .player-live-info {
+    font-weight: bold;
+    color: #333;
+  }
+</style>
+
+<div class="page-wrapper">
+  <div class="league-container">
+    {% if league.is_finalized and league.winner %}
+    <div class="winner-banner">
+      <h2>League Winner!</h2>
+      <p>
+        <a
+          href="{{ url_for('main.view_profile', user_id=league.winner.id) }}"
+          style="color: #333"
+          >{{ league.winner.full_name }}</a
+        >
+      </p>
+    </div>
+    {% endif %}
+
+    <div class="league-header">
+      <h1>{{ league.name }}</h1>
+      <p>League Code: <strong>{{ league.league_code }}</strong></p>
+
+      <!-- NEW: Conditional Join Button -->
+      {% if not current_user_entry and not league.has_entry_deadline_passed %}
+      <a
+        href="{{ url_for('league.add_entry', league_id=league.id) }}"
+        class="btn-join"
+        >Join This League</a
+      >
+      {% endif %}
+    </div>
+
+    <div class="league-details-grid">
+      <div class="detail-card">
+        <h3>Prize Details</h3>
+        <p>{{ league.prize_details or 'Not specified.' }}</p>
+      </div>
+      <div class="detail-card">
+        <h3>League Rules</h3>
+        <p>{{ league.rules or 'Standard rules apply.' }}</p>
+      </div>
+      <div class="detail-card">
+        <h3>Tournament Dates</h3>
+        <p>
+          <strong>Starts:</strong> {{ league.start_date.strftime('%d %b %Y,
+          %H:%M') }}
+        </p>
+        <p>
+          <strong>Ends:</strong> {{ league.end_date.strftime('%d %b %Y, %H:%M')
+          }}
+        </p>
+      </div>
+    </div>
+
+    <h2>Leaderboard</h2>
+    {% if league.has_entry_deadline_passed %}
+    <table class="leaderboard-table">
+      <thead>
+        <tr>
+          <th style="width: 10%">Rank</th>
+          <th style="width: 25%">Entry Name</th>
+          <th>Player Selections (Live SG Total)</th>
+          <th style="width: 15%; text-align: center">Total Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr
+          class="{{ 'my-entry' if current_user_entry and entry.id == current_user_entry.id }}"
+        >
+          <td class="rank">{{ loop.index }}</td>
+          <td>
+            <a href="{{ url_for('main.view_profile', user_id=entry.user.id) }}"
+              >{{ entry.entry_name }}</a
+            >
+          </td>
+          <td>
+            <ul class="player-selections">
+              {% for player in [entry.player1, entry.player2, entry.player3] %}
+              <li>
+                <a
+                  href="#"
+                  class="player-name-link"
+                  data-player-id="{{ player.dg_id }}"
+                  >{{ player.full_name() }}</a
+                >
+                <span class="player-live-info">
+                  {{ "%.2f"|format(player.current_score) }}
+                </span>
+              </li>
+              {% endfor %}
+            </ul>
+          </td>
+          <td class="score">{{ "%.2f"|format(entry.total_score) }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" style="text-align: center; padding: 2rem">
+            No entries have been made for this league yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="leaderboard-locked">
+      <h3>Leaderboard Locked</h3>
+      <p>
+        The leaderboard will be revealed after the entry deadline has passed.
+      </p>
+      <p>
+        <strong>Deadline:</strong> {{ league.entry_deadline.strftime('%A, %d %B
+        %Y at %H:%M') }} (UTC)
+      </p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- HTML for the Player Stats Modal -->
+<div id="playerStatsModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn">&times;</span>
+    <h2 id="modalPlayerName"></h2>
+    <div id="modalPlayerStats">
+      <!-- Stats will be inserted here by JavaScript -->
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const modal = document.getElementById("playerStatsModal");
+    const closeBtn = document.querySelector(".modal .close-btn");
+    const modalPlayerName = document.getElementById("modalPlayerName");
+    const modalPlayerStats = document.getElementById("modalPlayerStats");
+
+    // Function to close the modal
+    const closeModal = () => {
+      if (modal) {
+        modal.style.display = "none";
+      }
+    };
+
+    // Add event listeners to close the modal
+    if (closeBtn) {
+      closeBtn.onclick = closeModal;
+    }
+    window.onclick = function (event) {
+      if (event.target == modal) {
+        closeModal();
+      }
+    };
+    // --- END: Missing Modal Closing Logic ---
+
+    function setupModalEventListeners() {
+      document.querySelectorAll(".player-name-link").forEach((link) => {
+        link.addEventListener("click", function (e) {
+          e.preventDefault();
+          const playerId = this.dataset.playerId;
+          modalPlayerName.textContent = "Loading...";
+          modalPlayerStats.innerHTML = "";
+          modal.style.display = "block";
+
+          fetch(`/api/player-stats/${playerId}`)
+            .then((response) => {
+              if (!response.ok) {
+                return response.json().then(errorData => {
+                  throw new Error(errorData.error || `Server responded with status: ${response.status}`);
+                });
+              }
+              return response.json();
+            })
+            .then((data) => {
+              modalPlayerName.textContent = data.player_name.replace(", ", " ");
+              let statsHtml = `
+                <div class="player-stat"><span class="player-stat-label">Strokes Gained: Total</span><span class="player-stat-value">${data.sg_total.toFixed(2)}</span></div>
+                <div class="player-stat"><span class="player-stat-label">Strokes Gained: Putting</span><span class="player-stat-value">${data.sg_putt.toFixed(2)}</span></div>
+                <div class="player-stat"><span class="player-stat-label">Strokes Gained: Approach</span><span class="player-stat-value">${data.sg_app.toFixed(2)}</span></div>
+                <div class="player-stat"><span class="player-stat-label">Strokes Gained: Off the Tee</span><span class="player-stat-value">${data.sg_ott.toFixed(2)}</span></div>
+                <div class="player-stat"><span class="player-stat-label">Driving Distance</span><span class="player-stat-value">${data.distance.toFixed(0)} yds</span></div>
+                <div class="player-stat"><span class="player-stat-label">Driving Accuracy</span><span class="player-stat-value">${data.accuracy.toFixed(1)}%</span></div>
+              `;
+              modalPlayerStats.innerHTML = statsHtml;
+            })
+            .catch((error) => {
+              modalPlayerName.textContent = "Error";
+              modalPlayerStats.innerHTML = `<p>${error.message}</p>`;
+              console.error("Error fetching player stats:", error);
+            });
+        });
+      });
+    }
+
+    // Call the function on initial page load
+    setupModalEventListeners();
+
+    // --- Real-Time Leaderboard Logic ---
+    const socket = io();
+    const leagueId = {{ league.id }};
+
+    socket.on('connect', () => {
+        console.log('Socket connected, joining room:', `league_${leagueId}`);
+        socket.emit('join', {room: `league_${leagueId}`});
+    });
+
+    socket.on('scores_updated', (data) => {
+        console.log('Received scores_updated event:', data);
+        if (data.league_id === leagueId) {
+            updateLeaderboard();
+        }
+    });
+
+    function updateLeaderboard() {
+        console.log('Fetching new leaderboard data...');
+        fetch(`/league/api/${leagueId}/leaderboard`)
+          .then(response => response.json())
+          .then(data => {
+              const leaderboardBody = document.getElementById('leaderboard-body');
+              leaderboardBody.innerHTML = '';
+
+              if (data.length === 0) {
+                  leaderboardBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem;">No entries for this league yet.</td></tr>`;
+                  return;
+              }
+
+              data.forEach(entry => {
+                  const row = document.createElement('tr');
+                  if (entry.is_current_user) {
+                      row.classList.add('my-entry');
+                  }
+
+                  let playersHtml = '<ul class="player-selections">';
+                  entry.players.forEach(player => {
+                      playersHtml += `
+                            <li>
+                                <a href="{{ url_for('player.player_profile', dg_id=0) }}${player.dg_id}" target="_blank">
+                                    ${player.name}
+                                </a>
+                                <span class="player-live-info">${player.score.toFixed(2)}</span>
+                            </li>
+                        `;
+                    });
+                  playersHtml += '</ul>';
+
+                  row.innerHTML = `
+                        <td class="rank">${entry.rank}</td>
+                        <td><a href="/profile/${entry.user_id}">${entry.entry_name}</a></td>
+                        <td>${playersHtml}</td>
+                        <td class="score">${entry.total_score.toFixed(2)}</td>
+                    `;
+                    leaderboardBody.appendChild(row);
+                });
+
+              // After updating the HTML, re-attach the event listeners to the new links
+              // setupModalEventListeners();
+          })
+          .catch(error => console.error('Error updating leaderboard:', error));
+    }
+  });
+</script>
+{% endblock %}

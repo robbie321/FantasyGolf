@@ -1,0 +1,158 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  .page-wrapper {
+    padding: 4rem 1rem;
+    background-color: #f7f7f7;
+  }
+  .profile-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .profile-header {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  .profile-header h1 {
+    font-family: "Merriweather", serif;
+    margin: 0;
+    font-size: 2.5rem;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  .stat-card .stat-title {
+    font-size: 1rem;
+    color: #666;
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  .stat-card .stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #006a4e;
+  }
+
+  .history-section {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  .history-section h2 {
+    font-family: "Merriweather", serif;
+    margin-top: 0;
+    text-align: center;
+  }
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+  }
+  .history-table th,
+  .history-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  .history-table thead th {
+    background-color: #f2f2f2;
+  }
+  .btn {
+    background-color: #006a4e;
+    color: white;
+    text-decoration: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+  }
+  .trophy {
+    color: #ffd700;
+    font-size: 1.2rem;
+  }
+</style>
+
+<div class="page-wrapper">
+  <div class="profile-container">
+    <div class="profile-header">
+      <h1>{{ user.full_name }}</h1>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3 class="stat-title">Leagues Played</h3>
+        <p class="stat-value">{{ stats.leagues_played }}</p>
+      </div>
+      <div class="stat-card">
+        <h3 class="stat-title">Leagues Won</h3>
+        <p class="stat-value">{{ stats.leagues_won }}</p>
+      </div>
+      <div class="stat-card">
+        <h3 class="stat-title">Win Percentage</h3>
+        <p class="stat-value">{{ stats.win_percentage }}</p>
+      </div>
+      <div class="stat-card">
+        <h3 class="stat-title">Total Winnings</h3>
+        <p class="stat-value">{{ stats.total_winnings }}</p>
+      </div>
+    </div>
+
+    <div class="history-section">
+      <h2>League History</h2>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>League Name</th>
+            <th style="text-align: center">Final Rank</th>
+            <th style="text-align: center">Winnings</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in league_history %}
+          <tr>
+            <td>
+              {{ item.league_name }} {% if item.is_winner %}<span class="trophy"
+                >🏆</span
+              >{% endif %}
+            </td>
+            <td style="text-align: center">{{ item.rank }}</td>
+            <td style="text-align: center">{{ item.winnings }}</td>
+            <td>
+              <a
+                href="{{ url_for('league.view_league', league_id=item.league_id) }}"
+                class="btn"
+                >View League</a
+              >
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="4" style="text-align: center; padding: 2rem">
+              This user has not joined any leagues yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

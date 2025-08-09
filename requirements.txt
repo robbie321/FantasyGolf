@@ -1,0 +1,9 @@
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-Login
+Flask-APScheduler
+Flask-Mail
+requests
+itsdangerous
+werkzeug

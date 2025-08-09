@@ -1,0 +1,129 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  .page-wrapper {
+    padding: 4rem 1rem;
+    background-color: #f7f7f7;
+  }
+  .content-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .header h1 {
+    font-family: "Merriweather", serif;
+  }
+  .search-bar {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: center;
+  }
+  .search-bar form {
+    width: 100%;
+    max-width: 700px;
+  }
+  .search-bar input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 1rem;
+  }
+  .leagues-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+  .league-card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    flex-direction: column;
+  }
+  .league-card h3 {
+    font-family: "Merriweather", serif;
+    font-size: xx-large;
+    margin: 0;
+  }
+  .league-card p {
+    flex-grow: 1;
+    color: #555;
+  }
+  .btn {
+    display: block;
+    text-align: center;
+    margin-top: 1rem;
+    background-color: #006a4e;
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+  }
+</style>
+
+<div class="page-wrapper">
+  <div class="content-container">
+    <div class="header">
+      <h1>Browse Public Leagues</h1>
+    </div>
+    <div class="search-bar">
+      <!-- The form is no longer needed, just the input -->
+      <input
+        type="search"
+        id="league-search-input"
+        placeholder="Search for a league by name..."
+        value="{{ search_query or '' }}"
+      />
+    </div>
+
+    <div class="leagues-grid">
+      {% for league in leagues %}
+      <div class="league-card">
+        <h3>{{ league.name }}</h3>
+        <p>
+          <strong>Entry Fee:</strong> €{{ "%.2f"|format(league.entry_fee) }}
+        </p>
+        <p><strong>Entries:</strong> {{ league.entries|length }}</p>
+        <p><strong>Created by:</strong> {{ league.creator_name }}</p>
+        <a
+          href="{{ url_for('league.view_league', league_id=league.id) }}"
+          class="btn"
+          >View & Join</a
+        >
+      </div>
+      {% else %}
+      <p>No public leagues found.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- NEW: JavaScript for live filtering -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("league-search-input");
+    const leagueCards = document.querySelectorAll(".league-card");
+
+    searchInput.addEventListener("input", function () {
+      const searchTerm = searchInput.value.toLowerCase();
+
+      leagueCards.forEach(function (card) {
+        const leagueName = card.querySelector("h3").textContent.toLowerCase();
+
+        // If the league name includes the search term, show the card
+        if (leagueName.includes(searchTerm)) {
+          card.style.display = "block";
+        } else {
+          // Otherwise, hide it
+          card.style.display = "none";
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

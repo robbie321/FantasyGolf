@@ -1,0 +1,53 @@
+﻿{% extends 'base.html' %}
+{% block content %}
+    <h1>League Standings</h1>
+
+    <form method="GET" action="{{ url_for('league.standings') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <label for="league_id">Select League:</label><br>
+        <select id="league_id" name="league_id" onchange="this.form.submit()">
+            {% for league in leagues %}
+                <option value="{{ league.id }}" {% if selected_league and selected_league.id == league.id %}selected{% endif %}>{{ league.name }}</option>
+            {% endfor %}
+        </select><br><br>
+    </form>
+
+    {% if selected_league %}
+        <h2>Standings for {{ selected_league.name }}</h2>
+        <p>Tie-Breaker Question: {{ selected_league.tie_breaker_question }}</p> {# Display league's tie-breaker question #}
+        {% if entries %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Entry Name</th>
+                        <th>Participant</th>
+                        <th>Player 1</th>
+                        <th>Player 2</th>
+                        <th>Player 3</th>
+                        <th>Total Odds</th>
+                        <th>Total Score</th>
+                        <th>Tie-Breaker Answer</th> {# NEW: Column for tie-breaker answer #}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                        <tr>
+                            <td data-label="Entry Name">{{ entry['Name'] }}</td>
+                            <td data-label="Participant">{{ entry['Participant'] }}</td>
+                            <td data-label="Player 1">{{ entry['Player 1'] }}</td>
+                            <td data-label="Player 2">{{ entry['Player 2'] }}</td>
+                            <td data-label="Player 3">{{ entry['Player 3'] }}</td>
+                            <td data-label="Total Odds">{{ entry['Total Odds'] }}</td>
+                            <td data-label="Total Score">{{ entry['Total Score'] }}</td>
+                            <td data-label="Tie-Breaker Answer">{{ entry['Tie-Breaker Answer'] or 'N/A' }}</td> {# Display tie-breaker answer #}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No entries found for this league.</p>
+        {% endif %}
+    {% else %}
+        <p>Please select a league to view standings.</p>
+    {% endif %}
+{% endblock %}

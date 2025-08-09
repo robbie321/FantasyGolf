@@ -1,0 +1,197 @@
+﻿{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .video-hero-container {
+        position: relative;
+        width: 100%;
+        height: 60vh;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #background-video {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        z-index: 1;
+        transform: translateX(-50%) translateY(-50%);
+        object-fit: cover;
+    }
+    .video-hero-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 2;
+    }
+    .hero-content {
+        position: relative;
+        z-index: 3;
+        color: white;
+        text-align: center;
+        padding: 20px;
+    }
+    .hero-content h1 {
+        font-family: 'Merriweather', serif;
+        font-size: 3.5rem;
+        margin-bottom: 1rem;
+        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+    }
+    .hero-content p {
+        font-size: 1.5rem;
+        margin-bottom: 2.5rem;
+        text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.7);
+    }
+    .hero-content .btn {
+        background-color: #006a4e;
+        color: white;
+        text-decoration: none;
+        padding: 15px 30px;
+        border-radius: 5px;
+        font-weight: bold;
+        font-size: 1.1rem;
+        margin: 0 10px;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+    .hero-content .btn:hover {
+        background-color: #00563f;
+    }
+
+    .page-section {
+        padding: 4rem 1rem;
+    }
+    .content-wrapper {
+        max-width: 1000px;
+        margin: 0 auto;
+        text-align: center;
+    }
+    .content-wrapper h2 {
+        font-family: 'Merriweather', serif;
+        font-size: 2.5rem;
+        margin-bottom: 2rem;
+        color: #333;
+    }
+    .rankings-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .rankings-table th, .rankings-table td {
+        padding: 15px;
+        border-bottom: 1px solid #ddd;
+    }
+    .rankings-table thead th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+    .rankings-table .rank {
+        font-weight: bold;
+        font-size: 1.2rem;
+        text-align: center;
+    }
+    .rankings-table .sg-total {
+        font-weight: bold;
+        color: #006a4e;
+    }
+</style>
+
+<div class="video-hero-container">
+    <video autoplay loop muted playsinline id="background-video">
+        <source src="{{ url_for('static', filename='videos/golf_background.mp4') }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <div class="hero-content">
+        <h1>Fantasy Golf League</h1>
+        <p>Create or join a league and compete with friends.</p>
+
+        <div class="action-buttons">
+            {% if current_user.is_authenticated %}
+                {% if current_user.is_site_admin %}
+                    <a href="{{ url_for('admin.admin_dashboard') }}" class="btn">Go to Admin Dashboard</a>
+                {% elif current_user.is_club_admin %}
+                    <a href="{{ url_for('main.club_dashboard') }}" class="btn">Go to Club Dashboard</a>
+                {% else %}
+                    <a href="{{ url_for('main.user_dashboard') }}" class="btn">Go to My Dashboard</a>
+                {% endif %}
+            {% else %}
+                <a href="{{ url_for('auth.register') }}" class="btn">Register Now</a>
+                <a href="{{ url_for('auth.login_choice') }}" class="btn">Login</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Top 10 World Rankings Section -->
+<div class="page-section">
+    <div class="content-wrapper">
+        <h2>Top 10 World Rankings</h2>
+        {% if top_players %}
+            <table class="rankings-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">Rank</th>
+                        <th>Player Name</th>
+                        <th style="width: 25%;">Primary Tour</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in top_players %}
+                    <tr>
+                        <td class="rank">{{ player.datagolf_rank }}</td>
+                        <td>{{ player.player_name }}</td>
+                        <!-- THIS IS THE CORRECTED LINE -->
+                        <td class="sg-total">{{ player.primary_tour }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Could not load world rankings at this time. Please check back later.</p>
+        {% endif %}
+    </div>
+
+    <div class="page-section">
+        <div class="content-wrapper">
+            <h2>Top 10 Public Leagues</h2>
+            {% if top_leagues %}
+                <table class="rankings-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>League Name</th>
+                            <th>Entries</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for league in top_leagues %}
+                        <tr>
+                            <td class="rank">{{ loop.index }}</td>
+                            <td>{{ league.name }}</td>
+                            <td>{{ league.entries|length }}</td>
+                            <td><a href="{{ url_for('league.view_league', league_id=league.id) }}" class="btn">View & Join</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>There are no public leagues available at the moment.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

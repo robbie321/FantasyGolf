@@ -1,0 +1,214 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  .page-wrapper {
+    padding: 4rem 1rem;
+    background-color: #f7f7f7;
+  }
+  .main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  .header h1 {
+    font-family: "Merriweather", serif;
+    margin-bottom: 0.5rem;
+  }
+  .header p {
+    font-size: 1.1rem;
+    color: #666;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+  .form-card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 2rem;
+  }
+  .form-card h2 {
+    font-family: "Merriweather", serif;
+    margin-top: 0;
+    border-bottom: 2px solid #006a4e;
+    padding-bottom: 0.5rem;
+  }
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  .form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+  .form-group select,
+  .form-group input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+  .btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 5px;
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+  }
+  .btn-primary {
+    background-color: #006a4e;
+  }
+  .btn-danger {
+    background-color: #dc3545;
+    padding: 5px 10px;
+    font-size: 0.9rem;
+    width: auto;
+  }
+
+  .current-players-section {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 2rem;
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .data-table th,
+  .data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  .data-table thead th {
+    background-color: #f2f2f2;
+  }
+
+  @media (max-width: 992px) {
+    .card-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .btn-secondary {
+    background-color: #6c757d;
+  }
+</style>
+
+<div class="page-wrapper">
+  <div class="main-container">
+    <div class="header">
+      <h1>Manage Players for: {{ bucket.name }}</h1>
+      <p>
+        Add or remove players from this bucket to customize your league's player
+        pool.
+      </p>
+    </div>
+
+    <div class="card-grid">
+      <div class="form-card">
+        <h2>Add Individual Player</h2>
+        <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="add_individual" value="true" />
+          <div class="form-group">
+            <label for="player_id">Select Player:</label>
+            <select id="player_id" name="player_id" required>
+              <option value="">-- Select from available players --</option>
+              {% for player in players_not_in_bucket %}
+              <option value="{{ player.id }}">
+                {{ player.full_name() }} (Odds: {{ player.odds }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            Add Player to Bucket
+          </button>
+        </form>
+      </div>
+
+      <div class="form-card">
+        <h2>Upload Players via CSV</h2>
+        <form method="POST" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="upload_csv" value="true" />
+          <div class="form-group">
+            <label for="file">Select CSV File:</label>
+            <input type="file" id="file" name="file" accept=".csv" required />
+          </div>
+          <button type="submit" class="btn btn-primary">
+            Upload to Bucket
+          </button>
+        </form>
+      </div>
+
+      <div class="form-card">
+        <h2>Bucket Actions</h2>
+        <p>
+          Refresh the betting odds for all players currently in this bucket.
+          This will overwrite existing odds.
+        </p>
+        <form
+          method="POST"
+          action="{{ url_for('admin.refresh_bucket_odds', bucket_id=bucket.id) }}"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button type="submit" class="btn btn-secondary">Refresh Odds</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="current-players-section">
+      <h2>Players in This Bucket ({{ players_in_bucket|length }})</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Player Name</th>
+            <th>Odds</th>
+            <th style="text-align: right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for player in players_in_bucket %}
+          <tr>
+            <td>{{ player.full_name() }}</td>
+            <td>{{ player.odds }}</td>
+            <td style="text-align: right">
+              <form
+                method="POST"
+                action="{{ url_for('admin.remove_player_from_bucket', bucket_id=bucket.id, player_id=player.id) }}"
+              >
+                <input
+                  type="hidden"
+                  name="csrf_token"
+                  value="{{ csrf_token() }}"
+                />
+                <button type="submit" class="btn btn-danger">Remove</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" style="text-align: center; padding: 2rem">
+              No players currently in this bucket.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

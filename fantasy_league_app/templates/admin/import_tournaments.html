@@ -1,0 +1,103 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  .page-wrapper {
+    padding: 4rem 1rem;
+    background-color: #f7f7f7;
+  }
+  .content-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 3rem;
+  }
+  .content-container h1 {
+    font-family: "Merriweather", serif;
+    margin-top: 0;
+    border-bottom: 2px solid #006a4e;
+    padding-bottom: 1rem;
+  }
+  .tournaments-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2rem;
+  }
+  .tournaments-table th,
+  .tournaments-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  .tournaments-table thead th {
+    background-color: #f2f2f2;
+  }
+  .btn-import {
+    background-color: #006a4e;
+    color: white;
+    text-decoration: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+  }
+</style>
+
+<div class="page-wrapper">
+  <div class="content-container">
+    <h1>Import Active Tournaments</h1>
+    <p>
+      This tool fetches current and upcoming tournaments from the Data Golf API.
+      Clicking "Create Bucket" will automatically create a new player bucket for
+      that tournament, add all participating players to it, and add any new
+      players to the main database.
+    </p>
+
+    <table class="tournaments-table">
+      <thead>
+        <tr>
+          <th>Tournament Name</th>
+          <th>Start Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tournaments %}
+        <tr>
+          <td>{{ t.event_name }}</td>
+          <td>{{ t.start_date }}</td>
+          <td>
+            <form
+              action="{{ url_for('admin.import_tournament_action') }}"
+              method="POST"
+            >
+              <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+              <input type="hidden" name="event_id" value="{{ t.event_id }}" />
+              <input
+                type="hidden"
+                name="event_name"
+                value="{{ t.event_name }}"
+              />
+              <button type="submit" class="btn-import">Create Bucket</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3" style="text-align: center; padding: 2rem">
+            Could not fetch active tournaments from the API.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    .page-wrapper { padding: 4rem 1rem; background-color: #f7f7f7; text-align: center; }
+    .content-container { max-width: 700px; margin: 0 auto; background-color: #fff; padding: 3rem; border-radius: 8px; }
+    h1 { font-family: 'Merriweather', serif; color: #006a4e; }
+    .btn { display: inline-block; margin-top: 1.5rem; background-color: #006a4e; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold; }
+</style>
+<div class="page-wrapper">
+    <div class="content-container">
+        <h1>Payment Successful!</h1>
+        <p>Thank you for your payment. Your league entry has been confirmed and submitted.</p>
+        <a href="{{ url_for('main.user_dashboard') }}" class="btn">Return to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

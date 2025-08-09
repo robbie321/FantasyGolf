@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .page-wrapper {
+        padding: 4rem 1rem;
+        background-color: #f7f7f7;
+    }
+    .content-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        padding: 3rem;
+    }
+    .header {
+        text-align: center;
+        border-bottom: 2px solid #006a4e;
+        padding-bottom: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .header h1 {
+        font-family: 'Merriweather', serif;
+        margin: 0;
+        font-size: 2.5rem;
+    }
+    .leagues-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 2rem;
+    }
+    .leagues-table th, .leagues-table td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    .leagues-table thead th {
+        background-color: #f2f2f2;
+        font-family: 'Roboto', sans-serif;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+        color: #333;
+    }
+    .leagues-table tbody tr:hover {
+        background-color: #f9f9f9;
+    }
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        color: white;
+        font-weight: bold;
+        font-size: 0.8rem;
+    }
+    .status-finalized {
+        background-color: #28a745; /* Green */
+    }
+    .status-active {
+        background-color: #ffc107; /* Yellow */
+        color: #333;
+    }
+    .status-upcoming {
+        background-color: #17a2b8; /* Blue */
+    }
+    .btn {
+        background-color: #006a4e;
+        color: white;
+        text-decoration: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="content-container">
+        <div class="header">
+            <h1>All Leagues</h1>
+        </div>
+
+        <table class="leagues-table">
+            <thead>
+                <tr>
+                    <th>League Name</th>
+                    <th>Host Club</th>
+                    <th>Entries</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for league in leagues %}
+                <tr>
+                    <td>
+                        <strong>{{ league.name }}</strong><br>
+                        <small>Code: {{ league.league_code }}</small>
+                    </td>
+                    <td>{{ league.club_host.club_name }}</td>
+                    <td>{{ league.entries|length }}</td>
+                    <td>
+                        {% if league.is_finalized %}
+                            <span class="status-badge status-finalized">Finalized</span>
+                        {% elif league.has_ended %}
+                             <span class="status-badge status-active">Finished (Awaiting Finalization)</span>
+                        {% elif league.has_entry_deadline_passed %}
+                            <span class="status-badge status-active">Live</span>
+                        {% else %}
+                            <span class="status-badge status-upcoming">Upcoming</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('admin.edit_league', league_id=league.id) }}" class="btn">Manage</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 2rem;">No leagues have been created yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

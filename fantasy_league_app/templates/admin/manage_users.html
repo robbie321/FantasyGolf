@@ -1,0 +1,237 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  .page-wrapper {
+    padding: 4rem 1rem;
+    background-color: #f7f7f7;
+  }
+  .content-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 3rem;
+  }
+  .content-container h1 {
+    font-family: "Merriweather", serif;
+    margin-top: 0;
+    border-bottom: 2px solid #006a4e;
+    padding-bottom: 1rem;
+  }
+  .management-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  @media (min-width: 992px) {
+    .management-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+  }
+  .data-table th,
+  .data-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  .data-table thead th {
+    background-color: #f2f2f2;
+  }
+  .btn {
+    padding: 8px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-success {
+    background-color: #28a745;
+  }
+  .btn-warning {
+    background-color: #ffc107;
+  }
+  .btn-info {
+    background-color: #17a2b8;
+  }
+  .action-buttons {
+    display: flex;
+    gap: 5px;
+  }
+
+  /* NEW: Styling for flash messages */
+  .alert {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 5px;
+    color: #fff;
+    font-weight: bold;
+  }
+  .alert span {
+    flex-grow: 1;
+    text-align: center;
+  }
+  .alert-danger {
+    background-color: #dc3545;
+  }
+  .alert-success {
+    background-color: #28a745;
+  }
+  .alert-info {
+    background-color: #17a2b8;
+  }
+  .alert .close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 0.5rem;
+    line-height: 1;
+  }
+</style>
+
+<div class="page-wrapper">
+  <div class="content-container">
+    <!-- NEW: Block to display flashed messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %} {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">
+      <span>{{ message }}</span>
+      <button
+        class="close-btn"
+        onclick="this.parentElement.style.display='none';"
+      >
+        &times;
+      </button>
+    </div>
+    {% endfor %} {% endif %} {% endwith %}
+
+    <h1>Manage Users & Clubs</h1>
+    <div class="management-grid">
+      <!-- Players Section -->
+      <div class="players-section">
+        <h2>Players</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr>
+              <td>{{ user.full_name }}<br /><small>{{ user.email }}</small></td>
+              <td>
+                {% if user.is_active %}Active{% else %}Inactive{% endif %}
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <form
+                    method="POST"
+                    action="{{ url_for('admin.toggle_user_status', user_id=user.id) }}"
+                  >
+                    {% if user.is_active %}
+                    <button type="submit" class="btn btn-warning">
+                      Deactivate
+                    </button>
+                    {% else %}
+                    <button type="submit" class="btn btn-success">
+                      Activate
+                    </button>
+                    {% endif %}
+                  </form>
+                  <form
+                    method="POST"
+                    action="{{ url_for('admin.reset_user_password', user_id=user.id) }}"
+                    onsubmit="return confirm('Are you sure you want to reset the password for this user?');"
+                  >
+                    <button type="submit" class="btn btn-info">
+                      Reset Password
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Clubs Section -->
+      <div class="clubs-section">
+        <h2>Clubs</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Club Name</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for club in clubs %}
+            <tr>
+              <td>{{ club.club_name }}<br /><small>{{ club.email }}</small></td>
+              <td>
+                {% if club.is_active %}Active{% else %}Inactive{% endif %}
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <form
+                    method="POST"
+                    action="{{ url_for('admin.toggle_club_status', club_id=club.id) }}"
+                  >
+                    <input
+                      type="hidden"
+                      name="csrf_token"
+                      value="{{ csrf_token() }}"
+                    />
+                    {% if club.is_active %}
+                    <button type="submit" class="btn btn-warning">
+                      Deactivate
+                    </button>
+                    {% else %}
+                    <button type="submit" class="btn btn-success">
+                      Activate
+                    </button>
+                    {% endif %}
+                  </form>
+                  <form
+                    method="POST"
+                    action="{{ url_for('admin.reset_club_password', club_id=club.id) }}"
+                    onsubmit="return confirm('Are you sure you want to reset the password for this club?');"
+                  >
+                    <input
+                      type="hidden"
+                      name="csrf_token"
+                      value="{{ csrf_token() }}"
+                    />
+                    <button type="submit" class="btn btn-info">
+                      Reset Password
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

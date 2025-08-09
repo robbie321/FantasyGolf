@@ -1,0 +1,97 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  .page-wrapper {
+    padding: 4rem 1rem;
+    background-color: #f7f7f7;
+  }
+  .content-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 3rem;
+  }
+  .header {
+    text-align: center;
+    border-bottom: 2px solid #006a4e;
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .header h1 {
+    font-family: "Merriweather", serif;
+    margin: 0;
+    font-size: 2.5rem;
+  }
+  .rankings-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2rem;
+  }
+  .rankings-table th,
+  .rankings-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  .rankings-table thead th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+  }
+  .rankings-table tbody tr:hover {
+    background-color: #f9f9f9;
+  }
+  .rank-cell {
+    font-weight: bold;
+    font-size: 1.2rem;
+    text-align: center;
+  }
+  .player-name a {
+    font-weight: bold;
+    color: #006a4e;
+    text-decoration: none;
+  }
+  .player-name a:hover {
+    text-decoration: underline;
+  }
+</style>
+
+<div class="page-wrapper">
+  <div class="content-container">
+    <div class="header">
+      <h1>Official Player Rankings</h1>
+    </div>
+
+    <table class="rankings-table">
+      <thead>
+        <tr>
+          <th style="width: 10%">Rank</th>
+          <th>Player Name</th>
+          <th style="width: 20%">Primary Tour</th>
+          <th style="width: 20%; text-align: center">SG Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for player in players %}
+        <tr>
+          <td class="rank-cell">{{ player.datagolf_rank }}</td>
+          <td class="player-name">
+            <a
+              href="{{ url_for('player.player_profile', dg_id=player.dg_id) }}"
+            >
+              {{ player.player_name }}
+            </a>
+          </td>
+          <td>{{ player.primary_tour }}</td>
+
+          <td style="text-align: center">
+            {{ "%.2f"|format(player.dg_skill_estimate) }}
+          </td>
+        </tr>
+        {% else %} {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

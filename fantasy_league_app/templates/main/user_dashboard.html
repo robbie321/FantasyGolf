@@ -1,0 +1,454 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  /* ... (all existing styles remain the same) ... */
+  .dashboard-container {
+    display: flex;
+    font-family: Arial, sans-serif;
+    border: 1px solid #e0e0e0;
+    margin-top: 2rem;
+    min-height: 70vh;
+  }
+  .dashboard-nav {
+    flex: 0 0 280px;
+    background-color: #f7f7f7;
+    padding: 2rem;
+    border-right: 1px solid #e0e0e0;
+  }
+  .dashboard-nav h2 {
+    font-size: 1.5rem;
+    color: #333;
+    border-bottom: 2px solid #006a4e;
+    padding-bottom: 0.5rem;
+    margin-top: 0;
+  }
+  .profile-info p {
+    margin: 0.5rem 0;
+    color: #555;
+  }
+  .profile-info strong {
+    display: block;
+    color: #333;
+    font-size: 1.1rem;
+  }
+  .nav-section {
+    margin-top: 2.5rem;
+  }
+  .nav-section h3 {
+    font-size: 1.1rem;
+    color: #666;
+    text-transform: uppercase;
+  }
+  .nav-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .nav-section li a {
+    display: block;
+    padding: 0.8rem 1rem;
+    text-decoration: none;
+    color: #333;
+    border-radius: 5px;
+    font-weight: bold;
+  }
+  .nav-section li a.active {
+    background-color: #006a4e;
+    color: #fff;
+  }
+  .dashboard-content {
+    flex-grow: 1;
+    padding: 2rem 3rem;
+  }
+  .content-section {
+    display: none;
+  }
+  .content-section.active {
+    display: block;
+  }
+  .content-section h2 {
+    font-size: 2rem;
+    color: #333;
+    margin-top: 0;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 1rem;
+  }
+  .league-list {
+    list-style: none;
+    padding: 0;
+  }
+  .league-item {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .league-item-details h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+  }
+  .league-item-details p {
+    margin: 0;
+    color: #666;
+  }
+  .league-item-action .btn {
+    background-color: #006a4e;
+    color: white;
+    text-decoration: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 5px;
+    font-weight: bold;
+  }
+  .btn-danger {
+    background-color: #dc3545;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  /* --- NEW: Join League Form CSS --- */
+  .join-league-section {
+    background-color: #f7f7f7;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-top: 2rem;
+  }
+  .join-league-section h3 {
+    font-family: "Merriweather", serif;
+    margin-top: 0;
+    font-size: 1.5rem;
+  }
+  .join-league-form {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  .join-league-form input[type="text"] {
+    flex-grow: 1;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+  }
+  .join-league-form .btn {
+    padding: 12px 25px;
+    font-size: 1rem;
+    background-color: #006a4e;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  /* NEW: Styling for the Create League button */
+  .btn-create {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background-color: #006a4e;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    text-align: center;
+    box-sizing: border-box;
+    transition: background-color 0.2s;
+  }
+  .btn-create:hover {
+    background-color: #00563f;
+  }
+
+  .nav-section h3 {
+    font-size: 1.1rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+  }
+
+  .nav-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .nav-section li a {
+    display: block;
+    padding: 0.8rem 1rem;
+    text-decoration: none;
+    color: #333;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.2s;
+  }
+
+  .nav-section li a:hover {
+    background-color: #e9e9e9;
+  }
+
+  .nav-section li a.active {
+    background-color: #006a4e; /* Masters green */
+    color: #fff;
+  }
+
+  /* Right Content Panel */
+  .dashboard-content {
+    flex-grow: 1;
+    padding: 2rem 3rem;
+  }
+
+  .content-section {
+    display: none; /* Hide all sections by default */
+  }
+
+  .content-section.active {
+    display: block; /* Show the active section */
+  }
+
+  .content-section h2 {
+    font-size: 2rem;
+    color: #333;
+    margin-top: 0;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 1rem;
+  }
+
+  /* League List Styling */
+  .league-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .league-item {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-direction: row; /* Default for desktop */
+  }
+
+  .league-item-details h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+  }
+
+  .league-item-details p {
+    margin: 0;
+    color: #666;
+  }
+
+  .league-item-action .btn {
+    background-color: #006a4e; /* Masters green */
+    color: white;
+    text-decoration: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 5px;
+    font-weight: bold;
+  }
+
+  /* Delete button styling */
+  .btn-danger {
+    background-color: #dc3545;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  .btn-danger:hover {
+    background-color: #c82333;
+  }
+
+  @media (max-width: 992px) {
+    .dashboard-container {
+      flex-direction: column;
+    }
+
+    .dashboard-nav {
+      flex: 1;
+      border-right: none;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .dashboard-content {
+      padding: 2rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .dashboard-content {
+      padding: 1.5rem 1rem;
+    }
+
+    .league-item {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .league-item-action {
+      margin-top: 1rem;
+      width: 100%;
+    }
+
+    .league-item-action .btn {
+      display: block;
+      text-align: center;
+    }
+
+    .content-section h2 {
+      font-size: 1.75rem;
+    }
+  }
+</style>
+
+<div class="dashboard-container">
+  <aside class="dashboard-nav">
+    <h2>Profile</h2>
+    <div class="profile-info">
+      <strong>{{ current_user.full_name }}</strong>
+      <p>{{ current_user.email }}</p>
+    </div>
+
+    <!-- <div class="nav-section">
+      <a href="{{ url_for('league.create_user_league') }}" class="btn-create"
+        >Create a League</a
+      >
+    </div> -->
+
+    <div class="nav-section">
+      <h3>Payouts</h3>
+      {% if current_user.stripe_account_id %}
+      <p style="color: #28a745; font-weight: bold">✓ Payouts Enabled</p>
+      {% else %}
+      <p>Connect your bank account to receive prize winnings.</p>
+      <a
+        href="{{ url_for('main.stripe_connect_onboard') }}"
+        class="btn-create"
+        style="background-color: #17a2b8"
+        >Setup Payouts</a
+      >
+      {% endif %}
+    </div>
+
+    <div class="nav-section">
+      <h3 id="leagues-nav-header">My Leagues</h3>
+      <ul>
+        <li>
+          <a
+            href="#leagues"
+            class="nav-link active"
+            data-target="leagues-section"
+            >Leagues</a
+          >
+        </li>
+      </ul>
+    </div>
+
+    <div class="nav-section">
+      <h3>Account Settings</h3>
+      <ul>
+        <li>
+          <a href="#settings" class="nav-link" data-target="settings-section"
+            >Delete Account</a
+          >
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="dashboard-content">
+    <div id="leagues-section" class="content-section active">
+      <h2>My Leagues</h2>
+      <div class="join-league-section">
+        <h3>Join a New League</h3>
+        <form
+          action="{{ url_for('league.join_league') }}"
+          method="POST"
+          class="join-league-form"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input
+            type="text"
+            name="league_code"
+            placeholder="Enter League Code"
+            required
+          />
+          <button type="submit" class="btn">Join League</button>
+        </form>
+      </div>
+
+      {% if user_leagues %}
+      <ul class="league-list">
+        {% for league in user_leagues %}
+        <li class="league-item">
+          <div class="league-item-details">
+            <h4>{{ league.league_name }}</h4>
+            <p>My Entry: {{ league.entry_name }}</p>
+            <p>League code: <strong>{{ league.league_code }}</strong></p>
+          </div>
+          <div class="league-item-action">
+            <!-- Show 'Edit' button only if deadline has not passed -->
+            {% if not league.league_obj.has_entry_deadline_passed %}
+            <a
+              href="{{ url_for('league.edit_entry', entry_id=league.entry_id) }}"
+              class="btn"
+              >Edit Entry</a
+            >
+            {% endif %}
+            <a
+              href="{{ url_for('league.view_league', league_id=league.league_id) }}"
+              class="btn"
+              >View League</a
+            >
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>You haven't joined any leagues yet. Find a league to join!</p>
+      {% endif %}
+    </div>
+
+    <div id="settings-section" class="content-section"></div>
+  </main>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const navLinks = document.querySelectorAll(".nav-link");
+    const contentSections = document.querySelectorAll(".content-section");
+
+    navLinks.forEach((link) => {
+      link.addEventListener("click", function (e) {
+        e.preventDefault();
+
+        // Remove active class from all links and sections
+        navLinks.forEach((nav) => nav.classList.remove("active"));
+        contentSections.forEach((section) =>
+          section.classList.remove("active")
+        );
+
+        // Add active class to the clicked link
+        this.classList.add("active");
+
+        // Show the target content section
+        const targetId = this.getAttribute("data-target");
+        document.getElementById(targetId).classList.add("active");
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .page-wrapper {
+        padding: 4rem 1rem;
+        background-color: #f7f7f7;
+    }
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        padding: 3rem;
+    }
+    .form-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .form-header h1 {
+        font-family: 'Merriweather', serif;
+        margin: 0;
+    }
+    .form-header p {
+        font-size: 1.2rem;
+        color: #555;
+    }
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+    }
+    /* NEW: Added styling for select and input fields */
+    .form-group select, .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+        font-size: 1rem;
+    }
+    .odds-display {
+        text-align: center;
+        margin: 2rem 0;
+        padding: 1rem;
+        border: 2px solid #006a4e;
+        border-radius: 8px;
+    }
+    .odds-display h3 {
+        margin: 0;
+        font-family: 'Merriweather', serif;
+    }
+    #combined-odds {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #006a4e;
+    }
+    #odds-warning {
+        color: #dc3545;
+        font-weight: bold;
+        display: none;
+    }
+    .btn-submit {
+        width: 100%;
+        padding: 12px;
+        background-color: #006a4e;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+    }
+     .btn-submit:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="form-container">
+        <div class="form-header">
+            <h1>Edit Your Entry for {{ league.name }}</h1>
+            <p><strong>Entry Name:</strong> {{ current_user.full_name }}</p>
+        </div>
+
+        <form id="editEntryForm" method="POST" action="{{ url_for('league.edit_entry', entry_id=entry.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="form-group">
+                <label for="player1">Select Player 1</label>
+                <select id="player1" name="player1" class="player-select" required>
+                    <option value="" data-odds="0">-- Choose a Player --</option>
+                    {% for player in players %}
+                    <option value="{{ player.id }}" data-odds="{{ player.odds }}" {% if player.id == entry.player1_id %}selected{% endif %}>
+                        {{ player.name }} {{ player.surname }} ({{ player.odds }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="player2">Select Player 2</label>
+                <select id="player2" name="player2" class="player-select" required>
+                    <option value="" data-odds="0">-- Choose a Player --</option>
+                    {% for player in players %}
+                    <option value="{{ player.id }}" data-odds="{{ player.odds }}" {% if player.id == entry.player2_id %}selected{% endif %}>
+                        {{ player.name }} {{ player.surname }} ({{ player.odds }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="player3">Select Player 3</label>
+                <select id="player3" name="player3" class="player-select" required>
+                    <option value="" data-odds="0">-- Choose a Player --</option>
+                    {% for player in players %}
+                    <option value="{{ player.id }}" data-odds="{{ player.odds }}" {% if player.id == entry.player3_id %}selected{% endif %}>
+                        {{ player.name }} {{ player.surname }} ({{ player.odds }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="odds-display">
+                <h3>Combined Odds</h3>
+                <span id="combined-odds">0.00</span>
+                <p id="odds-warning">Combined odds must be at least 100.</p>
+            </div>
+
+            <div class="form-group">
+                <label for="tie_breaker_answer">{{ league.tie_breaker_question }}</label>
+                <input type="number" id="tie_breaker_answer" name="tie_breaker_answer" value="{{ entry.tie_breaker_answer }}" required>
+            </div>
+
+            <button type="submit" id="submit-button" class="btn-submit">Update Entry</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const playerSelects = document.querySelectorAll('.player-select');
+        const oddsDisplay = document.getElementById('combined-odds');
+        const oddsWarning = document.getElementById('odds-warning');
+        const submitButton = document.getElementById('submit-button');
+        const entryForm = document.getElementById('editEntryForm');
+
+        let totalOdds = 0;
+
+        function updateFormState() {
+            const selectedIds = Array.from(playerSelects)
+                                    .map(select => select.value)
+                                    .filter(value => value !== "");
+
+            totalOdds = 0;
+
+            playerSelects.forEach(currentSelect => {
+                const currentSelectedValue = currentSelect.value;
+
+                if (currentSelectedValue) {
+                    totalOdds += parseFloat(currentSelect.options[currentSelect.selectedIndex].dataset.odds);
+                }
+
+                Array.from(currentSelect.options).forEach(option => {
+                    option.disabled = false;
+                    if (selectedIds.includes(option.value) && option.value !== currentSelectedValue) {
+                        option.disabled = true;
+                    }
+                });
+            });
+
+            oddsDisplay.textContent = totalOdds.toFixed(2);
+
+            const allPlayersSelected = selectedIds.length === 3;
+
+            if (allPlayersSelected && totalOdds >= 100) {
+                oddsWarning.style.display = 'none';
+                submitButton.disabled = false;
+            } else {
+                submitButton.disabled = true;
+                if (allPlayersSelected && totalOdds < 100) {
+                    oddsWarning.style.display = 'block';
+                } else {
+                    oddsWarning.style.display = 'none';
+                }
+            }
+        }
+
+        playerSelects.forEach(select => {
+            select.addEventListener('change', updateFormState);
+        });
+
+        entryForm.addEventListener('submit', function(event) {
+            if (totalOdds < 100) {
+                event.preventDefault();
+                alert('Your combined odds are below 100. Please adjust your player selection.');
+            }
+        });
+
+        updateFormState();
+    });
+</script>
+{% endblock %}

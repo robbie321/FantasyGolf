@@ -1,0 +1,10 @@
+﻿{% extends 'base.html' %}
+{% block content %}
+    <h1>Upload Player Data CSV</h1>
+    <form method="POST" enctype="multipart/form-data">
+        <label for="file">Select CSV File:</label><br>
+        <input type="file" id="file" name="file" accept=".csv" required><br><br>
+        <input type="submit" value="Upload Players">
+    </form>
+    <p>Please ensure your CSV file has 'Name', 'Surname', 'Odds', and 'Current Score' columns.</p>
+{% endblock %}

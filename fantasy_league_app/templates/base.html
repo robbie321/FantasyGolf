@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fantasy Golf League</title>
+    <!-- <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    /> -->
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;700&display=swap");
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Roboto", sans-serif;
+        /* CHANGED: Set the default background to white */
+        background-color: #ffffff;
+      }
+      .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #ffffff;
+        color: #006a4e;
+        padding: 0 2rem;
+        height: 70px;
+        border-bottom: 1px solid #e0e0e0;
+        font-family: "Merriweather", serif;
+        position: relative; /* Establishes a stacking context */
+        z-index: 100; /* Ensures navbar is on top of other content */
+      }
+      .navbar-brand {
+        font-family: "Playfair Display", serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        text-decoration: none;
+        color: #006a4e;
+      }
+      .navbar-links a {
+        color: #006a4e;
+        text-decoration: none;
+        margin-left: 1.5rem;
+        font-weight: 700;
+      }
+
+      /* Dropdown styles remain the same... */
+      .navbar-dropdown {
+        position: relative;
+        display: inline-block;
+      }
+      .dropdown-button {
+        background-color: transparent;
+        color: #006a4e;
+        padding: 10px 15px;
+        font-size: 1rem;
+        font-weight: 700;
+        font-family: "Merriweather", serif;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+      }
+      .dropdown-button:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 5px;
+      }
+      .dropdown-button .arrow {
+        border: solid #006a4e;
+        border-width: 0 2px 2px 0;
+        display: inline-block;
+        padding: 3px;
+        margin-left: 10px;
+        transform: rotate(45deg);
+      }
+      .dropdown-content {
+        display: none;
+        position: absolute;
+        right: 0;
+        background-color: #f1f1f1;
+        min-width: 200px;
+        box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+        border-radius: 5px;
+        overflow: hidden;
+        font-family: "Roboto", sans-serif;
+      }
+      .dropdown-content a {
+        color: black;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+        font-weight: normal;
+      }
+      .dropdown-content a:hover {
+        background-color: #ddd;
+      }
+      .show {
+        display: block;
+      }
+
+      .flash-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: none; /* Hidden by default */
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        padding: 1rem;
+        box-sizing: border-box;
+      }
+
+      .flash-modal-content {
+        background-color: #ffffff;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        max-width: 500px;
+        width: 100%;
+        position: relative;
+      }
+
+      .flash-modal-content h2 {
+        font-family: "Merriweather", serif;
+        margin-top: 0;
+        margin-bottom: 1rem;
+        color: #dc3545; /* Red for errors */
+      }
+
+      .flash-modal-content .flash-success h2 {
+        color: #28a745; /* Green for success */
+      }
+
+      .flash-modal-content .flash-info h2 {
+        color: #17a2b8; /* Blue for info */
+      }
+
+      .flash-modal-content p {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #333;
+      }
+
+      .flash-modal-close-btn {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #aaa;
+        cursor: pointer;
+        line-height: 1;
+      }
+      .flash-modal-close-btn:hover {
+        color: #333;
+      }
+    </style>
+
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <nav class="navbar">
+      <a href="{{ url_for('main.index') }}" class="navbar-brand"
+        >Fantasy Golf</a
+      >
+
+      <button class="navbar-toggler" id="navbar-toggler-btn">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <div class="navbar-links" id="navbar-links-container">
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('main.browse_leagues') }}">Browse Leagues</a>
+        <a href="{{ url_for('player.rankings') }}">Player Rankings</a>
+
+        <div class="navbar-dropdown">
+          <button onclick="toggleDropdown()" class="dropdown-button">
+            {{ current_user.full_name or current_user.club_name or
+            current_user.username }}
+            <i class="arrow"></i>
+          </button>
+          <div id="myDropdown" class="dropdown-content">
+            {% if current_user.is_authenticated and not
+            current_user.is_club_admin and not current_user.is_site_admin %}
+            <a
+              href="{{ url_for('main.view_profile', user_id=current_user.id) }}"
+              >My Profile</a
+            >
+            {% endif %} {% if current_user.is_site_admin %}
+            <a href="{{ url_for('admin.admin_dashboard') }}">Admin Dashboard</a>
+            {% elif current_user.is_club_admin %}
+            <a href="{{ url_for('main.club_dashboard') }}">Club Dashboard</a>
+            {% else %}
+            <a href="{{ url_for('main.user_dashboard') }}">My Dashboard</a>
+            {% endif %}
+            <a href="{{ url_for('auth.logout') }}">Logout</a>
+          </div>
+        </div>
+        {% else %}
+        <a href="{{ url_for('auth.login_choice') }}">Login</a>
+        <a href="{{ url_for('auth.register') }}">Register</a>
+        {% endif %}
+      </div>
+    </nav>
+
+    {% block content %}{% endblock %} {% with messages =
+    get_flashed_messages(with_categories=true) %} {% if messages %}
+    <div id="flash-modal" class="flash-modal-overlay">
+      <div class="flash-modal-content">
+        <span class="flash-modal-close-btn">&times;</span>
+        {% for category, message in messages %}
+        <div class="flash-{{ category }}">
+          <h2>
+            {% if category == 'danger' %}Error {% elif category == 'success'
+            %}Success {% elif category == 'warning' %}Warning {% else %}Notice{%
+            endif %}
+          </h2>
+          <p>{{ message }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %} {% endwith %}
+
+    <script>
+      function toggleDropdown() {
+        document.getElementById("myDropdown").classList.toggle("show");
+      }
+      window.onclick = function (event) {
+        if (!event.target.matches(".dropdown-button, .dropdown-button *")) {
+          var dropdowns = document.getElementsByClassName("dropdown-content");
+          for (var i = 0; i < dropdowns.length; i++) {
+            var openDropdown = dropdowns[i];
+            if (openDropdown.classList.contains("show")) {
+              openDropdown.classList.remove("show");
+            }
+          }
+        }
+      };
+
+      document.addEventListener("DOMContentLoaded", function () {
+        const toggler = document.getElementById("navbar-toggler-btn");
+        const linksContainer = document.getElementById(
+          "navbar-links-container"
+        );
+
+        if (toggler && linksContainer) {
+          toggler.addEventListener("click", function () {
+            linksContainer.classList.toggle("is-active");
+            toggler.classList.toggle("is-active");
+          });
+        }
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        const flashModal = document.getElementById("flash-modal");
+        const closeModalBtn = document.querySelector(".flash-modal-close-btn");
+
+        // If the modal exists in the DOM, display it
+        if (flashModal) {
+          flashModal.style.display = "flex";
+
+          // Function to close the modal
+          const closeModal = () => {
+            flashModal.style.display = "none";
+          };
+
+          // Close modal when the 'x' button is clicked
+          if (closeModalBtn) {
+            closeModalBtn.addEventListener("click", closeModal);
+          }
+
+          // Close modal when clicking on the overlay (outside the content)
+          flashModal.addEventListener("click", function (event) {
+            if (event.target === flashModal) {
+              closeModal();
+            }
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

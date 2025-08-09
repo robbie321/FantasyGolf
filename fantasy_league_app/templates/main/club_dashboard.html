@@ -1,0 +1,175 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  .page-wrapper {
+    padding: 2rem;
+    background-color: #f7f7f7;
+  }
+  .dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    font-family: "Roboto", sans-serif;
+    border: 1px solid #e0e0e0;
+    background-color: #fff;
+    min-height: 70vh;
+  }
+  .dashboard-nav {
+    flex: 0 0 280px;
+    background-color: #f7f7f7;
+    padding: 2rem;
+    border-right: 1px solid #e0e0e0;
+  }
+  .dashboard-nav h2 {
+    font-family: "Merriweather", serif;
+    font-size: 1.5rem;
+    border-bottom: 2px solid #006a4e;
+    padding-bottom: 0.5rem;
+    margin-top: 0;
+  }
+  .profile-info strong {
+    font-size: 1.1rem;
+  }
+  /* NEW: Styling for the nav section and create button */
+  .nav-section {
+    margin-top: 2.5rem;
+  }
+  .btn-create {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background-color: #006a4e;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    text-align: center;
+    box-sizing: border-box;
+    transition: background-color 0.2s;
+  }
+  .btn-create:hover {
+    background-color: #00563f;
+  }
+  .dashboard-content {
+    flex-grow: 1;
+    padding: 2rem 3rem;
+  }
+  .dashboard-content h2 {
+    font-family: "Merriweather", serif;
+    font-size: 2rem;
+    margin-top: 0;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 1rem;
+  }
+  .league-list {
+    list-style: none;
+    padding: 0;
+  }
+  .league-item {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .league-item-details h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+  }
+  .league-item-action .btn {
+    background-color: #006a4e;
+    color: white;
+    text-decoration: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 5px;
+    font-weight: bold;
+  }
+
+  /* Styling for the revenue stat card */
+  .stat-card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .stat-card .stat-title {
+    font-size: 1.2rem;
+    color: #666;
+    margin: 0 0 0.5rem 0;
+    font-family: "Merriweather", serif;
+  }
+  .stat-card .stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #006a4e;
+  }
+</style>
+
+<div class="page-wrapper">
+  <div class="dashboard-container">
+    <aside class="dashboard-nav">
+      <h2>Club Profile</h2>
+      <div class="profile-info">
+        <strong>{{ current_user.club_name }}</strong>
+        <p>{{ current_user.email }}</p>
+      </div>
+
+      <div class="nav-section">
+        <a href="{{ url_for('league.create_league') }}" class="btn-create"
+          >Create New League</a
+        >
+      </div>
+
+      <div class="nav-section">
+        <h3 style="margin-top: 1.5rem">Payouts</h3>
+        {% if current_user.stripe_account_id %}
+        <p style="color: #28a745; font-weight: bold">✓ Payouts Enabled</p>
+        {% else %}
+        <p>Connect your club's bank account to receive your revenue share.</p>
+        <a
+          href="{{ url_for('main.stripe_connect_onboard') }}"
+          class="btn-create"
+          style="background-color: #17a2b8"
+          >Setup Payouts</a
+        >
+        {% endif %}
+      </div>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="stat-card">
+        <h3 class="stat-title">Your Total Revenue (70% Share)</h3>
+        <p class="stat-value">€{{ "%.2f"|format(club_revenue) }}</p>
+      </div>
+
+      <h2>Created Leagues</h2>
+      {% if club_leagues %}
+      <ul class="league-list">
+        {% for league in club_leagues %}
+        <li class="league-item">
+          <div class="league-item-details">
+            <h4>{{ league.name }}</h4>
+            <p>League Code: <strong>{{ league.code }}</strong></p>
+            <p>Entry Fee: €{{ "%.2f"|format(league.entry_fee) }}</p>
+          </div>
+          <div class="league-item-action">
+            <!-- THIS IS THE UPDATED LINE -->
+            <a
+              href="{{ url_for('league.manage_league', league_id=league.id) }}"
+              class="btn"
+              >Manage League</a
+            >
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>You haven't created any leagues yet.</p>
+      {% endif %}
+    </main>
+  </div>
+</div>
+{% endblock %}
