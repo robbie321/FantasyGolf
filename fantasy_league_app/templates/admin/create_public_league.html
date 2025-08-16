@@ -118,8 +118,15 @@
           {{ form.rules.label }} {{ form.rules(class="form-control") }}
         </div>
         <div class="form-group full-width">
-          {{ form.tie_breaker_question.label }} {{
-          form.tie_breaker_question(class="form-control", required=True) }}
+          <label for="tie_breaker_question">Tie-Breaker Question</label>
+          <input
+            type="text"
+            id="tie_breaker_question"
+            name="tie_breaker_question"
+            class="form-control"
+            value="A question will be automatically generated based on your player pool."
+            disabled
+          />
         </div>
         <div class="form-group full-width checkbox-group">
           {{ form.no_favorites_rule() }} {{

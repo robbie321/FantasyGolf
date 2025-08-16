@@ -3,13 +3,10 @@ from flask import current_app
 
 def _create_transfer(amount_in_cents, destination_account, description):
     """Helper function to create a single Stripe transfer."""
-     # Stripe's minimum transfer amount is 1 cent. Do not attempt transfers for 0.
+    # Stripe's minimum transfer amount is 1 cent. Do not attempt transfers for 0.
     if amount_in_cents < 1:
         print(f"Skipping transfer for {description}: Amount is zero.")
         return None, None # Return success, as there's nothing to do.
-
-    print(f"Attempting to transfer {amount_in_cents} cents to {destination_account} for: {description}")
-
 
     try:
         transfer = stripe.Transfer.create(
@@ -23,47 +20,50 @@ def _create_transfer(amount_in_cents, destination_account, description):
         print(f"Stripe Transfer Error: {e}")
         return None, str(e)
 
-def process_league_payouts(league, winner, club_admin):
+def process_payouts(league, winners, club_admin=None):
     """
-    Calculates and processes payouts for both the winner and the club admin.
-    This is used for private leagues created by clubs.
+    Calculates and processes payouts for a list of winners and an optional club admin.
     """
     stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
 
-    # Calculate the total revenue and the 70% share for the club
     total_revenue = league.entry_fee * len(league.entries)
-    creator_total_share = total_revenue * 0.70
+    num_winners = len(winners)
 
-    # Calculate the winner's prize based on the percentage set by the admin
-    winner_prize_amount = creator_total_share * (league.prize_amount / 100.0)
+    if league.is_public:
+        total_prize_pool = total_revenue * (league.prize_amount / 100.0)
+    else: # Private league
+        creator_total_share = total_revenue * 0.70
+        total_prize_pool = creator_total_share * (league.prize_amount / 100.0)
+        admin_profit = creator_total_share - total_prize_pool
+        admin_profit_cents = int(admin_profit * 100)
 
-    # The club admin's profit is what's left of their 70% share
-    admin_profit_amount = creator_total_share - winner_prize_amount
+        # Pay the club admin their share
+        if club_admin and club_admin.stripe_account_id:
+            _, admin_error = _create_transfer(
+                admin_profit_cents,
+                club_admin.stripe_account_id,
+                f"League hosting profit for {league.name}"
+            )
+            if admin_error:
+                return None, admin_error
 
-    # Convert amounts to cents for the Stripe API
-    winner_amount_cents = int(winner_prize_amount * 100)
-    admin_amount_cents = int(admin_profit_amount * 100)
+    # Split the prize pool among the winners
+    prize_per_winner = total_prize_pool / num_winners
+    prize_per_winner_cents = int(prize_per_winner * 100)
 
-    # --- Payout to the Winner ---
-    winner_transfer, winner_error = _create_transfer(
-        winner_amount_cents,
-        winner.stripe_account_id,
-        f"Winnings for {league.name}"
-    )
-    if winner_error:
-        return None, None, winner_error
+    for winner in winners:
+        if not winner.stripe_account_id:
+            return None, f"Winner {winner.full_name} is missing a Stripe account ID."
 
-    # --- Payout to the Club Admin ---
-    admin_transfer, admin_error = _create_transfer(
-        admin_amount_cents,
-        club_admin.stripe_account_id,
-        f"League hosting profit for {league.name}"
-    )
-    if admin_error:
-        # Optionally, you could try to reverse the winner's transfer here
-        return None, None, admin_error
+        _, winner_error = _create_transfer(
+            prize_per_winner_cents,
+            winner.stripe_account_id,
+            f"Winnings for {league.name} (split)"
+        )
+        if winner_error:
+            return None, winner_error
 
-    return winner_prize_amount, admin_profit_amount, None
+    return total_prize_pool, None
 
 def create_payout(amount_in_cents, destination_stripe_account_id, league_name):
     """
@@ -71,6 +71,10 @@ def create_payout(amount_in_cents, destination_stripe_account_id, league_name):
     This is used for public leagues where only the winner is paid out.
     """
     stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
+
+    if amount_in_cents < 1:
+        print(f"Skipping transfer for {league_name}: Amount is zero.")
+        return None, None
 
     try:
         transfer = stripe.Transfer.create(

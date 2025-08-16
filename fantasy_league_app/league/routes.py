@@ -10,7 +10,7 @@ import string
 import stripe
 from datetime import datetime, timedelta
 from ..data_golf_client import DataGolfClient
-from ..stripe_client import process_league_payouts
+from ..stripe_client import process_payouts
 
 
 
@@ -33,7 +33,10 @@ def _get_sorted_leaderboard(league_id):
 # Make sure the client is imported at the top of the file
 from ..data_golf_client import DataGolfClient
 
-def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str, prize_amount_str, rules, prize_details, tie_breaker, tour, max_entries, odds_limit, no_favorites_rule, is_public=False, club_creator=None, user_creator=None, allow_past_creation=False):
+def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str,
+                       prize_amount_str, max_entries, odds_limit, rules,
+                       prize_details, no_favorites_rule, tour, is_public,
+                       allow_past_creation=False, club_id=None):
     """
     A helper function to handle the creation of any type of league.
     Returns (new_league, error_message)
@@ -68,21 +71,19 @@ def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str, pr
     if not bucket:
         return None, "Selected player pool not found."
 
-    # --- START OF DYNAMIC TIE-BREAKER LOGIC ---
     tie_breaker_player = bucket.get_random_player_for_tie_breaker()
     if not tie_breaker_player:
         return None, "Cannot create league: The selected player pool is empty."
 
     # Generate the question and store the player's ID
-    tie_breaker_question = f"What will be the final stroke count for {tie_breaker_player.full_name()} on Day 2 of the tournament?"
+    tie_breaker_question = f"What will be the final stroke count for {tie_breaker_player.full_name()}'s on Day 2 of the tournament be?"
     tie_breaker_player_id = tie_breaker_player.dg_id
-    # --- END OF DYNAMIC TIE-BREAKER LOGIC ---
 
     new_league = League(
         name=name, league_code=league_code, entry_fee=entry_fee, prize_amount=prize_amount,
         max_entries=max_entries_val, odds_limit=odds_limit_val,
         no_favorites_rule=int(no_favorites_rule), prize_details=prize_details, rules=rules,
-        tie_breaker_question=tie_breaker, player_bucket_id=player_bucket_id,
+        tie_breaker_question=tie_breaker_question, tie_breaker_player_id=tie_breaker_player_id, player_bucket_id=player_bucket_id,
         start_date=start_date, end_date=end_date, is_public=is_public, tour=tour,
         club_id=club_creator.id if club_creator else None,
         user_id=user_creator.id if user_creator else None
@@ -156,7 +157,7 @@ def create_league():
             prize_amount_str=str(form.prize_amount.data),
             rules=request.form.get('rules'),
             prize_details=request.form.get('prize_details'),
-            tie_breaker=request.form.get('tie_breaker_question'),
+            # tie_breaker=request.form.get('tie_breaker_question'),
             tour=request.form.get('tour'),
             max_entries=request.form.get('max_entries'),
             odds_limit=request.form.get('odds_limit'),

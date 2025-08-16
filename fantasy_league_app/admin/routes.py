@@ -504,7 +504,7 @@ def create_public_league():
             odds_limit=form.odds_limit.data,
             rules=form.rules.data,
             prize_details=form.prize_details.data,
-            tie_breaker=form.tie_breaker_question.data,
+            # tie_breaker=form.tie_breaker_question.data,
             no_favorites_rule=form.no_favorites_rule.data,
             tour=form.tour.data,
             is_public=True,

@@ -25,6 +25,6 @@ class LeagueForm(FlaskForm):
     odds_limit = IntegerField('Combined Odds Limit', validators=[DataRequired(), NumberRange(min=0)])
     prize_details = TextAreaField('Prize Details')
     rules = TextAreaField('Rules')
-    tie_breaker_question = StringField('Tie-Breaker Question', validators=[DataRequired()])
+    # tie_breaker_question = StringField('Tie-Breaker Question', validators=[DataRequired()])
     no_favorites_rule = BooleanField("Enforce 'No Favorites' Rule")
     submit = SubmitField('Create League')

@@ -3,16 +3,15 @@ from collections import defaultdict
 import requests
 from sqlalchemy import func
 
-from .models import User, League, Player
 from . import db, mail, socketio # Make sure mail is imported if you use it in other tasks
 from flask_mail import Message
 
 from .data_golf_client import DataGolfClient
 
 from collections import defaultdict # Add this import
-from .models import League, Player, PlayerBucket
+from .models import League, Player, PlayerBucket, LeagueEntry, PlayerScore, User
 
-from .stripe_client import process_league_payouts, _create_transfer
+from .stripe_client import process_payouts,  create_payout
 from .utils import send_winner_notification_email
 
 def update_active_league_scores(app):
@@ -303,13 +302,13 @@ def update_player_buckets(app):
 # --- Automated Weekly Task to Finalize Leagues ---
 def finalize_finished_leagues(app):
     """
-    Scheduled to run weekly. Finds all leagues that have ended but are not
-    yet finalized, calculates the winner, and processes payouts.
+    Finds finished leagues, fetches the tie-breaker score, determines winner(s),
+    and processes payouts.
     """
     with app.app_context():
         print(f"--- Running weekly league finalization at {datetime.now()} ---")
+        client = DataGolfClient()
 
-        # Find all leagues that have ended and are not yet finalized
         leagues_to_finalize = League.query.filter(
             League.end_date < datetime.utcnow(),
             League.is_finalized == False
@@ -323,83 +322,60 @@ def finalize_finished_leagues(app):
             entries = league.entries
             if not entries:
                 print(f"Skipping league '{league.name}' (ID: {league.id}) as it has no entries.")
-                league.is_finalized = True # Mark as finalized to avoid re-checking
+                league.is_finalized = True
                 db.session.commit()
                 continue
 
-             # 1. Calculate total scores for all entries
+            # --- Calculate Winner(s) ---
             for entry in entries:
-                # Ensure players exist before trying to access their scores
                 p1_score = entry.player1.current_score if entry.player1 else 0
                 p2_score = entry.player2.current_score if entry.player2 else 0
                 p3_score = entry.player3.current_score if entry.player3 else 0
                 entry.total_score = p1_score + p2_score + p3_score
 
-            # 2. Find the lowest score
             min_score = min(entry.total_score for entry in entries)
-
-            # 3. Get all entries that are tied for the lowest score
             top_entries = [entry for entry in entries if entry.total_score == min_score]
 
-            winner_entry = None
+            winners = []
             if len(top_entries) == 1:
-                # If there's only one person with the top score, they are the winner
-                winner_entry = top_entries[0]
+                winners = [top_entries[0].user]
             else:
-                # If there's a tie, proceed to the tie-breaker question
                 actual_answer = league.tie_breaker_actual_answer
                 if actual_answer is not None:
-                    # Find the minimum difference between the guess and the actual answer
                     min_diff = min(abs(e.tie_breaker_answer - actual_answer) for e in top_entries)
-
-                    # Get all entries that are tied on the tie-breaker
-                    tie_breaker_winners = [e for e in top_entries if abs(e.tie_breaker_answer - actual_answer) == min_diff]
-
-                    # Sort these final tied entries by their creation date (earliest first)
-                    tie_breaker_winners.sort(key=lambda e: e.created_at)
-
-                    # The winner is the first person who submitted their entry
-                    winner_entry = tie_breaker_winners[0]
+                    winners = [e.user for e in top_entries if abs(e.tie_breaker_answer - actual_answer) == min_diff]
                 else:
-                    # Fallback if the tie-breaker score couldn't be fetched: sort by creation date
-                    top_entries.sort(key=lambda e: e.created_at)
-                    winner_entry = top_entries[0]
+                    winners = [e.user for e in top_entries]
 
-            winner = winner_entry.user
-
-            league.winner_id = winner.id
+            league.winners = winners
 
             # --- Payout Logic ---
-            if league.is_public:
-                # Payout for Public Leagues (Site Admin)
-                total_revenue = league.entry_fee * len(entries)
-                final_prize_amount = total_revenue * (league.prize_amount / 100.0)
-                amount_in_cents = int(final_prize_amount * 100)
+            club_admin = User.query.get(league.club_id) if not league.is_public else None
+            total_prize, error = process_payouts(league, winners, club_admin)
 
-                if winner.stripe_account_id:
-                    _, error = create_payout(amount_in_cents, winner.stripe_account_id, league.name)
-                    if error:
-                        print(f"Stripe payout failed for public league {league.id}: {error}")
-                        continue # Skip to the next league
-                else:
-                    print(f"Payout failed for public league {league.id}: Winner has no Stripe ID.")
-                    continue
-            else:
-                # Payout for Private Leagues (Club Admin)
-                club_admin = User.query.get(league.club_id)
-                if winner.stripe_account_id and club_admin and club_admin.stripe_account_id:
-                    _, _, error = process_league_payouts(league, winner, club_admin)
-                    if error:
-                        print(f"Stripe payout failed for private league {league.id}: {error}")
-                        continue
-                else:
-                    print(f"Payout failed for private league {league.id}: Winner or Admin has no Stripe ID.")
-                    continue
+            if error:
+                print(f"Stripe payout failed for league {league.id}: {error}")
+                continue
 
-            # --- Finalize and Notify ---
+            # --- Archive Scores & Finalize ---
+            all_players_in_league = set()
+            for entry in entries:
+                all_players_in_league.add(entry.player1)
+                all_players_in_league.add(entry.player2)
+                all_players_in_league.add(entry.player3)
+
+            for player in all_players_in_league:
+                if player:
+                    historical_score = PlayerScore(
+                        player_id=player.id,
+                        league_id=league.id,
+                        score=player.current_score
+                    )
+                    db.session.add(historical_score)
+
             league.is_finalized = True
             db.session.commit()
             send_winner_notification_email(league)
-            print(f"Successfully finalized league '{league.name}' (ID: {league.id}). Winner: {winner.full_name}")
+            print(f"Successfully finalized league '{league.name}' (ID: {league.id}). Winners: {[w.full_name for w in winners]}")
 
         print("--- Weekly league finalization finished. ---")

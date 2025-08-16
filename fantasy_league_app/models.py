@@ -11,6 +11,12 @@ player_bucket_association = db.Table(
     db.Column('player_bucket_id', db.Integer, db.ForeignKey('player_buckets.id'), primary_key=True)
 )
 
+# used incase a league cannot be settled so many users may receive a split of the prize pool
+league_winners_association = db.Table('league_winners',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('league_id', db.Integer, db.ForeignKey('leagues.id'), primary_key=True)
+)
+
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -174,6 +180,7 @@ class League(db.Model):
     #reltionships
     winner = db.relationship('User', foreign_keys=[winner_id])
     creator = db.relationship('User', foreign_keys=[user_id])
+    winners = db.relationship('User', secondary=league_winners_association, backref='won_leagues')
 
     @property
     def creator_name(self):

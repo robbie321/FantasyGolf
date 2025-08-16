@@ -46,6 +46,28 @@ class DataGolfClient:
             return [], error
         return data.get('live_stats', []), None
 
+
+    # --- Method to get a specific player's round score ---
+    def get_round_score(self, tour, event_id, player_dg_id):
+        """
+        Fetches the score for a specific player in a specific round of a tournament.
+        """
+        url = f"https://feeds.datagolf.com/preds/live-tournament-stats?tour={tour}&stats=round_score&round=2&display=value&key={self.api_key}"
+
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+
+            # The API returns a list of players; we need to find the one we're looking for
+            for player_data in data.get('players', []):
+                if player_data.get('dg_id') == player_dg_id:
+                    return player_data.get('round_score'), None
+
+            return None, "Player not found in tournament stats."
+        except requests.exceptions.RequestException as e:
+            return None, str(e)
+
     def get_betting_odds(self, tour='pga'):
         """Fetches outright win odds for a given tour."""
         endpoint = f"betting-tools/outrights?tour={tour}&market=win&odds_format=decimal&file_format=json"

@@ -8,11 +8,16 @@ Tasks []
 [complete] Ability for site admin to updates users/clubs emails and passwords
 [complete] Ability for users and clubs to reset their passwords securly
 []Seperate leagues by tours, PGA, LIV etc. Every monday update the player buckets for the respective tours. A new player bucket will be created each monday and the existing ones from the previous week will be deleted.
-[] fix the finalise and payout section when a league is finalised
-[] league admins need to set a percentage of the total entry pot instead of choosing a prize amount . This will be the percentage split of the 70% cut they receive.
+[complete] fix the finalise and payout section when a league is finalised
+complete] league admins need to set a percentage of the total entry pot instead of choosing a prize amount . This will be the percentage split of the 70% cut they receive.
 
 
-[] check payouts as I think a payout is paying out the full balance of s tripe account
+[complete] check payouts as I think a payout is paying out the full balance of s tripe account
+
+[] allow users to create mini leagues
+
+
+[] Sepearete out the project so its not all contained in one huge program
 
 hide league standing until club lauches the league -> countdown timer to tournament commencment.
 
