@@ -21,6 +21,8 @@ class Config:
     # Data Golf API
     DATA_GOLF_API_KEY = os.environ.get('DATA_GOLF_API_KEY') or '6194d71ab637acf3eb7800202456'
 
+    SPORTRADAR_API_KEY = os.environ.get('SPORTRADAR_API_KEY') or 'svKy6tuJCkFOnKfLcDokEHXT9hIEOrAE4U4Uwokx'
+
 
      # --- Email Server Configuration ---
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')

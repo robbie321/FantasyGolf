@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta
 from flask_login import UserMixin
 from fantasy_league_app import db
+import random
 
 # Association table for Player and PlayerBucket (Many-to-Many)
 player_bucket_association = db.Table(
@@ -83,10 +84,18 @@ class PlayerBucket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text, nullable=True)
-    # UPDATED: Many-to-many relationship with Player
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    event_id = db.Column(db.String(50), nullable=True)
+    # Many-to-many relationship with Player
     players = db.relationship('Player', secondary=player_bucket_association, back_populates='player_buckets')
     # Relationship to leagues that use this bucket (one-to-many from League to PlayerBucket)
     leagues = db.relationship('League', backref='player_bucket', lazy=True)
+
+    def get_random_player_for_tie_breaker(self):
+        """Selects a random player from the bucket."""
+        if self.players:
+            return random.choice(self.players)
+        return None
 
     def __repr__(self):
         return f'<PlayerBucket {self.name}>'
@@ -110,13 +119,28 @@ class Player(db.Model):
         return f'{self.name} {self.surname}'
 
 
+# --- Model to store historical player scores for finalized leagues ---
+class PlayerScore(db.Model):
+    __tablename__ = 'player_scores'
+    id = db.Column(db.Integer, primary_key=True)
+    score = db.Column(db.Integer, nullable=False)
+
+    player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
+    league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'), nullable=False)
+
+    player = db.relationship('Player')
+    league = db.relationship('League')
+
+    def __repr__(self):
+        return f'<PlayerScore {self.player.full_name()} in {self.league.name}: {self.score}>'
+
 class League(db.Model):
     __tablename__ = 'leagues'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
     league_code = db.Column(db.String(10), unique=True, nullable=False)
     entry_fee = db.Column(db.Float, default=0.0)
-    prize_amount = db.Column(db.Float, default=0.0, nullable=False)
+    prize_amount = db.Column(db.Integer, nullable=False, default=10)
     prize_details = db.Column(db.Text)
     rules = db.Column(db.Text)
     tie_breaker_question = db.Column(db.String(255), nullable=False, default="Enter a question")
@@ -134,6 +158,8 @@ class League(db.Model):
     entries = db.relationship('LeagueEntry', backref='league', lazy=True)
 
     tour = db.Column(db.String(10), nullable=False, default='pga')
+
+    tie_breaker_player_id = db.Column(db.Integer, nullable=True)
 
     #Track email reminder 24h before start of league
     reminder_sent = db.Column(db.Boolean, default=False, nullable=False)
@@ -190,6 +216,7 @@ class LeagueEntry(db.Model):
     total_odds = db.Column(db.Float, default=0.0)
     # NEW: Tie-breaker answer for the entry
     tie_breaker_answer = db.Column(db.Integer, nullable=True) # Changed to Integer for numerical answers
+    created_at = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
     league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 

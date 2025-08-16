@@ -2,14 +2,15 @@
 from flask import render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_required, current_user
 from fantasy_league_app import db, mail
-from fantasy_league_app.models import League, LeagueEntry, Player, PlayerBucket
-from fantasy_league_app.utils import is_testing_mode_active
+from ..models import User, League, LeagueEntry, Player, PlayerBucket, PlayerScore
+from ..utils import is_testing_mode_active, send_entry_confirmation_email, send_winner_notification_email
 from . import league_bp
 import random
 import string
-from datetime import datetime, timedelta
 import stripe
+from datetime import datetime, timedelta
 from ..data_golf_client import DataGolfClient
+from ..stripe_client import process_league_payouts
 
 
 
@@ -40,7 +41,7 @@ def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str, pr
     # --- Validation ---
     try:
         entry_fee = float(entry_fee_str)
-        prize_amount = float(prize_amount_str)
+        prize_amount = Integer(prize_amount_str)
         start_date = datetime.fromisoformat(start_date_str)
         max_entries_val = int(max_entries) if max_entries else None
         odds_limit_val = int(odds_limit) if odds_limit else None
@@ -61,6 +62,21 @@ def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str, pr
     league_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     while League.query.filter_by(league_code=league_code).first():
         league_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+
+    bucket = PlayerBucket.query.get(player_bucket_id)
+    if not bucket:
+        return None, "Selected player pool not found."
+
+    # --- START OF DYNAMIC TIE-BREAKER LOGIC ---
+    tie_breaker_player = bucket.get_random_player_for_tie_breaker()
+    if not tie_breaker_player:
+        return None, "Cannot create league: The selected player pool is empty."
+
+    # Generate the question and store the player's ID
+    tie_breaker_question = f"What will be the final stroke count for {tie_breaker_player.full_name()} on Day 2 of the tournament?"
+    tie_breaker_player_id = tie_breaker_player.dg_id
+    # --- END OF DYNAMIC TIE-BREAKER LOGIC ---
 
     new_league = League(
         name=name, league_code=league_code, entry_fee=entry_fee, prize_amount=prize_amount,
@@ -137,7 +153,7 @@ def create_league():
             start_date_str=request.form.get('start_date'),
             player_bucket_id=request.form.get('player_bucket_id'),
             entry_fee_str=request.form.get('entry_fee'),
-            prize_amount_str=request.form.get('prize_amount'),
+            prize_amount_str=str(form.prize_amount.data),
             rules=request.form.get('rules'),
             prize_details=request.form.get('prize_details'),
             tie_breaker=request.form.get('tie_breaker_question'),
@@ -222,6 +238,13 @@ def join_league():
 @league_bp.route('/add_entry/<int:league_id>', methods=['GET', 'POST'])
 @login_required
 def add_entry(league_id):
+    """
+    All
+    ows a user to create a new entry for a specific league.
+    """
+    if getattr(current_user, 'is_site_admin', False):
+        flash("Site admins cannot join leagues.", "danger")
+        return redirect(url_for('admin.admin_dashboard'))
     league = League.query.get_or_404(league_id)
 
     # --- Max Entries Rule Check (for GET request) ---
@@ -300,10 +323,15 @@ def add_entry(league_id):
                 return redirect(url_for('league.add_entry', league_id=league.id))
         else: # Free entry
             new_entry = LeagueEntry(
-                entry_name=current_user.full_name, total_odds=total_odds,
-                tie_breaker_answer=int(tie_breaker_answer), league_id=league.id, user_id=current_user.id,
-                player1_id=p1.id, player2_id=p2.id, player3_id=p3.id
-            )
+            entry_name=f"{current_user.full_name}'s Entry",
+            total_odds=total_odds,
+            tie_breaker_answer=tie_breaker_answer,
+            league_id=league.id,
+            user_id=current_user.id, # This is the crucial line
+            player1_id=player1_id,
+            player2_id=player2_id,
+            player3_id=player3_id
+        )
             db.session.add(new_entry)
             db.session.commit()
 
@@ -446,14 +474,36 @@ def cancel():
 @league_bp.route('/<int:league_id>')
 @login_required
 def view_league(league_id):
-    # --- MODIFIED ---
-    # Call the helper function to get the league object and sorted entries
-    league, sorted_entries = _get_sorted_leaderboard(league_id)
+    league = League.query.get_or_404(league_id)
+    entries = LeagueEntry.query.filter_by(league_id=league.id).all()
 
-    # Find the current user's entry to highlight it in the template
+    # This dictionary will hold the correct scores to display
+    display_scores = {}
+
+    if league.is_finalized:
+        # For finalized leagues, fetch historical scores
+        historical_scores = PlayerScore.query.filter_by(league_id=league.id).all()
+        for hs in historical_scores:
+            display_scores[hs.player_id] = hs.score
+    else:
+        # For active leagues, use the live scores
+        for entry in entries:
+            for player in [entry.player1, entry.player2, entry.player3]:
+                if player:
+                    display_scores[player.id] = player.current_score
+
+    # Calculate total scores for sorting and display
+    for entry in entries:
+        p1_score = display_scores.get(entry.player1_id, 0)
+        p2_score = display_scores.get(entry.player2_id, 0)
+        p3_score = display_scores.get(entry.player3_id, 0)
+        entry.total_score = p1_score + p2_score + p3_score
+
+    sorted_entries = sorted(entries, key=lambda e: e.total_score)
     current_user_entry = LeagueEntry.query.filter_by(league_id=league.id, user_id=current_user.id).first()
 
-    return render_template('league/view_league.html', league=league, entries=sorted_entries, current_user_entry=current_user_entry)
+    return render_template('league/view_league.html', league=league, entries=sorted_entries, scores=display_scores, current_user_entry=current_user_entry,
+    now=datetime.utcnow())
 
 
 # --- Route for Admins to Trigger a Payout ---
@@ -531,6 +581,7 @@ def manage_league(league_id):
 @login_required
 def finalize_league(league_id):
     league = League.query.get_or_404(league_id)
+    club_admin = User.query.get(league.club_id)
 
     if not getattr(current_user, 'is_club_admin', False) or league.club_id != current_user.id:
         flash('You do not have permission to finalize this league.', 'danger')
@@ -572,13 +623,46 @@ def finalize_league(league_id):
     league.is_finalized = True
     league.tie_breaker_actual_answer = actual_answer
     league.winner_id = winner.id
+
+    if not winner.stripe_account_id or not club_admin.stripe_account_id:
+        flash("Payout failed: The winner or club admin does not have a connected Stripe account.", "danger")
+        return redirect(url_for('league.manage_league', league_id=league.id))
+
+        winner_amount, admin_amount, error = process_league_payouts(league, winner, club_admin)
+
+    if error:
+        flash(f"An error occurred with the payout: {error}", "danger")
+        return redirect(url_for('admin.edit_league', league_id=league.id))
+
+
+    # Stripe payout logic would go here
+    print(f"PAYOUT: Transferring €{final_prize_amount:.2f} to winner {winner.full_name}")
+    # --- END OF PAYOUT CALCULATION ---
+
+    # --- Archive player scores ---
+    all_players_in_league = set()
+    for entry in entries:
+        all_players_in_league.add(entry.player1)
+        all_players_in_league.add(entry.player2)
+        all_players_in_league.add(entry.player3)
+
+    for player in all_players_in_league:
+        historical_score = PlayerScore(
+            player_id=player.id,
+            league_id=league.id,
+            score=player.current_score
+        )
+        db.session.add(historical_score)
+
+
     db.session.commit()
+
 
     # Send winner notification email to all participants
     send_winner_notification_email(league)
 
-    flash(f'League finalized! The winner is {winner.full_name}.', 'success')
-    return redirect(url_for('league.view_league', league_id=league.id))
+    flash(f'League finalized! Winner: {winner.full_name} (€{winner_amount:.2f}). Club Profit: €{admin_amount:.2f}. Payouts processed.', 'success')
+    return redirect(url_for('league.manage_league', league_id=league.id))
 
 
 @league_bp.route('/delete/<int:league_id>', methods=['POST'])
@@ -607,39 +691,40 @@ def delete_league(league_id):
         return redirect(url_for('league.manage_league', league_id=league.id))
 
 
+@league_bp.route('/resend-winner-email/<int:league_id>', methods=['POST'])
+@login_required
+def resend_winner_email(league_id):
+    league = League.query.get_or_404(league_id)
 
-# --- email helper functions ---
-def send_entry_confirmation_email(user, league):
-    """Sends an email to a user confirming their league entry."""
-    msg = Message('League Entry Confirmation',
-                  sender=current_app.config['MAIL_DEFAULT_SENDER'],
-                  recipients=[user.email])
-    msg.body = f"""Hi {user.full_name},
+    # --- Unified Authorization Check ---
+    is_authorized = False
+    # Check if the user is a site admin
+    if getattr(current_user, 'is_site_admin', False):
+        is_authorized = True
+    # Else, check if they are a club admin who owns this league
+    elif getattr(current_user, 'is_club_admin', False) and league.club_id == current_user.id:
+        is_authorized = True
 
-This email confirms your entry into the league: "{league.name}".
+    if not is_authorized:
+        flash('You do not have permission to perform this action.', 'danger')
+        return redirect(url_for('main.index'))
+    # --- End of Authorization Check ---
 
-The entry deadline is {league.entry_deadline.strftime('%d %b %Y at %H:%M')} UTC. You can edit your entry until this time.
+    if not league.is_finalized or not league.winner:
+        flash('This league has not been finalized yet.', 'warning')
+        # Redirect back to the appropriate dashboard
+        if getattr(current_user, 'is_site_admin', False):
+            return redirect(url_for('admin.edit_league', league_id=league.id))
+        else:
+            return redirect(url_for('league.manage_league', league_id=league.id))
 
-Good luck!
-"""
-    mail.send(msg)
+    # Use the shared utility function to send the email
+    send_winner_notification_email(league)
 
-def send_winner_notification_email(league):
-    """Sends an email to all participants announcing the winner."""
-    winner = league.winner
-    if not winner:
-        return
+    flash(f'Winner notification email has been resent for "{league.name}".', 'success')
 
-    # Get all participants' emails
-    recipients = [entry.user.email for entry in league.entries]
-
-    msg = Message(f'The Winner of "{league.name}" has been announced!',
-                  sender=current_app.config['MAIL_DEFAULT_SENDER'],
-                  recipients=recipients)
-    msg.body = f"""The results are in for the league: "{league.name}"!
-
-The winner is: {winner.full_name}
-
-Congratulations to the winner and thank you to everyone who participated.
-"""
-    mail.send(msg)
+    # Redirect back to the page they came from
+    if getattr(current_user, 'is_site_admin', False):
+        return redirect(url_for('admin.edit_league', league_id=league.id))
+    else:
+        return redirect(url_for('league.manage_league', league_id=league.id))

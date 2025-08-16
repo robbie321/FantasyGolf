@@ -180,7 +180,7 @@
       <div class="navbar-links" id="navbar-links-container">
         {% if current_user.is_authenticated %}
         <a href="{{ url_for('main.browse_leagues') }}">Browse Leagues</a>
-        <a href="{{ url_for('player.rankings') }}">Player Rankings</a>
+        <a href="{{ url_for('player.all_players') }}">All Players</a>
 
         <div class="navbar-dropdown">
           <button onclick="toggleDropdown()" class="dropdown-button">

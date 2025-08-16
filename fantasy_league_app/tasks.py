@@ -3,11 +3,17 @@ from collections import defaultdict
 import requests
 from sqlalchemy import func
 
-from .models import League, Player
+from .models import User, League, Player
 from . import db, mail, socketio # Make sure mail is imported if you use it in other tasks
 from flask_mail import Message
 
 from .data_golf_client import DataGolfClient
+
+from collections import defaultdict # Add this import
+from .models import League, Player, PlayerBucket
+
+from .stripe_client import process_league_payouts, _create_transfer
+from .utils import send_winner_notification_email
 
 def update_active_league_scores(app):
     """
@@ -66,6 +72,22 @@ def update_active_league_scores(app):
                     print(f"Emitting scores_updated for league_id: {league.id}")
                     socketio.emit('scores_updated', {'league_id': league.id}, room=f'league_{league.id}')
 
+# --- Task to reset all player scores weekly ---
+def reset_player_scores(app):
+    """
+    Scheduled to run weekly to reset the 'current_score' for all players to 0.
+    This prepares the database for the new week of tournaments.
+    """
+    with app.app_context():
+        print(f"--- Running weekly player score reset at {datetime.now()} ---")
+        try:
+            # This is a bulk update, which is very efficient
+            updated_rows = db.session.query(Player).update({"current_score": 0})
+            db.session.commit()
+            print(f"Successfully reset scores for {updated_rows} players.")
+        except Exception as e:
+            print(f"ERROR: Could not reset player scores: {e}")
+            db.session.rollback()
 
 def send_deadline_reminders(app):
     """
@@ -173,3 +195,211 @@ def settle_finished_leagues(app):
 
         except requests.exceptions.RequestException as e:
             print(f"Error fetching final scores from API: {e}")
+
+
+def update_player_buckets(app):
+    """
+    Scheduled to run weekly. Fetches upcoming tournaments for major tours,
+    creates player buckets for them, and cleans up old, unused buckets.
+    """
+    with app.app_context():
+        print(f"--- Running weekly player bucket update at {datetime.now()} ---")
+
+        API_KEY = app.config.get('DATA_GOLF_API_KEY')
+        if not API_KEY:
+            print("ERROR: Data Golf API key not configured. Aborting task.")
+            return
+
+        tours = ['pga', 'alt', 'euro', 'kft']
+        today = datetime.utcnow().date()
+
+        for tour in tours:
+            try:
+                # 1. Fetch the schedule for the current tour
+                schedule_url = f"https://feeds.datagolf.com/get-schedule?tour={tour}&file_format=json&key={API_KEY}"
+                response = requests.get(schedule_url)
+                response.raise_for_status()
+                schedule_data = response.json().get('schedule', [])
+
+                # Find the tournament for the upcoming week
+                for tournament in schedule_data:
+                    start_date = datetime.strptime(tournament.get('start_date'), '%Y-%m-%d').date()
+                    # Check if the tournament starts within the next 7 days
+                    if today <= start_date < today + timedelta(days=7):
+                        event_name = tournament.get('event_name')
+                        event_id = tournament.get('event_id')
+
+                        # 2. Check if a bucket for this event already exists
+                        if PlayerBucket.query.filter_by(name=event_name).first():
+                            print(f"Bucket '{event_name}' already exists. Skipping.")
+                            continue
+
+                        # 3. Fetch the player field for the new tournament
+                        field_url = f"https://feeds.datagolf.com/field-updates?tour={tour}&event_id={event_id}&key={API_KEY}"
+                        field_response = requests.get(field_url)
+                        field_response.raise_for_status()
+                        player_list = field_response.json().get('field', [])
+
+                        if not player_list:
+                            print(f"No player field found for '{event_name}'. Skipping bucket creation.")
+                            continue
+
+                        # 4. Create the new bucket and add players
+                            new_bucket = PlayerBucket(
+                                name=event_name,
+                                description=f"Players for {event_name}",
+                                event_id=event_id
+                            )
+                            db.session.add(new_bucket)
+
+                        for api_player in player_list:
+                            dg_id = api_player.get('dg_id')
+                            if not dg_id: continue
+
+                            player = Player.query.filter_by(dg_id=dg_id).first()
+                            if not player:
+                                # Create a new player if they don't exist in our DB
+                                name_parts = api_player.get('player_name', '').split(' ')
+                                name = name_parts[0]
+                                surname = ' '.join(name_parts[1:])
+                                player = Player(dg_id=dg_id, name=name, surname=surname)
+                                db.session.add(player)
+
+                            new_bucket.players.append(player)
+
+                        db.session.commit()
+                        print(f"Successfully created bucket '{event_name}' with {len(new_bucket.players)} players.")
+                        break # Move to the next tour
+
+            except requests.exceptions.RequestException as e:
+                print(f"API Error for tour '{tour}': {e}")
+            except Exception as e:
+                print(f"An unexpected error occurred for tour '{tour}': {e}")
+                db.session.rollback()
+
+        # 5. Clean up old, unused buckets
+        cleanup_date = datetime.utcnow() - timedelta(days=10)
+        old_buckets = PlayerBucket.query.filter(PlayerBucket.created_at < cleanup_date).all()
+
+        deleted_count = 0
+        for bucket in old_buckets:
+            # Only delete if no leagues are currently using this bucket
+            # Check if any of the leagues using this bucket are NOT finalized.
+            is_in_use_by_active_league = any(not league.is_finalized for league in bucket.leagues)
+
+            # If no active leagues are using it, it's safe to delete.
+            if not is_in_use_by_active_league:
+                db.session.delete(bucket)
+                deleted_count += 1
+            # --- END OF FIX ---
+
+        if deleted_count > 0:
+            db.session.commit()
+            print(f"Cleaned up and deleted {deleted_count} old, unused player buckets.")
+
+        print("--- Weekly bucket update finished. ---")
+
+
+# --- Automated Weekly Task to Finalize Leagues ---
+def finalize_finished_leagues(app):
+    """
+    Scheduled to run weekly. Finds all leagues that have ended but are not
+    yet finalized, calculates the winner, and processes payouts.
+    """
+    with app.app_context():
+        print(f"--- Running weekly league finalization at {datetime.now()} ---")
+
+        # Find all leagues that have ended and are not yet finalized
+        leagues_to_finalize = League.query.filter(
+            League.end_date < datetime.utcnow(),
+            League.is_finalized == False
+        ).all()
+
+        if not leagues_to_finalize:
+            print("No leagues to finalize this week.")
+            return
+
+        for league in leagues_to_finalize:
+            entries = league.entries
+            if not entries:
+                print(f"Skipping league '{league.name}' (ID: {league.id}) as it has no entries.")
+                league.is_finalized = True # Mark as finalized to avoid re-checking
+                db.session.commit()
+                continue
+
+             # 1. Calculate total scores for all entries
+            for entry in entries:
+                # Ensure players exist before trying to access their scores
+                p1_score = entry.player1.current_score if entry.player1 else 0
+                p2_score = entry.player2.current_score if entry.player2 else 0
+                p3_score = entry.player3.current_score if entry.player3 else 0
+                entry.total_score = p1_score + p2_score + p3_score
+
+            # 2. Find the lowest score
+            min_score = min(entry.total_score for entry in entries)
+
+            # 3. Get all entries that are tied for the lowest score
+            top_entries = [entry for entry in entries if entry.total_score == min_score]
+
+            winner_entry = None
+            if len(top_entries) == 1:
+                # If there's only one person with the top score, they are the winner
+                winner_entry = top_entries[0]
+            else:
+                # If there's a tie, proceed to the tie-breaker question
+                actual_answer = league.tie_breaker_actual_answer
+                if actual_answer is not None:
+                    # Find the minimum difference between the guess and the actual answer
+                    min_diff = min(abs(e.tie_breaker_answer - actual_answer) for e in top_entries)
+
+                    # Get all entries that are tied on the tie-breaker
+                    tie_breaker_winners = [e for e in top_entries if abs(e.tie_breaker_answer - actual_answer) == min_diff]
+
+                    # Sort these final tied entries by their creation date (earliest first)
+                    tie_breaker_winners.sort(key=lambda e: e.created_at)
+
+                    # The winner is the first person who submitted their entry
+                    winner_entry = tie_breaker_winners[0]
+                else:
+                    # Fallback if the tie-breaker score couldn't be fetched: sort by creation date
+                    top_entries.sort(key=lambda e: e.created_at)
+                    winner_entry = top_entries[0]
+
+            winner = winner_entry.user
+
+            league.winner_id = winner.id
+
+            # --- Payout Logic ---
+            if league.is_public:
+                # Payout for Public Leagues (Site Admin)
+                total_revenue = league.entry_fee * len(entries)
+                final_prize_amount = total_revenue * (league.prize_amount / 100.0)
+                amount_in_cents = int(final_prize_amount * 100)
+
+                if winner.stripe_account_id:
+                    _, error = create_payout(amount_in_cents, winner.stripe_account_id, league.name)
+                    if error:
+                        print(f"Stripe payout failed for public league {league.id}: {error}")
+                        continue # Skip to the next league
+                else:
+                    print(f"Payout failed for public league {league.id}: Winner has no Stripe ID.")
+                    continue
+            else:
+                # Payout for Private Leagues (Club Admin)
+                club_admin = User.query.get(league.club_id)
+                if winner.stripe_account_id and club_admin and club_admin.stripe_account_id:
+                    _, _, error = process_league_payouts(league, winner, club_admin)
+                    if error:
+                        print(f"Stripe payout failed for private league {league.id}: {error}")
+                        continue
+                else:
+                    print(f"Payout failed for private league {league.id}: Winner or Admin has no Stripe ID.")
+                    continue
+
+            # --- Finalize and Notify ---
+            league.is_finalized = True
+            db.session.commit()
+            send_winner_notification_email(league)
+            print(f"Successfully finalized league '{league.name}' (ID: {league.id}). Winner: {winner.full_name}")
+
+        print("--- Weekly league finalization finished. ---")

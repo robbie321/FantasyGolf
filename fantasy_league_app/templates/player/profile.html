@@ -55,7 +55,7 @@
   }
 </style>
 
-<div class="page-wrapper">
+<!-- <div class="page-wrapper">
   <div class="profile-container">
     <div class="profile-header">
       <h1>{{ player.full_name() }}</h1>
@@ -80,6 +80,70 @@
         <h3 class="stat-title">Primary Tour</h3>
         <p class="stat-value">{{ stats.get('primary_tour', 'N/A') }}</p>
       </div>
+    </div>
+  </div>
+</div> -->
+
+<div class="page-wrapper">
+  <div class="content-container">
+    <div class="profile-header" style="text-align: left; margin-bottom: 2rem">
+      <h1>{{ player.first_name }} {{ player.last_name }}</h1>
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 1rem;
+          font-size: 1.1rem;
+        "
+      >
+        <p><strong>Country:</strong> {{ player.country }}</p>
+        <p><strong>College:</strong> {{ player.college or 'N/A' }}</p>
+        <p><strong>Turned Pro:</strong> {{ player.turned_pro or 'N/A' }}</p>
+        <p><strong>Residence:</strong> {{ player.residence or 'N/A' }}</p>
+        <p><strong>Birthplace:</strong> {{ player.birth_place or 'N/A' }}</p>
+        <p>
+          <strong>Birthday:</strong> {{ player.birthday.split('T')[0] if
+          player.birthday else 'N/A' }}
+        </p>
+      </div>
+    </div>
+
+    <div class="history-section">
+      <h2 style="text-align: center">Recent Tournament History</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tournament</th>
+            <th style="text-align: center">Year</th>
+            <th style="text-align: center">Position</th>
+            <th style="text-align: center">Score</th>
+            <th style="text-align: center">Strokes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tournament in player.get('previous_tournaments', []) %}
+          <tr>
+            <td>{{ tournament.name }}</td>
+            <td style="text-align: center">{{ tournament.seasons[0].year }}</td>
+            <td style="text-align: center">
+              <strong>{{ tournament.leaderboard.position }}</strong>
+            </td>
+            <td style="text-align: center">
+              {{ tournament.leaderboard.score }}
+            </td>
+            <td style="text-align: center">
+              {{ tournament.leaderboard.strokes }}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 2rem">
+              No tournament history available.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

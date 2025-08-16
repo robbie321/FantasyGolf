@@ -147,7 +147,31 @@
       </p>
     </div>
 
-    {% if league.has_ended and not league.is_finalized %} {% elif
+    {% if league.is_finalized and league.winner %}
+    <div
+      style="
+        margin-top: 1.5rem;
+        border-top: 1px solid #eee;
+        padding-top: 1.5rem;
+      "
+    >
+      <p><strong>Winner:</strong> {{ league.winner.full_name }}</p>
+      <form
+        method="POST"
+        action="{{ url_for('league.resend_winner_email', league_id=league.id) }}"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <button
+          type="submit"
+          class="btn btn-info"
+          style="background-color: #17a2b8"
+        >
+          Resend Winner Email
+        </button>
+      </form>
+    </div>
+    {% endif %} {% if league.has_ended and not league.is_finalized %} {% elif
     league.is_finalized and league.payout_status == 'pending' %}
     <div class="finalize-container">
       <div class="finalize-section is-open">
@@ -189,6 +213,8 @@
           method="POST"
           action="{{ url_for('league.finalize_league', league_id=league.id) }}"
         >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
           <div class="form-group">
             <label for="tie_breaker_actual_answer"
               >{{ league.tie_breaker_question }}</label

@@ -263,6 +263,29 @@
           </form>
           {% endif %}
         </div>
+
+        <!-- NEW: Card for manually running the finalization task -->
+        <div class="management-card">
+          <h3>Manual Task Runner</h3>
+          <p>
+            Manually trigger the weekly task to finalize leagues. This will
+            calculate winners and process payouts for all finished leagues.
+          </p>
+          <div class="btn-group">
+            <form
+              method="POST"
+              action="{{ url_for('admin.manual_finalize_leagues') }}"
+            >
+              <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+
+              <button type="submit" class="btn">Run Finalization Task</button>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -8,6 +8,7 @@ class DataGolfClient:
         self.api_key = current_app.config['DATA_GOLF_API_KEY']
         self.base_url = "https://feeds.datagolf.com"
 
+
     def _make_request(self, endpoint):
         """Helper function to make a request and handle common errors."""
         url = f"{self.base_url}/{endpoint}&key={self.api_key}"
@@ -68,3 +69,77 @@ class DataGolfClient:
         if error:
             return [], error
         return data.get('field', []), None
+
+
+    def get_player_profiles(self):
+        """
+        Fetches the 2025 PGA player profiles from the Sportradar API.
+        Note: This uses a different API and key.
+        """
+        # Get the dedicated API key for Sportradar
+        sportradar_key = current_app.config.get('SPORTRADAR_API_KEY')
+        if not sportradar_key:
+            return None, "Sportradar API key is not configured."
+
+        url = "https://api.sportradar.com/golf/trial/pga/v3/en/2025/players/profiles.json"
+        headers = {
+            "accept": "application/json",
+            "x-api-key": sportradar_key
+        }
+
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status() # Raises an error for bad responses
+            # Assuming the player data is in a 'players' key in the JSON
+            return response.json().get('players', []), None
+        except requests.exceptions.RequestException as e:
+            print(f"Sportradar API Request Error: {e}")
+            return None, str(e)
+
+    # --- NEW METHOD FOR SPORDRADAR SINGLE PLAYER PROFILE ---
+    def get_player_profile(self, player_id):
+        """
+        Fetches a single player's detailed profile and history from the Sportradar API.
+        """
+        sportradar_key = current_app.config.get('SPORTRADAR_API_KEY')
+        if not sportradar_key:
+            return None, "Sportradar API key is not configured."
+
+        # The endpoint uses the player_id from Sportradar
+        url = f"https://api.sportradar.com/golf/trial/pga/v3/en/2025/players/{player_id}/profile.json"
+        headers = {
+            "accept": "application/json",
+            "x-api-key": sportradar_key
+        }
+
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            # The API returns the full player profile object directly
+            return response.json(), None
+        except requests.exceptions.RequestException as e:
+            print(f"Sportradar API Request Error for player {player_id}: {e}")
+            return None, str(e)
+
+     # --- NEW METHOD FOR SPORTRADAR SINGLE PLAYER PROFILE ---
+    def get_sportradar_profile(self, player_id):
+        """
+        Fetches a single player's detailed profile and history from the Sportradar API.
+        """
+        sportradar_key = current_app.config.get('SPORTRADAR_API_KEY')
+        if not sportradar_key:
+            return None, "Sportradar API key is not configured."
+
+        url = f"https://api.sportradar.com/golf/trial/pga/v3/en/2025/players/{player_id}/profile.json"
+        headers = {
+            "accept": "application/json",
+            "x-api-key": sportradar_key
+        }
+
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            return response.json(), None
+        except requests.exceptions.RequestException as e:
+            print(f"Sportradar API Request Error for player {player_id}: {e}")
+            return None, str(e)

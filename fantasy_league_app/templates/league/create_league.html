@@ -112,7 +112,7 @@
                 </div>
                 <div class="form-group full-width">
                     <label for="prize_amount">Prize for Winner (€)</label>
-                    <input type="number" id="prize_amount" name="prize_amount" min="0" step="0.01" value="{{ form_data.prize_amount if form_data else '0.00' }}" required>
+                    <input type="number" id="prize_amount" name="prize_amount" min="10" step="1" value="{{ form_data.prize_amount if form_data else '10' }}" required>
                 </div>
                 <div class="form-group full-width">
                     <label for="prize_details">Prize Details</label>

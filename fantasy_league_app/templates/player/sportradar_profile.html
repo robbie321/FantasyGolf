@@ -1,0 +1,283 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  /*
+      These styles are tailored for the player profile page and use the
+      variables from your main style.css file for a consistent "Masters" theme.
+    */
+  .page-wrapper {
+    padding: 4rem 1rem;
+    background-color: #f7f7f7;
+  }
+  .profile-container {
+    max-width: 90%;
+    margin: 0 auto;
+  }
+
+  .content-container {
+    max-width: 1450px;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 3rem;
+  }
+  .profile-header {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  .profile-header h1 {
+    font-family: "Merriweather", serif;
+    margin: 0;
+    font-size: 2.5rem;
+  }
+  .profile-header p {
+    font-size: 1.2rem;
+    color: #555;
+    margin: 0.5rem 0 0 0;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  .stat-card .stat-title {
+    font-size: 1rem;
+    color: #666;
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  .stat-card .stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #006a4e;
+  }
+
+  .profile-header h1 {
+    text-align: left;
+    border-bottom: 2px solid var(--primary-green);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .bio-grid {
+    display: grid;
+    /* Create 2 responsive columns */
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem 2rem; /* Vertical and horizontal gap */
+    font-size: 1.1rem;
+  }
+
+  .bio-grid p {
+    margin: 0.5rem 0;
+    color: #333;
+  }
+
+  .bio-grid p strong {
+    color: var(--heading-color);
+  }
+
+  .history-section h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Ensure the table uses the full width of its card */
+  .history-section .table {
+    margin-top: 0;
+    box-shadow: none;
+  }
+
+  /* Tables */
+  table {
+    width: 90%; /* Slightly less than 100% for margin */
+    border-collapse: collapse;
+    margin: 30px auto;
+    background-color: #ffffff;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  table th,
+  table td {
+    padding: 15px 20px; /* More padding */
+    text-align: left;
+    border-bottom: 1px solid #eee; /* Lighter border */
+  }
+
+  table th {
+    background-color: #006a4e; /* Header blue */
+    color: white;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 15px;
+  }
+
+  table tbody tr:nth-child(even) {
+    background-color: #f8fbfd; /* Very light blue for even rows */
+  }
+
+  table tbody tr:hover {
+    background-color: #e6f2fa; /* Light blue on hover */
+    transition: background-color 0.3s ease;
+  }
+
+  /* ==========================================================================
+   RESPONSIVE STYLES for TABLETS AND PHONES
+   ========================================================================== */
+
+  @media (max-width: 992px) {
+    /* This forces the table to not behave like a table anymore */
+    table,
+    thead,
+    tbody,
+    th,
+    td,
+    tr {
+      display: block;
+    }
+
+    /* Hide table headers (they'll be moved into each cell) */
+    thead {
+      display: none;
+    }
+
+    table tr {
+      margin-bottom: 1rem;
+      border: 1px solid var(--card-border-color);
+      border-radius: 8px;
+    }
+
+    table td {
+      /* Behave like a row */
+      border: none;
+      border-bottom: 1px solid #f1f3f5;
+      position: relative;
+      padding-left: 50%;
+      text-align: right; /* Align cell content to the right */
+    }
+
+    table td:last-child {
+      border-bottom: none;
+    }
+
+    /* This is the magic part that creates the "labels" */
+    table td::before {
+      content: attr(
+        data-label
+      ); /* Use the data-label attribute as the new header */
+      position: absolute;
+      left: 1rem;
+      width: 45%;
+      padding-right: 10px;
+      white-space: nowrap;
+      font-weight: bold;
+      text-align: left; /* Align the label to the left */
+      color: #6c757d;
+    }
+  }
+
+  /* Add a style for the new header layout */
+  .profile-header-layout {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+  .profile-headshot {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%; /* Make the image circular */
+    object-fit: cover;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+</style>
+<div class="page-wrapper">
+  <div class="content-container">
+    <div class="profile-header">
+      <!-- <img
+        src="{{ headshot_url }}"
+        alt="Headshot for {{ player.first_name }} {{ player.last_name }}"
+        class="profile-headshot"
+      /> -->
+      <h1>{{ player.first_name }} {{ player.last_name }}</h1>
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 1rem;
+          text-align: left;
+          font-size: 1.1rem;
+          margin-top: 1.5rem;
+        "
+      >
+        <p><strong>Country:</strong> {{ player.country }}</p>
+        <p><strong>College:</strong> {{ player.college or 'N/A' }}</p>
+        <p><strong>Turned Pro:</strong> {{ player.turned_pro or 'N/A' }}</p>
+        <p><strong>Residence:</strong> {{ player.residence or 'N/A' }}</p>
+        <p><strong>Birthplace:</strong> {{ player.birth_place or 'N/A' }}</p>
+        <p>
+          <strong>Birthday:</strong> {{ player.birthday.split('T')[0] if
+          player.birthday else 'N/A' }}
+        </p>
+      </div>
+    </div>
+
+    <div class="history-section">
+      <h2 style="text-align: center">Recent Tournament History</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th data-label="Tournament">Tournament</th>
+            <th data-label="Year" style="text-align: center">Year</th>
+            <th data-label="Position" style="text-align: center">Position</th>
+            <th data-label="Score" style="text-align: center">Score</th>
+            <th data-label="Strokes" style="text-align: center">Strokes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tournament in player.get('previous_tournaments', []) %}
+          <tr>
+            <td data-label="Tournament">{{ tournament.name }}</td>
+            <td data-label="Year" style="text-align: center">
+              {{ tournament.seasons[0].year }}
+            </td>
+            <td data-label="Position" style="text-align: center">
+              <strong>{{ tournament.leaderboard.position }}</strong>
+            </td>
+            <td data-label="Score" style="text-align: center">
+              {{ tournament.leaderboard.score }}
+            </td>
+            <td data-label="Strokes" style="text-align: center">
+              {{ tournament.leaderboard.strokes }}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 2rem">
+              No tournament history available.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

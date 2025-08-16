@@ -39,7 +39,7 @@ def create_app():
         scheduler.start()
 
     #  import from the renamed 'tasks.py' file.
-    from .tasks import update_active_league_scores, settle_finished_leagues, send_deadline_reminders
+    from .tasks import update_active_league_scores, settle_finished_leagues, send_deadline_reminders, update_player_buckets, reset_player_scores, finalize_finished_leagues
 
     if not scheduler.get_job('update_scores'):
         scheduler.add_job(
@@ -47,19 +47,57 @@ def create_app():
             func=update_active_league_scores,
             args=[app],
             trigger='cron',
-            minute='*/2' # Runs every 10 minutes (e.g., at :00, :10, :20)
+            day_of_week='thu-sun',  # Only run on Thursday, Friday, Saturday, Sunday
+            hour='6-23',          # Only run between 6:00 AM and 11:59 PM
+            minute='*/5'           # Runs every 2 minutes within the specified window
+        )
+
+    # --- Add the weekly job for resetting scores ---
+    if not scheduler.get_job('reset_scores'):
+        scheduler.add_job(
+            id='reset_scores',
+            func=reset_player_scores,
+            args=[app],
+            trigger='cron',
+            day_of_week='wed',  # Run on Tuesday
+            hour=20,             # Run at 5:00 AM
+            minute=52
+        )
+
+
+    if not scheduler.get_job('update_buckets'):
+        scheduler.add_job(
+            id='update_buckets',
+            func=update_player_buckets,
+            args=[app],
+            trigger='cron',
+            day_of_week='mon', # Run on Mondays
+            hour=15,           # Run at 3 PM (15:00)
+            minute=0
+        )
+
+        # --- NEW: Add the weekly job for finalizing leagues ---
+    if not scheduler.get_job('finalize_leagues'):
+        scheduler.add_job(
+            id='finalize_leagues',
+            func=finalize_finished_leagues,
+            args=[app],
+            trigger='cron',
+            day_of_week='mon',
+            hour=13,
+            minute=30
         )
 
 
         # Add the job for settling finished leagues (runs every 15 minutes)
-    if not scheduler.get_job('settle_leagues'):
-        scheduler.add_job(
-            id='settle_leagues',
-            func=settle_finished_leagues,
-            args=[app],
-            trigger='interval',
-            minutes=15
-        )
+    # if not scheduler.get_job('settle_leagues'):
+    #     scheduler.add_job(
+    #         id='settle_leagues',
+    #         func=settle_finished_leagues,
+    #         args=[app],
+    #         trigger='interval',
+    #         minutes=15
+    #     )
 
      # Add the job for deadline reminders (runs every hour)
     if not scheduler.get_job('deadline_reminders'):

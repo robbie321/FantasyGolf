@@ -329,6 +329,62 @@ table tbody tr:hover {
     transition: background-color 0.3s ease;
 }
 
+
+  /* ==========================================================================
+   RESPONSIVE STYLES for TABLETS AND PHONES
+   ========================================================================== */
+
+  @media (max-width: 992px) {
+    /* This forces the table to not behave like a table anymore */
+    table,
+    thead,
+    tbody,
+    th,
+    td,
+    tr {
+      display: block;
+    }
+
+    /* Hide table headers (they'll be moved into each cell) */
+    thead {
+      display: none;
+    }
+
+    table tr {
+      margin-bottom: 1rem;
+      border: 1px solid var(--card-border-color);
+      border-radius: 8px;
+    }
+
+    table td {
+      /* Behave like a row */
+      border: none;
+      border-bottom: 1px solid #f1f3f5;
+      position: relative;
+      padding-left: 50%;
+      text-align: right; /* Align cell content to the right */
+    }
+
+    table td:last-child {
+      border-bottom: none;
+    }
+
+    /* This is the magic part that creates the "labels" */
+    table td::before {
+      content: attr(
+        data-label
+      ); /* Use the data-label attribute as the new header */
+      position: absolute;
+      left: 1rem;
+      width: 45%;
+      padding-right: 10px;
+      white-space: nowrap;
+      font-weight: bold;
+      text-align: left; /* Align the label to the left */
+      color: #6c757d;
+    }
+  }
+
 /* Specific container styling (e.g., for league details) */
 .league-details-container {
     background-color: #ffffff;

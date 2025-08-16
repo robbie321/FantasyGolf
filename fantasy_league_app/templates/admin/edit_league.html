@@ -79,6 +79,20 @@
       <h1>Manage League: {{ league.name }}</h1>
     </div>
 
+    {% if league.is_finalized and league.winner %}
+    <div style="margin-top: 1.5rem">
+      <p><strong>Winner:</strong> {{ league.winner.full_name }}</p>
+      <form
+        method="POST"
+        action="{{ url_for('league.resend_winner_email', league_id=league.id) }}"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <button type="submit" class="btn btn-info">Resend Winner Email</button>
+      </form>
+    </div>
+    {% endif %}
+
     <!-- Edit League Details Section -->
     <div class="section">
       <h2>Edit Details</h2>

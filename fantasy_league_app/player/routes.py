@@ -7,9 +7,10 @@ from ..models import Player
 from .. import db
 
 from ..data_golf_client import DataGolfClient
+from ..sportradar_client import SportradarClient
 
 
-# --- Player Rankings Leaderboard Route ---
+# --- Player Rankings DATAGOLF Leaderboard Route ---
 @player_bp.route('/rankings')
 @login_required
 def rankings():
@@ -21,6 +22,8 @@ def rankings():
     if error:
         flash(f"Error fetching player rankings from the API: {error}", "danger")
     return render_template('player/rankings.html', players=all_players)
+
+
 
 @player_bp.route('/profile/<int:dg_id>')
 @login_required
@@ -72,3 +75,68 @@ def player_profile(dg_id):
 
 
     return render_template('player/profile.html', player=player, stats=player_stats)
+
+
+# sports radar
+
+@player_bp.route('/all')
+@login_required
+def all_players():
+    """Displays a list of all player profiles fetched from the Sportradar API."""
+    client = SportradarClient()
+    player_profiles, error = client.get_player_profiles()
+
+    if error:
+        flash(f"Could not retrieve player profiles from the API: {error}", "danger")
+        return render_template('player/all_players.html', players=[])
+
+    # Sort the list of dictionaries by the 'last_name', then 'first_name'
+    sorted_players = sorted(player_profiles, key=lambda p: (p.get('last_name', ''), p.get('first_name', '')))
+
+    return render_template('player/all_players.html', players=sorted_players)
+
+
+
+# --- Route for displaying a single player's detailed profile from Sportradar ---
+
+@player_bp.route('/profile/<string:player_id>')
+@login_required
+def single_player_profile(player_id):
+    """Displays a detailed profile for a single player using their Sportradar ID."""
+    client = SportradarClient()
+    # --- DEBUGGING ---
+    print(f"\n--- 3. Player Profile Route ---")
+    print(f"Received request for Sportradar player_id: {player_id}")
+    # ---
+    player_data, error = client.get_single_player_profile(player_id)
+
+    if error:
+        flash(f"Could not retrieve player profile from the API: {error}", "danger")
+        return redirect(url_for('player.all_players'))
+
+    # 2. Fetch the headshot manifest
+    # headshot_map, error = client.get_headshot_manifest()
+    # headshot_url = None
+    # if error:
+    #     flash("Could not retrieve player headshot manifest.", "warning")
+    # elif headshot_map:
+    #     # --- DEBUGGING ---
+    #     print(f"--- 4. Looking up headshot for ID: {player_id} ---")
+    #     image_id = headshot_map.get(player_id)
+    #     print(f"Found image_id: {image_id}")
+    #     # ---
+    #     if image_id:
+    #         # 4. Construct the final, correctly sized image URL
+    #         headshot_url = f"{client.base_image_url}/{image_id}/240x240-crop.jpg"
+    #         # --- DEBUGGING ---
+    #         print(f"Constructed headshot URL: {headshot_url}")
+    #         # ---
+
+    print("-----------------------------------\n")
+
+    return render_template(
+        'player/sportradar_profile.html',
+        player=player_data,
+        # headshot_url=headshot_url
+    )
+

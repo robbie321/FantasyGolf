@@ -10,10 +10,12 @@ import requests
 import secrets # NEW: For generating secure random strings
 from werkzeug.security import generate_password_hash # NEW: For hashing passwords
 from fantasy_league_app.league.routes import _create_new_league
-from fantasy_league_app.utils import is_testing_mode_active
+from ..utils import is_testing_mode_active, send_winner_notification_email
 import os
-
+from ..forms import LeagueForm
+from ..stripe_client import create_payout
 from . import admin_bp
+from ..tasks import finalize_finished_leagues
 
 @admin_bp.route('/dashboard')
 @login_required
@@ -84,6 +86,25 @@ def toggle_testing_mode():
             f.write('active')
         flash('Testing Mode has been activated. Users can now join leagues past the deadline.', 'success')
 
+    return redirect(url_for('admin.admin_dashboard'))
+
+
+# ---  Route to manually trigger the finalization task for testing ---
+@admin_bp.route('/manual-finalize-leagues', methods=['POST'])
+@login_required
+def manual_finalize_leagues():
+    """
+    Allows the site admin to manually trigger the weekly league
+    finalization task for testing purposes.
+    """
+    if not getattr(current_user, 'is_site_admin', False):
+        flash('You do not have permission to perform this action.', 'danger')
+        return redirect(url_for('main.index'))
+
+    # Call the task function directly, passing the current app instance
+    finalize_finished_leagues(current_app._get_current_object())
+
+    flash('Manual league finalization task has been run. Check the logs for details.', 'success')
     return redirect(url_for('admin.admin_dashboard'))
 
 # --- Routes for API Tournament Import ---
@@ -315,13 +336,18 @@ def delete_player_bucket(bucket_id):
 
     bucket_to_delete = PlayerBucket.query.get_or_404(bucket_id)
 
-    # Safety Check: Check if any leagues are using this bucket
-    leagues_using_bucket = League.query.filter_by(player_bucket_id=bucket_id).count()
-    if leagues_using_bucket > 0:
-        flash(f'Cannot delete "{bucket_to_delete.name}" because it is currently in use by {leagues_using_bucket} league(s).', 'danger')
+    # Check if any of the leagues using this bucket are still active (i.e., not finalized).
+    active_leagues_using_bucket = [
+        league for league in bucket_to_delete.leagues if not league.is_finalized
+    ]
+
+    if active_leagues_using_bucket:
+        count = len(active_leagues_using_bucket)
+        flash(f'Cannot delete "{bucket_to_delete.name}" because it is in use by {count} active or upcoming league(s).', 'danger')
         return redirect(url_for('admin.manage_player_buckets'))
 
     try:
+        # If the check passes, it's safe to delete.
         db.session.delete(bucket_to_delete)
         db.session.commit()
         flash(f'Player bucket "{bucket_to_delete.name}" has been deleted.', 'success')
@@ -464,30 +490,34 @@ def create_public_league():
     if not getattr(current_user, 'is_site_admin', False):
         return redirect(url_for('main.index'))
 
-    player_buckets = PlayerBucket.query.all()
+    form = LeagueForm()
+    form.player_bucket_id.choices = [(b.id, b.name) for b in PlayerBucket.query.order_by('name').all()]
 
-    if request.method == 'POST':
+    if form.validate_on_submit():
         new_league, error = _create_new_league(
-            name=request.form.get('name'),
-            start_date_str=request.form.get('start_date'),
-            player_bucket_id=request.form.get('player_bucket_id'),
-            entry_fee_str=request.form.get('entry_fee'),
-            rules=request.form.get('rules'),
-            prize_details=request.form.get('prize_details'),
-            tie_breaker=request.form.get('tie_breaker_question'),
-            tour=request.form.get('tour'),
-            is_public=True, # Site Admin creates public leagues
+            name=form.name.data,
+            start_date_str=form.start_date.data.strftime('%Y-%m-%d'),
+            player_bucket_id=form.player_bucket_id.data,
+            entry_fee_str=str(form.entry_fee.data),
+            prize_amount_str=str(form.prize_amount.data),
+            max_entries=form.max_entries.data,
+            odds_limit=form.odds_limit.data,
+            rules=form.rules.data,
+            prize_details=form.prize_details.data,
+            tie_breaker=form.tie_breaker_question.data,
+            no_favorites_rule=form.no_favorites_rule.data,
+            tour=form.tour.data,
+            is_public=True,
             allow_past_creation=True
         )
 
         if error:
             flash(error, 'danger')
-            return render_template('admin/create_public_league.html', player_buckets=player_buckets, form_data=request.form)
+        else:
+            flash(f'Public league "{new_league.name}" created successfully!', 'success')
+            return redirect(url_for('admin.manage_leagues'))
 
-        flash(f'Public league "{new_league.name}" created successfully!', 'success')
-        return redirect(url_for('admin.manage_leagues'))
-
-    return render_template('admin/create_public_league.html', player_buckets=player_buckets)
+    return render_template('admin/create_public_league.html', form=form)
 
 
 # --- User and Club Management Routes ---
@@ -567,5 +597,93 @@ def reset_club_password(club_id):
 
     flash(f"Password for {club.club_name} has been reset. The temporary password is: {temp_password}", 'success')
     return redirect(url_for('admin.manage_users'))
+
+
+@admin_bp.route('/leagues/finalize/<int:league_id>', methods=['POST'])
+@login_required
+def finalize_league_admin(league_id):
+    if not getattr(current_user, 'is_site_admin', False):
+        flash('You do not have permission to perform this action.', 'danger')
+        return redirect(url_for('main.index'))
+
+    league = League.query.get_or_404(league_id)
+
+    if not league.has_ended:
+        flash('This league cannot be finalized until the tournament is over.', 'warning')
+        return redirect(url_for('admin.edit_league', league_id=league.id))
+
+    if league.is_finalized:
+        flash('This league has already been finalized.', 'info')
+        return redirect(url_for('admin.edit_league', league_id=league.id))
+
+    actual_answer_str = request.form.get('tie_breaker_actual_answer')
+    if not actual_answer_str or not actual_answer_str.isdigit():
+        flash('You must provide a valid number for the tie-breaker answer.', 'danger')
+        return redirect(url_for('admin.edit_league', league_id=league.id))
+
+    actual_answer = int(actual_answer_str)
+    entries = league.entries
+    if not entries:
+        flash('Cannot finalize a league with no entries.', 'warning')
+        return redirect(url_for('admin.edit_league', league_id=league.id))
+
+    # Calculate final scores
+    for entry in entries:
+        entry.total_score = entry.player1.current_score + entry.player2.current_score + entry.player3.current_score
+
+    min_score = min(entry.total_score for entry in entries)
+    top_entries = [entry for entry in entries if entry.total_score == min_score]
+
+    winner = None
+    if len(top_entries) == 1:
+        winner = top_entries[0].user
+    else:
+        # Sort by the smallest difference to the tie-breaker answer
+        winner_entry = min(top_entries, key=lambda x: abs(x.tie_breaker_answer - actual_answer))
+        winner = winner_entry.user
+
+    league.is_finalized = True
+    league.tie_breaker_actual_answer = actual_answer
+    league.winner_id = winner.id
+
+    if not winner.stripe_account_id or not club_admin.stripe_account_id:
+        flash("Payout failed: The winner or club admin does not have a connected Stripe account.", "danger")
+        return redirect(url_for('league.manage_league', league_id=league.id))
+
+        winner_amount, admin_amount, error = process_league_payouts(league, winner, club_admin)
+
+    if error:
+        flash(f"An error occurred with the payout: {error}", "danger")
+        return redirect(url_for('admin.edit_league', league_id=league.id))
+
+    # Here you would integrate with Stripe to make the payout
+    # For now, we'll just print it for demonstration
+    print(f"PAYOUT: Transferring €{final_prize_amount:.2f} to winner {winner.full_name}")
+
+
+
+     # --- Archive player scores ---
+    all_players_in_league = set()
+    for entry in entries:
+        all_players_in_league.add(entry.player1)
+        all_players_in_league.add(entry.player2)
+        all_players_in_league.add(entry.player3)
+
+    for player in all_players_in_league:
+        historical_score = PlayerScore(
+            player_id=player.id,
+            league_id=league.id,
+            score=player.current_score
+        )
+        db.session.add(historical_score)
+
+    db.session.commit()
+
+    # Send notification email using the refactored function
+    send_winner_notification_email(league)
+
+    flash(f'League finalized! Winner: {winner.full_name} (€{winner_amount:.2f}). Club Profit: €{admin_amount:.2f}. Payouts processed.', 'success')
+    return redirect(url_for('league.manage_league', league_id=league.id))
+
 
 
