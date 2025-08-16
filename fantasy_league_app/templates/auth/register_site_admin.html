@@ -1,24 +1,47 @@
 {% extends 'base.html' %} {% block content %}
-<h1>Register Site Administrator</h1>
+
 <div class="form-container">
   <h2 class="form-title">Create First Site Admin</h2>
   <p class="form-subtitle">
     This page is for initial setup. If a site admin already exists, this form
     will be disabled.
   </p>
+
   <form
     method="POST"
     action="{{ url_for('auth.register_site_admin') }}"
     novalidate
   >
     {{ form.hidden_tag() }}
+
     <div class="form-fields">
-      {{ render_field(form.username, class="form-input") }} {{
-      render_field(form.password, class="form-input") }}
+      <div class="form-group">
+        {{ form.username.label(class="form-label") }} {{
+        form.username(class="form-input") }} {% if form.username.errors %}
+        <div class="errors">
+          {% for error in form.username.errors %}
+          <span class="error-message">{{ error }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        {{ form.password.label(class="form-label") }} {{
+        form.password(class="form-input") }} {% if form.password.errors %}
+        <div class="errors">
+          {% for error in form.password.errors %}
+          <span class="error-message">{{ error }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
     </div>
+
     <div class="form-actions">
       {{ form.submit(class="btn btn-primary btn-block") }}
     </div>
   </form>
 </div>
+
 {% endblock %}
