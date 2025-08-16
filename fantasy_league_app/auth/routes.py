@@ -115,7 +115,7 @@ def register_club():
             flash(f'Club registration failed: {e}', 'danger')
 
     return render_template('auth/register_club.html')
-@auth.route('/register-site-admin', methods=['GET', 'POST'])
+@auth_bp.route('/register-site-admin', methods=['GET', 'POST'])
 def register_site_admin():
     """
     Provides a registration page for the first site admin.
