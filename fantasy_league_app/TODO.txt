@@ -16,6 +16,8 @@ complete] league admins need to set a percentage of the total entry pot instead 
 
 [] allow users to create mini leagues
 
+[] verify email address before user allowed to join leagues
+
 
 [] Sepearete out the project so its not all contained in one huge program
 

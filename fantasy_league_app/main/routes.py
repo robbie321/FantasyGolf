@@ -1,15 +1,18 @@
 # --- File: fantasy_league_app/main/routes.py (UPDATED - Fix NameError: db is not defined) ---
-import stripe
 from flask import render_template, url_for, redirect, flash, current_app, request
 from flask_login import login_required, current_user
 from fantasy_league_app.models import League, LeagueEntry, User
 from . import main_bp
-from fantasy_league_app import db #: Import db for joinedload - THIS IS THE FIX
+from fantasy_league_app import db, stripe_client #: Import db for joinedload - THIS IS THE FIX
 from fantasy_league_app.utils import password_reset_required
 from sqlalchemy import func
 from datetime import datetime, timedelta
 import requests
 from ..data_golf_client import DataGolfClient
+
+@main_bp.route('/offline.html')
+def offline():
+    return render_template('offline.html')
 
 @main_bp.route('/')
 def index():
@@ -185,31 +188,39 @@ def view_profile(user_id):
 
 # --- Stripe Connect Onboarding Routes ---
 
-@main_bp.route('/stripe/connect/onboard')
+@main_bp.route('/onboard-stripe', methods=['POST'])
 @login_required
-def stripe_connect_onboard():
-    """Redirects the user or club to Stripe to onboard a new Connected Account."""
+def onboard_stripe():
+    """
+    Handles the request to create or update a user's Stripe account.
+    """
     try:
-        account = stripe.Account.create(
-            type='express',
-            country='IE',  # Set to your country
-            email=current_user.email,
-        )
-        current_user.stripe_account_id = account.id
-        db.session.commit()
+        # Step 1: Create a Stripe account if the user doesn't have one
+        if not current_user.stripe_account_id:
+            account = stripe_client.create_express_account(current_user.email)
+            if account:
+                current_user.stripe_account_id = account.id
+                db.session.commit()
+            else:
+                flash('Could not create a Stripe account. Please try again later.', 'danger')
+                return redirect(url_for('main.user_dashboard'))
 
-        # Create the Account Link to redirect the user
-        account_link = stripe.AccountLink.create(
-            account=account.id,
-            refresh_url=url_for('main.stripe_connect_refresh', _external=True),
-            return_url=url_for('main.stripe_connect_return', _external=True),
-            type='account_onboarding',
+        # Step 2: Create the account link to redirect the user
+        account_link = stripe_client.create_account_link(
+            account_id=current_user.stripe_account_id,
+            refresh_url=url_for('main.user_dashboard', _external=True) + '#stripe-section',
+            return_url=url_for('main.user_dashboard', _external=True) + '#stripe-section'
         )
-        return redirect(account_link.url, code=303)
+
+        if account_link:
+            return redirect(account_link.url)
+        else:
+            flash('Could not connect to Stripe at this time. Please try again.', 'danger')
+            return redirect(url_for('main.user_dashboard'))
+
     except Exception as e:
-        flash(f"An error occurred with our payment provider: {str(e)}", 'danger')
-        if getattr(current_user, 'is_club_admin', False):
-            return redirect(url_for('main.club_dashboard'))
+        current_app.logger.error(f"Stripe onboarding error for user {current_user.id}: {e}")
+        flash('An unexpected error occurred. Please contact support.', 'danger')
         return redirect(url_for('main.user_dashboard'))
 
 @main_bp.route('/stripe/connect/return')

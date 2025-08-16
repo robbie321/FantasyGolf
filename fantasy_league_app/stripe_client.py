@@ -1,6 +1,39 @@
 import stripe
 from flask import current_app
 
+def create_express_account(email):
+    """Creates a new Stripe Express account for a user."""
+    try:
+        account = stripe.Account.create(
+            type='express',
+            email=email,
+            capabilities={
+                'card_payments': {'requested': True},
+                'transfers': {'requested': True},
+            },
+        )
+        return account
+    except Exception as e:
+        current_app.logger.error(f"Failed to create Stripe account: {e}")
+        return None
+
+def create_account_link(account_id, refresh_url, return_url):
+    """
+    Creates a link for the user to onboard to Stripe.
+    This is the correct, direct way to call the Stripe API.
+    """
+    try:
+        account_link = stripe.AccountLink.create(
+            account=account_id,
+            refresh_url=refresh_url,
+            return_url=return_url,
+            type='account_onboarding',
+        )
+        return account_link
+    except Exception as e:
+        current_app.logger.error(f"Failed to create Stripe account link: {e}")
+        return None
+
 def _create_transfer(amount_in_cents, destination_account, description):
     """Helper function to create a single Stripe transfer."""
     # Stripe's minimum transfer amount is 1 cent. Do not attempt transfers for 0.
