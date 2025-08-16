@@ -7,7 +7,7 @@ Flask_SocketIO==5.5.1
 flask_sqlalchemy==3.1.1
 flask_wtf==1.2.2
 itsdangerous==2.2.0
-locustio==0.999
+locust
 Requests==2.32.4
 SQLAlchemy==2.0.43
 stripe==12.3.0
