@@ -1,28 +1,24 @@
 {% extends 'base.html' %} {% block content %}
 <h1>Register Site Administrator</h1>
-<form method="POST">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-  <label for="username">Username:</label><br />
-  <input
-    type="text"
-    id="username"
-    name="username"
-    value="{{ form.username if form else '' }}"
-    required
-    autofocus
-  /><br /><br />
-
-  <label for="password">Password:</label><br />
-  <input type="password" id="password" name="password" required /><br /><br />
-
-  <label for="confirm_password">Confirm Password:</label><br />
-  <input
-    type="password"
-    id="confirm_password"
-    name="confirm_password"
-    required
-  /><br /><br />
-
-  <input type="submit" value="Register Site Admin" />
-</form>
+<div class="form-container">
+  <h2 class="form-title">Create First Site Admin</h2>
+  <p class="form-subtitle">
+    This page is for initial setup. If a site admin already exists, this form
+    will be disabled.
+  </p>
+  <form
+    method="POST"
+    action="{{ url_for('auth.register_site_admin') }}"
+    novalidate
+  >
+    {{ form.hidden_tag() }}
+    <div class="form-fields">
+      {{ render_field(form.username, class="form-input") }} {{
+      render_field(form.password, class="form-input") }}
+    </div>
+    <div class="form-actions">
+      {{ form.submit(class="btn btn-primary btn-block") }}
+    </div>
+  </form>
+</div>
 {% endblock %}

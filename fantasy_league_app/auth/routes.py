@@ -118,29 +118,27 @@ def register_club():
 
 @auth_bp.route('/register-site-admin', methods=['GET', 'POST'])
 def register_site_admin():
+     """
+    Provides a registration page for the first site admin using the SiteAdmins table.
+    This route is only accessible if no site admins exist.
     """
-    Provides a registration page for the first site admin.
-    This route is only accessible if no other site admins exist.
-    """
-    # Check if a site admin already exists in the database
-    if User.query.filter_by(is_site_admin=True).first():
+    # Check if a site admin already exists in the new SiteAdmin table
+    if SiteAdmin.query.first():
         flash('A site admin account has already been registered.', 'warning')
         return redirect(url_for('main.index'))
 
     form = SiteAdminRegistrationForm()
     if form.validate_on_submit():
         hashed_password = generate_password_hash(form.password.data)
-        admin_user = User(
-            full_name=form.full_name.data,
-            email=form.email.data,
-            password_hash=hashed_password,
-            is_site_admin=True,
-            is_active=True  # Activate the admin account immediately
+        admin_user = SiteAdmin(
+            username=form.username.data,
+            password_hash=hashed_password
         )
         db.session.add(admin_user)
         db.session.commit()
+        # NOTE: You will need a separate login page for site admins
         flash('Site admin account created successfully. Please log in.', 'success')
-        return redirect(url_for('auth.user_login'))
+        return redirect(url_for('auth.login_site_admin')) # Assumes you have a login route for admins
 
     return render_template('auth/register_site_admin.html', title='Register Site Admin', form=form)
 

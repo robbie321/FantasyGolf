@@ -55,17 +55,13 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('That email is already in use. Please choose a different one.')
 
 class SiteAdminRegistrationForm(FlaskForm):
-    """Form for the first site admin to register."""
-    full_name = StringField('Full Name', validators=[DataRequired(), Length(min=2, max=100)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
+     """Form for the first site admin to register with a simple username and password."""
+    username = StringField('Username', validators=[DataRequired(), Length(min=4, max=80)])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=8)])
-    confirm_password = PasswordField(
-        'Confirm Password',
-        validators=[DataRequired(), EqualTo('password', message='Passwords must match.')]
-    )
     submit = SubmitField('Create Admin Account')
 
-    def validate_email(self, email):
-        user = User.query.filter_by(email=email.data).first()
-        if user:
-            raise ValidationError('That email is already in use. Please choose a different one.')
+    def validate_username(self, username):
+        """Check if the username is already taken."""
+        admin = SiteAdmin.query.filter_by(username=username.data).first()
+        if admin:
+            raise ValidationError('That username is already in use.')
