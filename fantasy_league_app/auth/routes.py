@@ -115,6 +115,7 @@ def register_club():
             flash(f'Club registration failed: {e}', 'danger')
 
     return render_template('auth/register_club.html')
+
 @auth_bp.route('/register-site-admin', methods=['GET', 'POST'])
 def register_site_admin():
     """
