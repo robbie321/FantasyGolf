@@ -8,6 +8,8 @@ from fantasy_league_app import db, mail
 from fantasy_league_app.models import User, Club, SiteAdmin, LeagueEntry
 from . import auth_bp, validators
 from .decorators import redirect_if_authenticated
+from ..forms import (RegistrationForm, LoginForm, RequestPasswordResetForm,
+                     ResetPasswordForm, ClubRegistrationForm, SiteAdminRegistrationForm)
 
 # Helper function to create the serializer
 def get_serializer(secret_key):
@@ -113,49 +115,33 @@ def register_club():
             flash(f'Club registration failed: {e}', 'danger')
 
     return render_template('auth/register_club.html')
-
-@auth_bp.route('/register_site_admin', methods=['GET', 'POST'])
-@redirect_if_authenticated
+@auth.route('/register-site-admin', methods=['GET', 'POST'])
 def register_site_admin():
-
-    # Prevent multiple site admins from being registered
-    if SiteAdmin.query.first():
-        flash('A site admin account already exists. You cannot register another.', 'danger')
+    """
+    Provides a registration page for the first site admin.
+    This route is only accessible if no other site admins exist.
+    """
+    # Check if a site admin already exists in the database
+    if User.query.filter_by(is_site_admin=True).first():
+        flash('A site admin account has already been registered.', 'warning')
         return redirect(url_for('main.index'))
 
-    if request.method == 'POST':
-        username = request.form['username'].strip()
-        password = request.form['password']
-        confirm_password = request.form['confirm_password']
+    form = SiteAdminRegistrationForm()
+    if form.validate_on_submit():
+        hashed_password = generate_password_hash(form.password.data)
+        admin_user = User(
+            full_name=form.full_name.data,
+            email=form.email.data,
+            password_hash=hashed_password,
+            is_site_admin=True,
+            is_active=True  # Activate the admin account immediately
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        flash('Site admin account created successfully. Please log in.', 'success')
+        return redirect(url_for('auth.user_login'))
 
-        errors = []
-        if validate_username(username): errors.append(validate_username(username))
-        if validate_password_strength(password): errors.append(validate_password_strength(password))
-        if password != confirm_password: errors.append("Passwords do not match.")
-        if is_common_password(password): errors.append('This password is too common. Please choose a stronger one.')
-
-        if errors:
-            for error in errors:
-                flash(error, 'danger')
-            return render_template('auth/register_site_admin.html', form=request.form)
-
-        existing_admin = SiteAdmin.query.filter_by(username=username).first()
-        if existing_admin:
-            flash('Username already taken. Please choose a different username.', 'danger')
-            return render_template('auth/register_site_admin.html', form=request.form)
-
-        hashed_password = generate_password_hash(password)
-        new_admin = SiteAdmin(username=username, password_hash=hashed_password)
-        try:
-            db.session.add(new_admin)
-            db.session.commit()
-            flash('Site Admin registered successfully! Please log in.', 'success')
-            return redirect(url_for('auth.login_site_admin'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Site Admin registration failed: {e}', 'danger')
-
-    return render_template('auth/register_site_admin.html')
+    return render_template('auth/register_site_admin.html', title='Register Site Admin', form=form)
 
 @auth_bp.route('/login_choice', methods=['GET'])
 def login_choice():
