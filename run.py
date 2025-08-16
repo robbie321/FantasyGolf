@@ -1,7 +1,8 @@
-from your_app_name import create_app, db, socketio
+# run.py
+
+from fantasy_league_app import create_app, db, socketio
 
 app = create_app()
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
-    # app.run(debug=True)
+    socketio.run(app)
