@@ -30,6 +30,14 @@ class LeagueForm(FlaskForm):
     submit = SubmitField('Create League')
 
 
+class LoginForm(FlaskForm):
+    """Form for users to log in."""
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    remember_me = BooleanField('Remember Me')
+    submit = SubmitField('Login')
+
+
 class RegistrationForm(FlaskForm):
     """Form for new users to register."""
     full_name = StringField('Full Name', validators=[DataRequired(), Length(min=2, max=100)])
