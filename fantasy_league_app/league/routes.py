@@ -1,4 +1,4 @@
-﻿from flask_mail import Message
+from flask_mail import Message
 from flask import render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_required, current_user
 from fantasy_league_app import db, mail

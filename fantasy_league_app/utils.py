@@ -1,4 +1,4 @@
-﻿from flask import current_app
+from flask import current_app
 from fantasy_league_app import db, mail
 from fantasy_league_app.models import Player
 

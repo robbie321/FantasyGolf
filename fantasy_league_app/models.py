@@ -1,4 +1,4 @@
-﻿# --- File: fantasy_league_app/models.py (UPDATED - Add Tie-Breaker Question to League and Answer to LeagueEntry) ---
+# --- File: fantasy_league_app/models.py (UPDATED - Add Tie-Breaker Question to League and Answer to LeagueEntry) ---
 from datetime import datetime, timedelta
 from flask_login import UserMixin
 from fantasy_league_app import db

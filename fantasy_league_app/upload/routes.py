@@ -1,4 +1,4 @@
-﻿import os
+import os
 import csv
 from flask import render_template, request, redirect, url_for, flash, current_app
 from werkzeug.utils import secure_filename
