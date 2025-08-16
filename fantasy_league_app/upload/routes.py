@@ -56,7 +56,7 @@ def upload():
                     db.session.commit()
                     flash(f'Player data uploaded successfully! Added {added_count} new players, updated {updated_count} existing players.', 'success')
                     if errors:
-                        flash(f'Warnings during upload: {'; '.join(errors)}', 'warning')
+                        flash(f'Warnings during upload: {"; ".join(errors)}', 'warning')
 
                 # Corrected Python file deletion
                 if os.path.exists(filepath):
