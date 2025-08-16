@@ -55,7 +55,7 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('That email is already in use. Please choose a different one.')
 
 class SiteAdminRegistrationForm(FlaskForm):
-     """Form for the first site admin to register with a simple username and password."""
+    """Form for the first site admin to register with a simple username and password."""
     username = StringField('Username', validators=[DataRequired(), Length(min=4, max=80)])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=8)])
     submit = SubmitField('Create Admin Account')
