@@ -8,8 +8,8 @@ from fantasy_league_app import db, mail
 from fantasy_league_app.models import User, Club, SiteAdmin, LeagueEntry
 from . import auth_bp, validators
 from .decorators import redirect_if_authenticated
-from ..forms import (RegistrationForm, LoginForm, RequestPasswordResetForm,
-                     ResetPasswordForm, ClubRegistrationForm, SiteAdminRegistrationForm)
+from ..forms import (RegistrationForm, LoginForm,
+                     ResetPasswordForm, SiteAdminRegistrationForm)
 
 # Helper function to create the serializer
 def get_serializer(secret_key):
