@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField, DateField, DecimalField, TextAreaField, IntegerField, BooleanField
-from wtforms.validators import DataRequired, NumberRange
+from wtforms.validators import DataRequired, NumberRange, Email, EqualTo, ValidationError, Length
 
 class LeagueForm(FlaskForm):
     """
