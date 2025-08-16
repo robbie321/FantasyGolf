@@ -126,11 +126,21 @@
       <div class="nav-section">
         <h3 style="margin-top: 1.5rem">Payouts</h3>
         {% if current_user.stripe_account_id %}
-        <p style="color: #28a745; font-weight: bold">✓ Payouts Enabled</p>
+        <div class="stripe-connect-section">
+          <h3>Connect with Stripe</h3>
+          <p>Edit Stripe details</p>
+
+          <form action="{{ url_for('main.onboard_stripe') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-primary">
+              Connect with Stripe
+            </button>
+          </form>
+        </div>
         {% else %}
         <p>Connect your club's bank account to receive your revenue share.</p>
         <a
-          href="{{ url_for('main.stripe_connect_onboard') }}"
+          href="{{ url_for('main.onboard_stripe') }}"
           class="btn-create"
           style="background-color: #17a2b8"
           >Setup Payouts</a
