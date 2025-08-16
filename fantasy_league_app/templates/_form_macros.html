@@ -1,0 +1,13 @@
+{# fantasy_league_app/templates/_form_macros.html #} {% macro
+render_field(field, class='') %}
+<div class="form-group">
+  {{ field.label(class='form-label') }} {{ field(class=class, **kwargs) }} {% if
+  field.errors %}
+  <div class="errors">
+    {% for error in field.errors %}
+    <span class="error-message">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}
