@@ -499,7 +499,7 @@ def create_public_league():
             start_date_str=form.start_date.data.strftime('%Y-%m-%d'),
             player_bucket_id=form.player_bucket_id.data,
             entry_fee_str=str(form.entry_fee.data),
-            prize_amount_str=str(form.prize_amount.data),
+            prize_amount = int(prize_amount_str),
             max_entries=form.max_entries.data,
             odds_limit=form.odds_limit.data,
             rules=form.rules.data,
