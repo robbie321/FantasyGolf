@@ -1,36 +1,40 @@
-{% extends 'base.html' %}
-{% block content %}
-    <h1>League Details: {{ league.name }}</h1>
+{% extends 'base.html' %} {% block content %}
+<h1>League Details: {{ league.name }}</h1>
 
-    <div class="league-details-container">
-        <p><strong>League Code:</strong> {{ league.league_code }}</p>
-        <p><strong>Entry Fee:</strong> €{{ "%.2f" | format(league.entry_fee) }}</p>
+<div class="league-details-container">
+  <p><strong>League Code:</strong> {{ league.league_code }}</p>
+  <p><strong>Entry Fee:</strong> €{{ "%.2f" | format(league.entry_fee) }}</p>
 
-        <h3>Prize Details:</h3>
-        {% if league.prize_details %}
-            <p>{{ league.prize_details }}</p>
-        {% else %}
-            <p>No specific prize details provided yet.</p>
-        {% endif %}
+  <h3>Prize Details:</h3>
+  {% if league.prize_details %}
+  <p>{{ league.prize_details }}</p>
+  {% else %}
+  <p>No specific prize details provided yet.</p>
+  {% endif %}
 
-        <h3>Rules:</h3>
-        {% if league.rules %}
-            <p>{{ league.rules }}</p>
-        {% else %}
-            <p>No specific rules provided yet.</p>
-        {% endif %}
+  <h3>Rules:</h3>
+  {% if league.rules %}
+  <p>{{ league.rules }}</p>
+  {% else %}
+  <p>No specific rules provided yet.</p>
+  {% endif %}
 
-        <h3>Tie-Breaker Question:</h3>
-        <p>{{ league.tie_breaker_question }}</p>
+  <h3>Tie-Breaker Question:</h3>
+  <p>{{ league.tie_breaker_question }}</p>
 
-        <p class="warning-message">By proceeding, you confirm your understanding of the league rules and agree to pay the entry fee of €{{ "%.2f" | format(league.entry_fee) }}.</p>
+  <p class="warning-message">
+    By proceeding, you confirm your understanding of the league rules and agree
+    to pay the entry fee of €{{ "%.2f" | format(league.entry_fee) }}.
+  </p>
 
-        {# NEW: Stripe Payment Button #}
-        <button id="checkout-button" class="button primary">Pay with Stripe</button>
-        <a href="{{ url_for('main.user_dashboard') }}" class="button secondary">Cancel and Go Back</a>
-    </div>
+  {# NEW: Stripe Payment Button #}
+  <button id="checkout-button" class="button primary">Pay with Stripe</button>
+  <a href="{{ url_for('main.user_dashboard') }}" class="button secondary"
+    >Cancel and Go Back</a
+  >
+</div>
 
-    <style>
+<!-- <style>
         .league-details-container {
             background-color: #ffffff;
             padding: 30px;
@@ -74,33 +78,36 @@
             width: auto;
             margin: 0;
         }
-    </style>
+    </style> -->
 
-    {# NEW: Stripe.js and Checkout Logic #}
-    <script src="https://js.stripe.com/v3/"></script>
-    <script>
-        const stripe = Stripe("{{ stripe_public_key }}");
-        const checkoutButton = document.getElementById("checkout-button");
+{# NEW: Stripe.js and Checkout Logic #}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+  const stripe = Stripe("{{ stripe_public_key }}");
+  const checkoutButton = document.getElementById("checkout-button");
 
-        checkoutButton.addEventListener("click", function () {
-            fetch("{{ url_for('league.create_checkout_session', league_id=league.id) }}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            })
-            .then(function (response) {
-                if (response.redirected) {
-                    window.location.href = response.url;
-                } else {
-                    console.error('Failed to initiate checkout session:', response);
-                    alert('Could not initiate payment. Please try again.');
-                }
-            })
-            .catch(function (error) {
-                console.error("Error:", error);
-                alert('An error occurred during payment initiation. Please try again.');
-            });
-        });
-    </script>
+  checkoutButton.addEventListener("click", function () {
+    fetch(
+      "{{ url_for('league.create_checkout_session', league_id=league.id) }}",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
+      .then(function (response) {
+        if (response.redirected) {
+          window.location.href = response.url;
+        } else {
+          console.error("Failed to initiate checkout session:", response);
+          alert("Could not initiate payment. Please try again.");
+        }
+      })
+      .catch(function (error) {
+        console.error("Error:", error);
+        alert("An error occurred during payment initiation. Please try again.");
+      });
+  });
+</script>
 {% endblock %}

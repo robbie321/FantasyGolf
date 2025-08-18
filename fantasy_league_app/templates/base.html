@@ -8,12 +8,12 @@
       rel="manifest"
       href="{{ url_for('static', filename='manifest.json') }}"
     />
-    <!-- <link
+    <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    /> -->
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
 
-    <style>
+    <!-- <style>
       @import url("https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;700&display=swap");
 
       body {
@@ -38,7 +38,6 @@
         padding: 0 2rem;
         height: 70px;
         border-bottom: 1px solid #e0e0e0;
-        font-family: "Merriweather", serif;
         position: relative; /* Establishes a stacking context */
         z-index: 100; /* Ensures navbar is on top of other content */
       }
@@ -171,7 +170,7 @@
       .flash-modal-close-btn:hover {
         color: #333;
       }
-    </style>
+    </style> -->
 
     {% block head %}{% endblock %}
   </head>

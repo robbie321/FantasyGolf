@@ -14,6 +14,8 @@ complete] league admins need to set a percentage of the total entry pot instead 
 
 [complete] check payouts as I think a payout is paying out the full balance of s tripe account
 
+[] do mobile first css for admin page
+
 [] allow users to create mini leagues
 
 [] verify email address before user allowed to join leagues

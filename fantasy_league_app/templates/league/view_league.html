@@ -1,11 +1,7 @@
 {% extends 'base.html' %} {% block content %}
-<style>
+<!-- <style>
   /* --- Main Page Layout --- */
-  .page-wrapper {
-    padding: 2rem 1rem;
-    background-color: #f7f7f7;
-    font-family: "Roboto", sans-serif;
-  }
+
   .league-container {
     width: 100%;
     max-width: 1400px;
@@ -315,11 +311,14 @@
       text-align: right;
     }
   }
-</style>
+</style> -->
 
 <div class="page-wrapper">
   <div class="league-container">
-    <a href="{{ url_for('main.user_dashboard') }}" class="back-to-dashboard">
+    <a
+      href="{{ url_for('main.club_dashboard') if current_user.is_club_admin else url_for('main.user_dashboard') }}"
+      class="back-to-dashboard"
+    >
       <svg
         xmlns="http://www.w3.org/2000/svg"
         height="20px"
@@ -334,7 +333,7 @@
 
     {% if not league.is_finalized and league.entry_deadline > now %}
     <div class="countdown-container">
-      <h3>Entry Deadline</h3>
+      <h2>ENRTY DEADLINE</h2>
       <div
         id="countdown"
         class="countdown-timer"
@@ -440,7 +439,7 @@
               <td class="rank" data-label="Rank">{{ loop.index }}</td>
               <td data-label="Entry Name">{{ entry.entry_name }}</td>
 
-              <td data-label="Player 1">
+              <td data-label="Player 1" class="player-cell">
                 <a
                   href="#"
                   class="player-name-link"
@@ -456,7 +455,7 @@
                 </span>
               </td>
 
-              <td data-label="Player 2">
+              <td data-label="Player 2" class="player-cell">
                 <a
                   href="#"
                   class="player-name-link"
@@ -472,7 +471,7 @@
                 </span>
               </td>
 
-              <td data-label="Player 3">
+              <td data-label="Player 3" class="player-cell">
                 <a
                   href="#"
                   class="player-name-link"
