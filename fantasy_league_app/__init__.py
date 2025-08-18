@@ -72,8 +72,8 @@ def create_app():
             args=[app],
             trigger='cron',
             day_of_week='mon', # Run on Mondays
-            hour=14,           # Run at 3 PM (15:00)
-            minute=00
+            hour=13,           # Run at 3 PM (15:00)
+            minute=03
         )
 
         # --- NEW: Add the weekly job for finalizing leagues ---

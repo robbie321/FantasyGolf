@@ -288,7 +288,7 @@ def update_player_buckets(app):
 
         # 5. Clean up old, unused buckets (moved outside the tour loop to run once at the end)
         print("\n--- Starting cleanup of old buckets ---")
-        cleanup_date = datetime.utcnow() - timedelta(days=10)
+        cleanup_date = datetime.utcnow() - timedelta(days=100)
         old_buckets = PlayerBucket.query.filter(PlayerBucket.created_at < cleanup_date).all()
 
         deleted_count = 0
