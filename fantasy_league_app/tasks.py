@@ -196,6 +196,8 @@ def settle_finished_leagues(app):
             print(f"Error fetching final scores from API: {e}")
 
 
+# In fantasy_league_app/tasks.py
+
 def update_player_buckets(app):
     """
     Scheduled to run weekly. Fetches upcoming tournaments for major tours,
@@ -214,61 +216,69 @@ def update_player_buckets(app):
 
         for tour in tours:
             try:
+                print(f"Processing tour: {tour}")
+
                 # 1. Fetch the schedule for the current tour
                 schedule_url = f"https://feeds.datagolf.com/get-schedule?tour={tour}&file_format=json&key={API_KEY}"
                 response = requests.get(schedule_url)
                 response.raise_for_status()
                 schedule_data = response.json().get('schedule', [])
 
-                # Find the tournament for the upcoming week
+                # Find the first upcoming tournament in the next 7 days
+                upcoming_tournament = None
                 for tournament in schedule_data:
                     start_date = datetime.strptime(tournament.get('start_date'), '%Y-%m-%d').date()
-                    # Check if the tournament starts within the next 7 days
                     if today <= start_date < today + timedelta(days=7):
-                        event_name = tournament.get('event_name')
-                        event_id = tournament.get('event_id')
+                        upcoming_tournament = tournament
+                        break # Found the first one, stop looking
 
-                        # 2. Check if a bucket for this event already exists
-                        if PlayerBucket.query.filter_by(name=event_name).first():
-                            print(f"Bucket '{event_name}' already exists. Skipping.")
-                            continue
+                if not upcoming_tournament:
+                    print(f"No upcoming tournaments found for tour '{tour}' in the next 7 days.")
+                    continue # Move to the next tour
 
-                        # 3. Fetch the player field for the new tournament
-                        field_url = f"https://feeds.datagolf.com/field-updates?tour={tour}&event_id={event_id}&key={API_KEY}"
-                        field_response = requests.get(field_url)
-                        field_response.raise_for_status()
-                        player_list = field_response.json().get('field', [])
+                event_name = upcoming_tournament.get('event_name')
+                event_id = upcoming_tournament.get('event_id')
 
-                        if not player_list:
-                            print(f"No player field found for '{event_name}'. Skipping bucket creation.")
-                            continue
+                # 2. Check if a bucket for this event already exists
+                if PlayerBucket.query.filter_by(name=event_name).first():
+                    print(f"Bucket '{event_name}' already exists. Skipping.")
+                    continue
 
-                        # 4. Create the new bucket and add players
-                            new_bucket = PlayerBucket(
-                                name=event_name,
-                                description=f"Players for {event_name}",
-                                event_id=event_id
-                            )
-                            db.session.add(new_bucket)
+                # 3. Fetch the player field for the new tournament
+                field_url = f"https://feeds.datagolf.com/field-updates?tour={tour}&event_id={event_id}&key={API_KEY}"
+                field_response = requests.get(field_url)
+                field_response.raise_for_status()
+                player_list = field_response.json().get('field', [])
 
-                        for api_player in player_list:
-                            dg_id = api_player.get('dg_id')
-                            if not dg_id: continue
+                if not player_list:
+                    print(f"No player field found for '{event_name}'. Skipping bucket creation.")
+                    continue
 
-                            player = Player.query.filter_by(dg_id=dg_id).first()
-                            if not player:
-                                # Create a new player if they don't exist in our DB
-                                name_parts = api_player.get('player_name', '').split(' ')
-                                name = name_parts[0]
-                                surname = ' '.join(name_parts[1:])
-                                player = Player(dg_id=dg_id, name=name, surname=surname)
-                                db.session.add(player)
+                # 4. Create the new bucket and add players
+                new_bucket = PlayerBucket(
+                    name=event_name,
+                    description=f"Players for {event_name}",
+                    event_id=event_id
+                )
+                db.session.add(new_bucket)
 
-                            new_bucket.players.append(player)
+                for api_player in player_list:
+                    dg_id = api_player.get('dg_id')
+                    if not dg_id: continue
 
-                        db.session.commit()
-                        print(f"Successfully created bucket '{event_name}' with {len(new_bucket.players)} players.")
-                        break # Move to the next tour
+                    player = Player.query.filter_by(dg_id=dg_id).first()
+                    if not player:
+                        # Create a new player if they don't exist in our DB
+                        name_parts = api_player.get('player_name', '').split(' ')
+                        name = name_parts[0]
+                        surname = ' '.join(name_parts[1:])
+                        player = Player(dg_id=dg_id, name=name, surname=surname)
+                        db.session.add(player)
+
+                    new_bucket.players.append(player)
+
+                db.session.commit()
+                print(f"Successfully created bucket '{event_name}' with {len(new_bucket.players)} players.")
 
             except requests.exceptions.RequestException as e:
                 print(f"API Error for tour '{tour}': {e}")
@@ -276,25 +286,24 @@ def update_player_buckets(app):
                 print(f"An unexpected error occurred for tour '{tour}': {e}")
                 db.session.rollback()
 
-        # 5. Clean up old, unused buckets
+        # 5. Clean up old, unused buckets (moved outside the tour loop to run once at the end)
+        print("\n--- Starting cleanup of old buckets ---")
         cleanup_date = datetime.utcnow() - timedelta(days=10)
         old_buckets = PlayerBucket.query.filter(PlayerBucket.created_at < cleanup_date).all()
 
         deleted_count = 0
         for bucket in old_buckets:
-            # Only delete if no leagues are currently using this bucket
-            # Check if any of the leagues using this bucket are NOT finalized.
             is_in_use_by_active_league = any(not league.is_finalized for league in bucket.leagues)
 
-            # If no active leagues are using it, it's safe to delete.
             if not is_in_use_by_active_league:
                 db.session.delete(bucket)
                 deleted_count += 1
-            # --- END OF FIX ---
 
         if deleted_count > 0:
             db.session.commit()
             print(f"Cleaned up and deleted {deleted_count} old, unused player buckets.")
+        else:
+            print("No old buckets to clean up.")
 
         print("--- Weekly bucket update finished. ---")
 
