@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fantasy Golf League</title>
+    <title>Fantasy Fairways</title>
     <link
       rel="manifest"
       href="{{ url_for('static', filename='manifest.json') }}"
@@ -175,64 +175,67 @@
     {% block head %}{% endblock %}
   </head>
   <body>
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
+
     <nav class="navbar">
       <a href="{{ url_for('main.index') }}" class="navbar-brand"
-        >Fantasy Golf</a
+        >Fantasy Fairways</a
       >
 
-      <button class="navbar-toggler" id="navbar-toggler-btn">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-
-      <div class="navbar-links" id="navbar-links-container">
-        {% if current_user.is_authenticated %}
-        <a href="{{ url_for('main.browse_leagues') }}">Browse Leagues</a>
-        <a href="{{ url_for('player.all_players') }}">All Players</a>
-
-        <div class="navbar-dropdown">
-          <button onclick="toggleDropdown()" class="dropdown-button">
-            {{ current_user.full_name or current_user.club_name or
-            current_user.username }}
-            <i class="arrow"></i>
-          </button>
-          <div id="myDropdown" class="dropdown-content">
-            {% if current_user.is_authenticated and not
-            current_user.is_club_admin and not current_user.is_site_admin %}
-            <a
-              href="{{ url_for('main.view_profile', user_id=current_user.id) }}"
-              >My Profile</a
-            >
-            {% endif %} {% if current_user.is_site_admin %}
-            <a href="{{ url_for('admin.admin_dashboard') }}">Admin Dashboard</a>
-            {% elif current_user.is_club_admin %}
-            <a href="{{ url_for('main.club_dashboard') }}">Club Dashboard</a>
-            {% else %}
-            <a href="{{ url_for('main.user_dashboard') }}">My Dashboard</a>
-            {% endif %}
-            <a href="{{ url_for('auth.logout') }}">Logout</a>
+      <div class="navbar-links" id="navbar-links">
+        <div class="navbar-links-wrapper">
+          <a href="{{ url_for('main.browse_leagues') }}">Browse Leagues</a>
+          {% if current_user.is_authenticated %}
+          <div class="navbar-dropdown">
+            <button class="dropdown-button" onclick="toggleDropdown()">
+              {{ current_user.full_name or current_user.username }}
+              <span class="arrow"></span>
+            </button>
+            <div class="dropdown-content" id="myDropdown">
+              {% if current_user.is_site_admin %}
+              <a href="{{ url_for('admin.admin_dashboard') }}"
+                >Admin Dashboard</a
+              >
+              {% elif current_user.is_club_admin %}
+              <a href="{{ url_for('main.club_dashboard') }}">Club Dashboard</a>
+              {% else %}
+              <a href="{{ url_for('main.user_dashboard') }}">My Dashboard</a>
+              {% endif %}
+              <a href="{{ url_for('auth.logout') }}">Logout</a>
+            </div>
           </div>
+          {% else %}
+          <a href="{{ url_for('auth.login_choice') }}">Login</a>
+          <a href="{{ url_for('auth.register') }}" class="btn btn-outline"
+            >Register</a
+          >
+          {% endif %}
         </div>
-        {% else %}
-        <a href="{{ url_for('auth.login_choice') }}">Login</a>
-        <a href="{{ url_for('auth.register') }}">Register</a>
-        {% endif %}
       </div>
+
+      <button
+        class="navbar-toggle"
+        id="navbar-toggle"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggle-icon"></span>
+      </button>
     </nav>
 
-    {% block content %}{% endblock %} {% with messages =
-    get_flashed_messages(with_categories=true) %} {% if messages %}
-    <div id="flash-modal" class="flash-modal-overlay">
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %}
+    <div
+      class="flash-modal-overlay"
+      id="flash-modal-overlay"
+      style="display: flex"
+    >
       <div class="flash-modal-content">
-        <span class="flash-modal-close-btn">&times;</span>
+        <span class="flash-modal-close-btn" id="flash-modal-close-btn"
+          >&times;</span
+        >
         {% for category, message in messages %}
         <div class="flash-{{ category }}">
-          <h2>
-            {% if category == 'danger' %}Error {% elif category == 'success'
-            %}Success {% elif category == 'warning' %}Warning {% else %}Notice{%
-            endif %}
-          </h2>
+          <h2>{{ category|capitalize }}</h2>
           <p>{{ message }}</p>
         </div>
         {% endfor %}
@@ -240,12 +243,15 @@
     </div>
     {% endif %} {% endwith %}
 
+    <main>{% block content %}{% endblock %}</main>
+
     <script>
       function toggleDropdown() {
         document.getElementById("myDropdown").classList.toggle("show");
       }
+      // Close dropdown if clicking outside
       window.onclick = function (event) {
-        if (!event.target.matches(".dropdown-button, .dropdown-button *")) {
+        if (!event.target.matches(".dropdown-button")) {
           var dropdowns = document.getElementsByClassName("dropdown-content");
           for (var i = 0; i < dropdowns.length; i++) {
             var openDropdown = dropdowns[i];
@@ -270,49 +276,56 @@
         }
       });
 
-      document.addEventListener("DOMContentLoaded", function () {
-        const flashModal = document.getElementById("flash-modal");
-        const closeModalBtn = document.querySelector(".flash-modal-close-btn");
+      // --- Flash Modal Logic ---
+      const flashModalOverlay = document.getElementById("flash-modal-overlay");
+      const flashModalCloseBtn = document.getElementById(
+        "flash-modal-close-btn"
+      );
 
-        // If the modal exists in the DOM, display it
-        if (flashModal) {
-          flashModal.style.display = "flex";
-
-          // Function to close the modal
-          const closeModal = () => {
-            flashModal.style.display = "none";
-          };
-
-          // Close modal when the 'x' button is clicked
-          if (closeModalBtn) {
-            closeModalBtn.addEventListener("click", closeModal);
+      if (flashModalOverlay && flashModalCloseBtn) {
+        flashModalCloseBtn.onclick = function () {
+          flashModalOverlay.style.display = "none";
+        };
+        window.onclick = function (event) {
+          if (event.target == flashModalOverlay) {
+            flashModalOverlay.style.display = "none";
           }
+        };
+      }
 
-          // Close modal when clicking on the overlay (outside the content)
-          flashModal.addEventListener("click", function (event) {
-            if (event.target === flashModal) {
-              closeModal();
-            }
-          });
-        }
-      });
+      // --- Hamburger Menu Logic ---
+      const navbarToggle = document.getElementById("navbar-toggle");
+      const navbarLinks = document.getElementById("navbar-links");
+      const menuOverlay = document.getElementById("mobile-menu-overlay");
+
+      if (navbarToggle) {
+        navbarToggle.addEventListener("click", () => {
+          navbarLinks.classList.toggle("active");
+          menuOverlay.classList.toggle("active");
+          document.body.classList.toggle("menu-open");
+        });
+
+        menuOverlay.addEventListener("click", () => {
+          navbarLinks.classList.remove("active");
+          menuOverlay.classList.remove("active");
+          document.body.classList.remove("menu-open");
+        });
+      }
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("{{ url_for('static', filename='service-worker.js') }}")
+            .then((registration) => {
+              console.log(
+                "ServiceWorker registration successful with scope: ",
+                registration.scope
+              );
+            })
+            .catch((error) => {
+              console.log("ServiceWorker registration failed: ", error);
+            });
+        });
+      }
     </script>
   </body>
 </html>
-<script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker
-        .register("{{ url_for('static', filename='service-worker.js') }}")
-        .then((registration) => {
-          console.log(
-            "ServiceWorker registration successful with scope: ",
-            registration.scope
-          );
-        })
-        .catch((error) => {
-          console.log("ServiceWorker registration failed: ", error);
-        });
-    });
-  }
-</script>

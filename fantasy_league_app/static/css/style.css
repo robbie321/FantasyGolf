@@ -11,6 +11,11 @@ body {
   line-height: 1.6;
 }
 
+/* Prevent scrolling when mobile menu is open */
+body.menu-open {
+    overflow: hidden;
+}
+
 img,
 video,
 iframe {
@@ -777,11 +782,11 @@ iframe {
   align-items: center;
   background-color: #ffffff;
   color: #006a4e;
-  padding: 0 2rem;
+  padding: 0 1rem;
   height: 70px;
   border-bottom: 1px solid #e0e0e0;
   position: relative;
-  z-index: 100;
+  z-index: 1000;
 }
 .navbar-brand {
   font-family: "Playfair Display", serif;
@@ -789,57 +794,128 @@ iframe {
   font-weight: 700;
   text-decoration: none;
   color: #006a4e;
+  z-index: 1001;
+}
+/* Default mobile styles for nav links (off-screen side menu) */
+.navbar-links {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 80%;
+  max-width: 300px;
+  height: 100vh;
+  background-color: white;
+  z-index: 1002;
+  transform: translateX(100%); /* Start off-screen */
+  transition: transform 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar-links.active {
+  transform: translateX(0);
+}
+.navbar-links-wrapper {
+    padding: 6rem 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
 }
 .navbar-links a {
   color: #006a4e;
   text-decoration: none;
-  margin-left: 1.5rem;
   font-weight: 700;
+  padding: 1rem 0;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
 }
+
+/* Overlay for mobile menu */
+.mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+.mobile-menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+
+/* Hamburger Toggle Button */
+.navbar-toggle {
+  display: block; /* Shown on mobile by default */
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  z-index: 1003;
+}
+.navbar-toggle-icon {
+  display: block;
+  width: 25px;
+  height: 2px;
+  background-color: #006a4e;
+  position: relative;
+}
+.navbar-toggle-icon::before,
+.navbar-toggle-icon::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background-color: #006a4e;
+  left: 0;
+  transition: transform 0.2s;
+}
+.navbar-toggle-icon::before {
+  top: -8px;
+}
+.navbar-toggle-icon::after {
+  bottom: -8px;
+}
+
 .navbar-dropdown {
   position: relative;
-  display: inline-block;
 }
 .dropdown-button {
   background-color: transparent;
   color: #006a4e;
-  padding: 10px 15px;
+  padding: 1rem 0;
   font-size: 1rem;
   font-weight: 700;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
+  width: 100%;
+  justify-content: space-between;
+  border-bottom: 1px solid #f0f0f0;
 }
 .dropdown-button:hover {
   background-color: rgba(0, 0, 0, 0.05);
-  border-radius: 5px;
 }
 .dropdown-button .arrow {
   border: solid #006a4e;
   border-width: 0 2px 2px 0;
   display: inline-block;
   padding: 3px;
-  margin-left: 10px;
   transform: rotate(45deg);
 }
 .dropdown-content {
   display: none;
-  position: absolute;
-  right: 0;
-  background-color: #f1f1f1;
-  min-width: 200px;
-  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-  z-index: 1;
-  border-radius: 5px;
-  overflow: hidden;
-  font-family: "Roboto", sans-serif;
+  position: static;
+  box-shadow: none;
+  background-color: #f9f9f9;
 }
 .dropdown-content a {
   color: black;
-  padding: 12px 16px;
-  text-decoration: none;
-  display: block;
   font-weight: normal;
 }
 .dropdown-content a:hover {
@@ -848,6 +924,7 @@ iframe {
 .show {
   display: block;
 }
+
 
 .flash-modal-overlay {
   display: none;
@@ -877,9 +954,7 @@ iframe {
   .timer-box .label {
     font-size: 0.6rem;
   }
-  .navbar-links {
-    display: none; /* Hide links on mobile */
-  }
+
   .league-item-body {
     flex-direction: column;
     align-items: flex-start;
@@ -925,6 +1000,52 @@ iframe {
   }
   .mobile-hero {
     display: none; /* Hide the mobile hero on larger screens */
+  }
+
+ .navbar {
+    padding: 0 2rem;
+  }
+  .navbar-toggle {
+    display: none; /* Hide hamburger on larger screens */
+  }
+  .navbar-links {
+    position: static;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+    height: auto;
+    transform: translateX(0);
+    transition: none;
+    background-color: transparent;
+    z-index: auto;
+  }
+  .navbar-links-wrapper {
+      padding: 0;
+      flex-direction: row;
+      align-items: center;
+  }
+  .navbar-links a {
+    padding: 0;
+    margin-left: 1.5rem;
+    border: none;
+  }
+  .dropdown-button {
+    width: auto;
+    padding: 10px 15px;
+    border: none;
+  }
+  .dropdown-content {
+    position: absolute;
+    right: 0;
+    background-color: #f1f1f1;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    border-radius: 5px;
+    z-index: 1001;
+  }
+  .dropdown-content a {
+      text-align: left;
   }
   /* Restore traditional table for leaderboards on larger screens */
 
