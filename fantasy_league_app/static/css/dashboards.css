@@ -89,6 +89,7 @@ body {
 .action-btn.primary {
     background-color: var(--masters-accent);
     color: var(--masters-text-dark);
+    width: -webkit-fill-available;
 }
 .action-btn.primary:hover {
     background-color: #f0f0f0;
