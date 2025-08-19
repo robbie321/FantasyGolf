@@ -62,12 +62,12 @@ def user_dashboard():
     # Fetch leagues the user has joined
     my_entries = LeagueEntry.query.filter_by(user_id=current_user.id).options(db.joinedload(LeagueEntry.league)).all()
 
-    # THIS IS THE CORRECTED INDENTATION
     user_leagues = []
     for entry in my_entries:
         if entry.league:
             user_leagues.append({
                 'entry_id': entry.id,
+                'start_date': entry.league.start_date,
                 'league_obj': entry.league,
                 'entry_name': entry.entry_name,
                 'league_name': entry.league.name,
@@ -76,7 +76,7 @@ def user_dashboard():
                 'league_id': entry.league.id
             })
 
-    return render_template('main/user_dashboard.html', user_leagues=user_leagues)
+    return render_template('main/user_dashboard.html', user_leagues=user_leagues, today=datetime.utcnow())
 
 @main_bp.route('/club_dashboard')
 @login_required
