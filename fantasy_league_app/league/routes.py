@@ -57,8 +57,8 @@ def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str,
     if League.query.filter_by(name=name).first():
         return None, f"A league with the name '{name}' already exists. Please choose a different name."
 
-    if not allow_past_creation and start_date < datetime.utcnow() + timedelta(days=3):
-        return None, "The tournament start date must be at least 3 days in the future."
+    if not allow_past_creation and start_date < datetime.utcnow() + timedelta(days=1):
+        return None, "The tournament start date must be at least 1 days in the future."
 
     if 0 < entry_fee < 5:
         return None, "The entry fee must be €0.00 or at least €5.00."
