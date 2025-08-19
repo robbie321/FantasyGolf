@@ -868,7 +868,7 @@ iframe {
     gap: 0.5rem;
   }
   .timer-box {
-    padding: 0.75rem;
+    padding: 0.5rem;
     min-width: 60px;
   }
   .timer-box .time {
