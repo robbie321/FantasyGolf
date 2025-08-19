@@ -158,6 +158,11 @@ class League(db.Model):
     winner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
 
     is_public = db.Column(db.Boolean, default=False, nullable=False)
+    # Make the existing user_id nullable
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+    # Add a new nullable site_admin_id foreign key
+    site_admin_id = db.Column(db.Integer, db.ForeignKey('site_admins.id'), nullable=True)
     club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True) # Now nullable
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) # New column for user-created leagues
     player_bucket_id = db.Column(db.Integer, db.ForeignKey('player_buckets.id'), nullable=True)
@@ -175,7 +180,7 @@ class League(db.Model):
     # custom rules
     max_entries = db.Column(db.Integer, nullable=True)  # Max number of users, nullable for unlimited
     odds_limit = db.Column(db.Integer, nullable=True)   # Max combined odds, nullable for no limit
-    no_favorites_rule = db.Column(db.Integer, default=0, nullable=False) # Number of top players to exclude (0 = no rule)
+    no_favorites_rule = db.Column(db.Boolean, default=False, nullable=False) # Number of top players to exclude (0 = no rule)
 
     #reltionships
     winner = db.relationship('User', foreign_keys=[winner_id])

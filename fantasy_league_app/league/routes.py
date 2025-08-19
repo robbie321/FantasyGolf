@@ -2,7 +2,7 @@ from flask_mail import Message
 from flask import render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_required, current_user
 from fantasy_league_app import db, mail
-from ..models import User, League, LeagueEntry, Player, PlayerBucket, PlayerScore
+from ..models import User, SiteAdmin, League, LeagueEntry, Player, PlayerBucket, PlayerScore
 from ..utils import is_testing_mode_active, send_entry_confirmation_email, send_winner_notification_email
 from . import league_bp
 import random
@@ -11,6 +11,8 @@ import stripe
 from datetime import datetime, timedelta
 from ..data_golf_client import DataGolfClient
 from ..stripe_client import process_payouts
+import secrets
+from ..forms import LeagueForm
 
 
 
@@ -34,9 +36,9 @@ def _get_sorted_leaderboard(league_id):
 from ..data_golf_client import DataGolfClient
 
 def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str,
-                       prize_amount_str, max_entries, odds_limit, rules,
-                       prize_details, no_favorites_rule, tour, is_public,
-                       allow_past_creation=False, club_id=None):
+                         prize_amount_str, max_entries, odds_limit, rules,
+                         prize_details, no_favorites_rule, tour, is_public,
+                         club_id=None, allow_past_creation=False):
     """
     A helper function to handle the creation of any type of league.
     Returns (new_league, error_message)
@@ -44,7 +46,8 @@ def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str,
     # --- Validation ---
     try:
         entry_fee = float(entry_fee_str)
-        prize_amount = Integer(prize_amount_str)
+        prize_amount = int(prize_amount_str)
+        user_id = current_user.id
         start_date = datetime.fromisoformat(start_date_str)
         max_entries_val = int(max_entries) if max_entries else None
         odds_limit_val = int(odds_limit) if odds_limit else None
@@ -79,14 +82,44 @@ def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str,
     tie_breaker_question = f"What will be the final stroke count for {tie_breaker_player.full_name()}'s on Day 2 of the tournament be?"
     tie_breaker_player_id = tie_breaker_player.dg_id
 
+
+    user_id = None
+    site_admin_id = None
+
+    # Check the type of the logged-in user
+    if isinstance(current_user, User):
+        user_id = current_user.id
+    elif isinstance(current_user, SiteAdmin):
+        site_admin_id = current_user.id
+    else:
+        return None, "Invalid user type for league creation."
+
+# 1. Generate a unique league code BEFORE creating the league object.
+    while True:
+        alphabet = string.ascii_uppercase + string.digits
+        # Using 8 characters for better uniqueness
+        league_code = ''.join(secrets.choice(alphabet) for _ in range(8))
+        if not League.query.filter_by(league_code=league_code).first():
+            # The code is unique, we can proceed.
+            break
+
     new_league = League(
-        name=name, league_code=league_code, entry_fee=entry_fee, prize_amount=prize_amount,
-        max_entries=max_entries_val, odds_limit=odds_limit_val,
-        no_favorites_rule=int(no_favorites_rule), prize_details=prize_details, rules=rules,
-        tie_breaker_question=tie_breaker_question, tie_breaker_player_id=tie_breaker_player_id, player_bucket_id=player_bucket_id,
-        start_date=start_date, end_date=end_date, is_public=is_public, tour=tour,
-        club_id=club_creator.id if club_creator else None,
-        user_id=user_creator.id if user_creator else None
+        name=name,
+        league_code=league_code,
+        start_date=start_date,
+        end_date=start_date + timedelta(days=4),
+        player_bucket_id=player_bucket_id,
+        entry_fee=entry_fee,
+        prize_amount=prize_amount,
+        max_entries=max_entries,
+        odds_limit=odds_limit,
+        rules=rules,
+        prize_details=prize_details,
+        no_favorites_rule=no_favorites_rule,
+        tour=tour,
+        is_public=is_public,
+        club_id=club_id,
+        user_id=user_id
     )
     db.session.add(new_league)
     db.session.commit()
@@ -139,41 +172,40 @@ def get_leaderboard_data(league_id):
 
     return jsonify(leaderboard_data)
 
-@league_bp.route('/create', methods=['GET', 'POST'])
+@league_bp.route('/create-league', methods=['GET', 'POST'])
 @login_required
 def create_league():
     if not getattr(current_user, 'is_club_admin', False):
         flash('You do not have permission to create a league.', 'warning')
         return redirect(url_for('main.user_dashboard'))
 
-    player_buckets = PlayerBucket.query.all()
+    form = LeagueForm()
+    form.player_bucket_id.choices = [(b.id, b.name) for b in PlayerBucket.query.order_by('name').all()]
 
-    if request.method == 'POST':
+    if form.validate_on_submit():
         new_league, error = _create_new_league(
-            name=request.form.get('name'),
-            start_date_str=request.form.get('start_date'),
-            player_bucket_id=request.form.get('player_bucket_id'),
-            entry_fee_str=request.form.get('entry_fee'),
+            name=form.name.data,
+            start_date_str=form.start_date.data.strftime('%Y-%m-%d'),
+            player_bucket_id=form.player_bucket_id.data,
+            entry_fee_str=str(form.entry_fee.data),
             prize_amount_str=str(form.prize_amount.data),
-            rules=request.form.get('rules'),
-            prize_details=request.form.get('prize_details'),
-            # tie_breaker=request.form.get('tie_breaker_question'),
-            tour=request.form.get('tour'),
-            max_entries=request.form.get('max_entries'),
-            odds_limit=request.form.get('odds_limit'),
-            no_favorites_rule=request.form.get('no_favorites_rule'),
-            is_public=False,
-            club_creator=current_user
+            max_entries=form.max_entries.data,
+            odds_limit=form.odds_limit.data,
+            rules=form.rules.data,
+            prize_details=form.prize_details.data,
+            no_favorites_rule=form.no_favorites_rule.data,
+            tour=form.tour.data,
+            is_public=False, # Club leagues are not public
+            club_id=current_user.id # Pass the club_id
         )
 
         if error:
             flash(error, 'danger')
-            return render_template('league/create_league.html', player_buckets=player_buckets, form_data=request.form)
+        else:
+            flash(f'League "{new_league.name}" created successfully! The league code is {new_league.league_code}.', 'success')
+            return redirect(url_for('main.club_dashboard'))
 
-        flash(f'League "{new_league.name}" created successfully! The league code is {new_league.league_code}.', 'success')
-        return redirect(url_for('main.club_dashboard'))
-
-    return render_template('league/create_league.html', player_buckets=player_buckets)
+    return render_template('league/create_league.html', form=form)
 
 
 @league_bp.route('/create-user-league', methods=['GET', 'POST'])
@@ -196,7 +228,7 @@ def create_user_league():
             odds_limit=request.form.get('odds_limit'),
             no_favorites_rule=request.form.get('no_favorites_rule'),
             is_public=False,
-            club_creator=current_user
+            club_id=current_user
         )
         if error:
             flash(error, 'danger')

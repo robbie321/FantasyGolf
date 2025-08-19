@@ -1,189 +1,136 @@
-﻿{% extends 'base.html' %}
-
-{% block content %}
+﻿{% extends 'base.html' %} {% from "_form_macros.html" import render_field %} {%
+block content %}
 <style>
-    .page-wrapper {
-        padding: 4rem 1rem;
-        background-color: #f7f7f7;
-    }
-    .form-container {
-        max-width: 800px;
-        margin: 0 auto;
-        background-color: #ffffff;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        padding: 3rem;
-    }
-    .form-container h1 {
-        font-family: 'Merriweather', serif;
-        text-align: center;
-        margin-top: 0;
-        margin-bottom: 2rem;
-    }
+  .page-wrapper {
+    padding: 4rem 1rem;
+    background-color: #f7f7f7;
+  }
+  .form-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 3rem;
+  }
+  .form-container h1 {
+    font-family: "Merriweather", serif;
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 2rem;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  @media (min-width: 768px) {
     .form-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
+      grid-template-columns: 1fr 1fr;
     }
-    @media (min-width: 768px) {
-        .form-grid {
-            grid-template-columns: 1fr 1fr;
-        }
-    }
-    .form-group {
-        margin-bottom: 1rem;
-    }
-    .full-width {
-        grid-column: 1 / -1;
-    }
-    .form-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: bold;
-    }
-    .form-group input,
-    .form-group textarea,
-    .form-group select {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        box-sizing: border-box;
-        font-family: 'Roboto', sans-serif;
-        font-size: 1rem;
-    }
-    .form-group textarea {
-        min-height: 120px;
-        resize: vertical;
-    }
-    .btn-submit {
-        width: 100%;
-        padding: 12px;
-        background-color: #006a4e;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        font-size: 1.1rem;
-        font-weight: bold;
-        cursor: pointer;
-    }
+  }
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  .full-width {
+    grid-column: 1 / -1;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+  }
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-family: "Roboto", sans-serif;
+    font-size: 1rem;
+  }
+  .form-group textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+  .btn-submit {
+    width: 100%;
+    padding: 12px;
+    background-color: #006a4e;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+  }
 </style>
 
 <div class="page-wrapper">
-    <div class="form-container">
-        <h1>Create a New Fantasy League</h1>
-        <form method="POST" action="{{ url_for('league.create_league') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <div class="form-grid">
-                <div class="form-group full-width">
-                    <label for="name">League Name</label>
-                    <input type="text" id="name" name="name" value="{{ form_data.name if form_data }}" required>
-                </div>
+  <div class="form-container">
+    <h2 class="form-title">Create a New League</h2>
+    <p class="form-subtitle">
+      Fill out the details below to create a new league for your club.
+    </p>
 
-                <div class="form-group">
-                    <label for="tour">Select Tour</label>
-                    <select id="tour" name="tour" required>
-                        <option value="pga" {% if form_data and form_data.tour == 'pga' %}selected{% endif %}>PGA Tour</option>
-                        <option value="euro" {% if form_data and form_data.tour == 'euro' %}selected{% endif %}>DP World Tour</option>
-                        <option value="liv" {% if form_data and form_data.tour == 'liv' %}selected{% endif %}>LIV Golf</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="start_date">Tournament Start Date & Time</label>
-                    <input type="datetime-local" id="start_date" name="start_date" value="{{ form_data.start_date if form_data }}" required>
-                </div>
-                <div class="form-group">
-                    <label for="player_bucket_id">Player Pool</label>
-                    <select id="player_bucket_id" name="player_bucket_id" required>
-                        <option value="">-- Select a Player Pool --</option>
-                        {% for bucket in player_buckets %}
-                        <option value="{{ bucket.id }}" {% if form_data and form_data.player_bucket_id|int == bucket.id %}selected{% endif %}>
-                            {{ bucket.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group full-width">
-                    <label for="entry_fee">Entry Fee (€)</label>
-                    <input type="number" id="entry_fee" name="entry_fee" min="0" step="0.01" value="{{ form_data.entry_fee if form_data else '0.00' }}" oninput="validateFee(this)" required>
-                    <small id="fee-warning" style="color: red; display: none; margin-top: 5px;">The entry fee must be €0.00 or at least €5.00.</small>
-                </div>
-                <div class="form-group full-width">
-                    <label for="prize_amount">Prize for Winner (€)</label>
-                    <input type="number" id="prize_amount" name="prize_amount" min="10" step="1" value="{{ form_data.prize_amount if form_data else '10' }}" required>
-                </div>
-                <div class="form-group full-width">
-                    <label for="prize_details">Prize Details</label>
-                    <textarea id="prize_details" name="prize_details">{{ form_data.prize_details if form_data }}</textarea>
-                </div>
-                <div class="form-group full-width">
-                    <label for="max_entries">Maximum Entries (Optional)</label>
-                    <input type="number" id="max_entries" name="max_entries" min="2" placeholder="Leave blank for unlimited" value="{{ form_data.max_entries if form_data }}">
-                </div>
-
-                <div class="form-group full-width">
-                    <label for="odds_limit">Maximum Combined Odds (Optional)</label>
-                    <input type="number" id="odds_limit" name="odds_limit" min="1" placeholder="e.g., 200 (leave blank for no limit)" value="{{ form_data.odds_limit if form_data }}">
-                    <small>Set a cap on the total odds. Rewards picking undervalued players.</small>
-                </div>
-
-                <div class="form-group full-width">
-                    <label for="no_favorites_rule">"No Favorites" Rule</label>
-                    <select id="no_favorites_rule" name="no_favorites_rule">
-                        <option value="0" {% if form_data and form_data.no_favorites_rule == '0' %}selected{% endif %}>No Rule</option>
-                        <option value="5" {% if form_data and form_data.no_favorites_rule == '5' %}selected{% endif %}>Exclude Top 5 Players by Odds</option>
-                        <option value="10" {% if form_data and form_data.no_favorites_rule == '10' %}selected{% endif %}>Exclude Top 10 Players by Odds</option>
-                    </select>
-                    <small>Prevent users from picking the tournament favorites.</small>
-                </div>
-                <div class="form-group full-width">
-                    <label for="rules">Rules</label>
-                    <textarea id="rules" name="rules">{{ form_data.rules if form_data }}</textarea>
-                </div>
-
-                <div class="form-group full-width">
-                    <label for="tie_breaker_question">Tie-Breaker Question</label>
-                    <input type="text" id="tie_breaker_question" name="tie_breaker_question" value="{{ form_data.tie_breaker_question if form_data else 'How many total shots will Rory McIlroy take to complete the 4 days of the tournament?' }}" required>
-                </div>
-                <div class="form-group full-width">
-                    <button type="submit" class="btn-submit">Create League</button>
-                </div>
-            </div>
-        </form>
-    </div>
+    <form
+      method="POST"
+      action="{{ url_for('league.create_league') }}"
+      novalidate
+    >
+      {{ form.hidden_tag() }}
+      <div class="form-fields">
+        {{ render_field(form.name, class="form-input") }} {{
+        render_field(form.tour, class="form-input") }} {{
+        render_field(form.start_date, class="form-input") }} {{
+        render_field(form.player_bucket_id, class="form-input") }} {{
+        render_field(form.entry_fee, class="form-input") }} {{
+        render_field(form.prize_amount, class="form-input") }} {{
+        render_field(form.max_entries, class="form-input") }} {{
+        render_field(form.odds_limit, class="form-input") }} {{
+        render_field(form.prize_details, class="form-input") }} {{
+        render_field(form.rules, class="form-input") }} {{
+        render_field(form.no_favorites_rule) }}
+      </div>
+      <div class="form-actions">
+        {{ form.submit(class="btn btn-primary btn-block") }}
+      </div>
+    </form>
+  </div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const startDateInput = document.getElementById('start_date');
+  document.addEventListener("DOMContentLoaded", function () {
+    const startDateInput = document.getElementById("start_date");
 
-        const now = new Date();
-        now.setDate(now.getDate() + 3);
+    const now = new Date();
+    now.setDate(now.getDate() + 3);
 
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
 
-        const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+    const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
 
-        startDateInput.setAttribute('min', minDateTime);
+    startDateInput.setAttribute("min", minDateTime);
 
-        // Run fee validation on page load in case the form is re-rendered with an error
-        validateFee(document.getElementById('entry_fee'));
-    });
+    // Run fee validation on page load in case the form is re-rendered with an error
+    validateFee(document.getElementById("entry_fee"));
+  });
 
-    function validateFee(input) {
-        const warning = document.getElementById('fee-warning');
-        const value = parseFloat(input.value);
-        if (value > 0 && value < 5) {
-            warning.style.display = 'block';
-        } else {
-            warning.style.display = 'none';
-        }
+  function validateFee(input) {
+    const warning = document.getElementById("fee-warning");
+    const value = parseFloat(input.value);
+    if (value > 0 && value < 5) {
+      warning.style.display = "block";
+    } else {
+      warning.style.display = "none";
     }
+  }
 </script>
 {% endblock %}
