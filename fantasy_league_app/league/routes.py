@@ -2,7 +2,7 @@ from flask_mail import Message
 from flask import render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_required, current_user
 from fantasy_league_app import db, mail
-from ..models import User, SiteAdmin, League, LeagueEntry, Player, PlayerBucket, PlayerScore
+from ..models import User, Club, SiteAdmin, League, LeagueEntry, Player, PlayerBucket, PlayerScore
 from ..utils import is_testing_mode_active, send_entry_confirmation_email, send_winner_notification_email
 from . import league_bp
 import random
@@ -85,12 +85,15 @@ def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str,
 
     user_id = None
     site_admin_id = None
+    club_id = None
 
     # Check the type of the logged-in user
     if isinstance(current_user, User):
         user_id = current_user.id
     elif isinstance(current_user, SiteAdmin):
         site_admin_id = current_user.id
+    elif isinstance(current_user, Club):
+        club_id = current_user.id
     else:
         return None, "Invalid user type for league creation."
 
