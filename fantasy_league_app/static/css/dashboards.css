@@ -160,7 +160,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--masters-text-light);
+    color: var(--masters-accent);
     text-decoration: none;
 }
 
