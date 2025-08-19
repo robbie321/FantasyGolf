@@ -178,9 +178,12 @@
     <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
 
     <nav class="navbar">
-      <a href="{{ url_for('main.index') }}" class="navbar-brand"
-        >Fantasy Fairways</a
-      >
+      <a href="{{ url_for('main.index') }}" class="navbar-brand">
+        <img
+          src="{{ url_for('static', filename='images/logo/logo.svg') }}"
+          alt="Fantasy Fairways Logo"
+        />
+      </a>
 
       <div class="navbar-links" id="navbar-links">
         <div class="navbar-links-wrapper">

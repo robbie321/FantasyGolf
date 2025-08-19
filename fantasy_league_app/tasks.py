@@ -95,12 +95,18 @@ def send_deadline_reminders(app):
     with app.app_context():
         now = datetime.utcnow()
         # Find leagues whose entry deadline is in the next 24 hours and haven't had a reminder sent
-        reminder_window_start = now
-        reminder_window_end = now + timedelta(hours=24)
+        reminder_window_start = now + timedelta(hours=24)
+        reminder_window_end = now + timedelta(hours=48)
 
-        leagues_needing_reminder = League.query.filter(
-            League.entry_deadline.between(reminder_window_start, reminder_window_end),
-            League.reminder_sent == False
+         # Query against the actual 'start_date' database column.
+        # adjust the window by -1 hour to match the logic of the entry_deadline property
+        # (deadline is 3 hour before the tournament starts).
+        leagues_nearing_deadline = League.query.filter(
+            League.reminder_sent == False,
+            League.start_date.between(
+                reminder_window_start + timedelta(hours=3),
+                reminder_window_end + timedelta(hours=3)
+            )
         ).all()
 
         if not leagues_needing_reminder:

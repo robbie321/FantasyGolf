@@ -46,36 +46,41 @@
     >
     {% endif %}
   </div>
+  <hr style="margin-top: 2rem" />
 </div>
 
-<!-- Top 10 World Rankings Section -->
-<div class="page-section">
-  <div class="content-wrapper">
-    <h2 style="text-align: center">Top 10 World Rankings</h2>
-    {% if top_players %}
-    <table class="rankings-table">
-      <thead>
-        <tr>
-          <th style="width: 10%">Rank</th>
-          <th>Player Name</th>
-          <th style="width: 25%">Primary Tour</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for player in top_players %}
-        <tr>
-          <td data-label="Rank" class="rank">{{ player.datagolf_rank }}</td>
-          <td data-label="Player">{{ player.player_name }}</td>
-          <td data-label="Primary Tour" class="sg-total">
-            {{ player.primary_tour }}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <p>Could not load world rankings at this time. Please check back later.</p>
-    {% endif %}
+<div class="dual-column-layout">
+  <!-- Top 10 World Rankings Section -->
+  <div class="page-section">
+    <div class="content-wrapper">
+      <h2 style="text-align: center">Top 10 World Rankings</h2>
+      {% if top_players %}
+      <table class="rankings-table">
+        <thead>
+          <tr>
+            <th style="width: 10%">Rank</th>
+            <th>Player Name</th>
+            <th style="width: 25%">Primary Tour</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for player in top_players %}
+          <tr>
+            <td data-label="Rank" class="rank">{{ player.datagolf_rank }}</td>
+            <td data-label="Player">{{ player.player_name }}</td>
+            <td data-label="Primary Tour" class="sg-total">
+              {{ player.primary_tour }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p>
+        Could not load world rankings at this time. Please check back later.
+      </p>
+      {% endif %}
+    </div>
   </div>
 
   <div class="page-section">
@@ -97,7 +102,7 @@
             <td data-label="Rank" class="rank">{{ loop.index }}</td>
             <td data-label="League Name">{{ league.name }}</td>
             <td data-label="Entries">{{ league.entries|length }}</td>
-            <td data-label="Action">
+            <td data-label="Action" class="td-full-width-action">
               <a
                 href="{{ url_for('league.view_league', league_id=league.id) }}"
                 class="btn"
@@ -114,4 +119,5 @@
     </div>
   </div>
 </div>
+
 {% endblock %}

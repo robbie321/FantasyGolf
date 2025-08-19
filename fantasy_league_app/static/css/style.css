@@ -107,10 +107,9 @@ iframe {
 
     /* --- Mobile Hero --- */
     .mobile-hero {
-        background-color: #006a4e;
         color: white;
         text-align: center;
-        padding: 4rem 1rem;
+        padding: 2rem 1rem 0 1rem
     }
     .mobile-hero .action-buttons {
         display: flex;
@@ -173,8 +172,8 @@ iframe {
 
 .btn-outline {
   background-color: transparent;
-  border: 2px solid white;
-  color: white;
+  border: 2px solid #006a4e;
+  color: #006a4e;
 }
 .btn-outline:hover {
   background-color: white;
@@ -213,7 +212,7 @@ iframe {
 .tournaments-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 2rem;
+  /* margin-top: 2rem; */
 }
 
 .rankings-table th,
@@ -296,7 +295,7 @@ iframe {
   border-radius: 8px;
   overflow: hidden;
   display: block; /* Mobile first: treat as block */
-  padding: 2%;
+  padding: 0 2% 2% 2%;
 }
 
 /* Mobile-first: Stacked rows */
@@ -333,6 +332,21 @@ iframe {
   text-align: left;
   white-space: nowrap;
 }
+.rankings-table td.td-full-width-action::before {
+  display: none;
+}
+.rankings-table td.td-full-width-action {
+  padding: 0;
+}
+
+/* Make the button inside that cell fill the available space */
+.rankings-table td.td-full-width-action .btn {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 0 0 8px 8px; /* Match the parent container's corners */
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
 .rankings-table .rank {
   font-weight: bold;
   font-size: 1.2rem;
@@ -340,51 +354,6 @@ iframe {
 .rankings-table .sg-total {
   font-weight: bold;
   color: #006a4e;
-}
-
-/* --- MEDIA QUERIES --- */
-
-/* For tablets and up (768px and wider) */
-@media (min-width: 768px) {
-  .hero-content h1 {
-    font-size: 3.5rem;
-  }
-  .hero-content p {
-    font-size: 1.5rem;
-  }
-  .content-wrapper h2 {
-      font-size: 2.5rem;
-  }
-
-  /* Restore traditional table layout on larger screens */
-  .rankings-table {
-    display: table;
-    border-collapse: collapse;
-  }
-  .rankings-table thead {
-    display: table-header-group;
-  }
-  .rankings-table tbody,
-  .rankings-table tr {
-    display: table-row;
-  }
-  .rankings-table th,
-  .rankings-table td {
-    display: table-cell;
-    padding: 15px;
-    border-bottom: 1px solid #ddd;
-    text-align: left;
-  }
-  .rankings-table td::before {
-    display: none; /* Hide mobile-only labels */
-  }
-  .rankings-table thead th {
-    background-color: #f2f2f2;
-    font-weight: bold;
-  }
-  .rankings-table .rank {
-    text-align: center;
-  }
 }
 
 /* --- AUTH SECTION --- */
@@ -789,12 +758,14 @@ iframe {
   z-index: 1000;
 }
 .navbar-brand {
-  font-family: "Playfair Display", serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-decoration: none;
-  color: #006a4e;
+  display: flex; /* Helps with vertical alignment of the logo */
+  align-items: center;
+  height: 100%;
   z-index: 1001;
+}
+.navbar-brand img {
+  height: 45px; /* Adjust this value to change the logo size */
+  width: auto; /* Maintains the aspect ratio */
 }
 /* Default mobile styles for nav links (off-screen side menu) */
 .navbar-links {
@@ -922,7 +893,8 @@ iframe {
   background-color: #ddd;
 }
 .show {
-  display: block;
+  display: flex;
+  flex-direction: column;
 }
 
 
@@ -1047,9 +1019,65 @@ iframe {
   .dropdown-content a {
       text-align: left;
   }
-  /* Restore traditional table for leaderboards on larger screens */
 
+  .hero-content h1 {
+    font-size: 3.5rem;
+  }
+  .hero-content p {
+    font-size: 1.5rem;
+  }
+  .content-wrapper{
+    max-width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 80%;
+  }
+  .content-wrapper h2 {
+      font-size: 2.5rem;
+  }
 
+  /* Restore traditional table layout on larger screens */
+  .rankings-table {
+    display: table;
+    border-collapse: collapse;
+  }
+  .rankings-table thead {
+    display: table-header-group;
+  }
+  .rankings-table tbody,
+  .rankings-table tr {
+    display: revert;
+  }
+  .rankings-table th,
+  .rankings-table td {
+    display: table-cell;
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+  }
+  .rankings-table td::before {
+    display: none; /* Hide mobile-only labels */
+  }
+  .rankings-table thead th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+  }
+  .rankings-table .rank {
+    text-align: center;
+  }
+
+  .dual-column-layout {
+  display: flex;
+  gap: 2rem; /* Adds space between the columns */
+  align-items: flex-start; /* Aligns the tops of the tables */
+  max-width: 1200px; /* Or your preferred max-width */
+  margin: 0 auto;
+}
+
+.dual-column-layout .page-section {
+  flex: 1; /* Each section takes up half the space */
+  padding-top: 0;
+}
 }
 
 /* For desktops and up */
