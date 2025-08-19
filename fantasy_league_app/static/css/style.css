@@ -635,6 +635,8 @@ iframe {
   color: #333;
 }
 .nav-section {
+  display: flex;
+  flex-direction: column;
   margin-top: 1.5rem;
 }
 .nav-section h3 {
@@ -704,8 +706,21 @@ iframe {
   margin: 0.2rem 0;
   color: #666;
 }
+
+.league-item-body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
 .league-item-action {
   margin-top: 0;
+  width: 100%;
+}
+
+.league-item-action .btn{
+  box-sizing: border-box;
+  width: -webkit-fill-available;
 }
 .join-league-section {
   background-color: #006a4e;
@@ -743,6 +758,27 @@ iframe {
   background-color: white;
   color: #006a4e;
 }
+
+  /* Styling for the revenue stat card */
+  .stat-card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .stat-card .stat-title {
+    font-size: 1.2rem;
+    color: #666;
+    margin: 0 0 0.5rem 0;
+    font-family: "Merriweather", serif;
+  }
+  .stat-card .stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #006a4e;
+  }
 
 /* --- BASE SECTION --- */
 .navbar {
@@ -816,6 +852,80 @@ iframe {
 .mobile-menu-overlay.active {
     opacity: 1;
     visibility: visible;
+}
+
+
+/* --- TOAST NOTIFICATIONS --- */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 280px;
+    color: white;
+    transform: translateY(150%);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform 0.4s ease-in-out, opacity 0.4s ease-in-out, visibility 0.4s;
+}
+
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+}
+
+.toast__content {
+    margin-right: 1.5rem;
+}
+
+.toast__message {
+    margin: 0;
+    font-weight: bold;
+}
+
+.toast__close {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+.toast__close:hover {
+    opacity: 1;
+}
+
+/* Toast Colors */
+.toast--success {
+    background-color: #28a745; /* Green */
+}
+.toast--danger, .toast--error {
+    background-color: #dc3545; /* Red */
+}
+.toast--warning {
+    background-color: #ffc107; /* Yellow */
+    color: #333;
+}
+.toast--warning .toast__close {
+    color: #333;
+}
+.toast--info {
+    background-color: #17a2b8; /* Blue */
 }
 
 
@@ -927,7 +1037,7 @@ iframe {
     font-size: 0.6rem;
   }
 
-  .league-item-body {
+  /* .league-item-body {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
@@ -938,7 +1048,7 @@ iframe {
   .league-item-action .btn {
       width: 100%;
       box-sizing: border-box;
-  }
+  } */
 }
 
 /* For tablets and up */

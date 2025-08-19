@@ -1,185 +1,113 @@
 {% extends 'base.html' %} {% block content %}
-<style>
-  .page-wrapper {
-    padding: 2rem;
-    background-color: #f7f7f7;
-  }
-  .dashboard-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    font-family: "Roboto", sans-serif;
-    border: 1px solid #e0e0e0;
-    background-color: #fff;
-    min-height: 70vh;
-  }
-  .dashboard-nav {
-    flex: 0 0 280px;
-    background-color: #f7f7f7;
-    padding: 2rem;
-    border-right: 1px solid #e0e0e0;
-  }
-  .dashboard-nav h2 {
-    font-family: "Merriweather", serif;
-    font-size: 1.5rem;
-    border-bottom: 2px solid #006a4e;
-    padding-bottom: 0.5rem;
-    margin-top: 0;
-  }
-  .profile-info strong {
-    font-size: 1.1rem;
-  }
-  /* NEW: Styling for the nav section and create button */
-  .nav-section {
-    margin-top: 2.5rem;
-  }
-  .btn-create {
-    display: block;
-    width: 100%;
-    padding: 12px;
-    background-color: #006a4e;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    font-weight: bold;
-    text-align: center;
-    box-sizing: border-box;
-    transition: background-color 0.2s;
-  }
-  .btn-create:hover {
-    background-color: #00563f;
-  }
-  .dashboard-content {
-    flex-grow: 1;
-    padding: 2rem 3rem;
-  }
-  .dashboard-content h2 {
-    font-family: "Merriweather", serif;
-    font-size: 2rem;
-    margin-top: 0;
-    border-bottom: 1px solid #ccc;
-    padding-bottom: 1rem;
-  }
-  .league-list {
-    list-style: none;
-    padding: 0;
-  }
-  .league-item {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .league-item-details h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.25rem;
-  }
-  .league-item-action .btn {
-    background-color: #006a4e;
-    color: white;
-    text-decoration: none;
-    padding: 0.8rem 1.5rem;
-    border-radius: 5px;
-    font-weight: bold;
-  }
+<!-- Link to the new stylesheet -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/dashboards.css') }}"
+/>
 
-  /* Styling for the revenue stat card */
-  .stat-card {
-    background-color: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 1.5rem;
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-  .stat-card .stat-title {
-    font-size: 1.2rem;
-    color: #666;
-    margin: 0 0 0.5rem 0;
-    font-family: "Merriweather", serif;
-  }
-  .stat-card .stat-value {
-    font-size: 2.5rem;
-    font-weight: bold;
-    color: #006a4e;
-  }
-</style>
+<div class="dashboard-wrapper">
+  <div class="dashboard-header">
+    <h3>{{ club.club_name }} Dashboard</h3>
+  </div>
 
-<div class="page-wrapper">
-  <div class="dashboard-container">
-    <aside class="dashboard-nav">
+  <!-- Slider Tabs -->
+  <div class="tabs-container">
+    <div class="tab active" data-tab="leagues">Club Leagues</div>
+    <div class="tab" data-tab="profile">Club Profile</div>
+  </div>
+
+  <!-- Leagues Content -->
+  <div id="leagues" class="tab-content active">
+    <div class="action-buttons">
+      <a
+        href="{{ url_for('league.create_league') }}"
+        class="action-btn primary"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 4V20M4 12H20"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Create a New League
+      </a>
+    </div>
+
+    <div class="leagues-table-container">
+      <h2>Leagues Created by {{ club.name }}</h2>
+      <table class="leagues-table">
+        <thead>
+          <tr>
+            <th>League</th>
+            <th class="rank">Entries</th>
+            <th class="rank">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for league in club_leagues %}
+          <tr>
+            <td>
+              <a
+                href="{{ url_for('league.view_league', league_id=league.id) }}"
+                class="league-name"
+              >
+                {{ league.name }}
+              </a>
+            </td>
+            <td class="rank">{{ league.entries|length }}</td>
+            <td class="rank">
+              {% if league.is_finalized %}Finished{% else %}Active{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" style="text-align: center; padding: 2rem">
+              Your club hasn't created any leagues yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Profile Content -->
+  <div id="profile" class="tab-content">
+    <div class="profile-section">
       <h2>Club Profile</h2>
-      <div class="profile-info">
-        <strong>{{ current_user.club_name }}</strong>
-        <p>{{ current_user.email }}</p>
-      </div>
-
-      <div class="nav-section">
-        <a href="{{ url_for('league.create_league') }}" class="btn-create"
-          >Create New League</a
-        >
-      </div>
-
-      <div class="nav-section">
-        <h3 style="margin-top: 1.5rem">Payouts</h3>
-        {% if current_user.stripe_account_id %}
-        <div class="stripe-connect-section">
-          <h3>Connect with Stripe</h3>
-          <p>Edit Stripe details</p>
-
-          <form action="{{ url_for('main.onboard_stripe') }}" method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <button type="submit" class="btn btn-primary">
-              Connect with Stripe
-            </button>
-          </form>
-        </div>
-        {% else %}
-        <p>Connect your club's bank account to receive your revenue share.</p>
-        <a
-          href="{{ url_for('main.onboard_stripe') }}"
-          class="btn-create"
-          style="background-color: #17a2b8"
-          >Setup Payouts</a
-        >
-        {% endif %}
-      </div>
-    </aside>
-
-    <main class="dashboard-content">
-      <div class="stat-card">
-        <h3 class="stat-title">Your Total Revenue (70% Share)</h3>
-        <p class="stat-value">€{{ "%.2f"|format(club_revenue) }}</p>
-      </div>
-
-      <h2>Created Leagues</h2>
-      {% if club_leagues %}
-      <ul class="league-list">
-        {% for league in club_leagues %}
-        <li class="league-item">
-          <div class="league-item-details">
-            <h4>{{ league.name }}</h4>
-            <p>League Code: <strong>{{ league.code }}</strong></p>
-            <p>Entry Fee: €{{ "%.2f"|format(league.entry_fee) }}</p>
-          </div>
-          <div class="league-item-action">
-            <!-- THIS IS THE UPDATED LINE -->
-            <a
-              href="{{ url_for('league.manage_league', league_id=league.id) }}"
-              class="btn"
-              >Manage League</a
-            >
-          </div>
-        </li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p>You haven't created any leagues yet.</p>
-      {% endif %}
-    </main>
+      <p>Manage your club's details and payout information.</p>
+      <form action="{{ url_for('main.onboard_stripe') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="action-btn primary">
+          Update Stripe Payout Details
+        </button>
+      </form>
+    </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const tabs = document.querySelectorAll(".tab");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        tabs.forEach((t) => t.classList.remove("active"));
+        tabContents.forEach((c) => c.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.tab).classList.add("active");
+      });
+    });
+  });
+</script>
 {% endblock %}

@@ -1,406 +1,132 @@
 {% extends 'base.html' %} {% block content %}
-<!-- <style>
-  .page-wrapper {
-    background-color: #f7f7f7;
-    min-height: 80vh;
-  }
-  .dashboard-container {
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    font-family: Arial, sans-serif;
-    border: 1px solid #e0e0e0;
-    background-color: #fff;
-    min-height: 70vh;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  .dashboard-nav {
-    flex: 0 0 280px;
-    background-color: #fff;
-    padding: 2rem;
-    border-right: 1px solid #e0e0e0;
-  }
-  .profile-info {
-    text-align: center;
-    margin-bottom: 2.5rem;
-  }
-  .profile-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background-color: #e0e0e0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #555;
-  }
-  .profile-info p {
-    margin: 0.2rem 0;
-    color: #555;
-  }
-  .profile-info strong {
-    font-size: 1.1rem;
-    color: #333;
-  }
-  .nav-section {
-    margin-top: 1.5rem;
-  }
-  .nav-section h3 {
-    font-size: 0.8rem;
-    color: #666;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #eee;
-  }
-  .nav-section ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  .nav-section li a {
-    display: block;
-    padding: 0.8rem 1rem;
-    text-decoration: none;
-    color: #333;
-    border-radius: 5px;
-    font-weight: bold;
-    transition: background-color 0.2s;
-  }
-  .nav-section li a:hover {
-    background-color: #f0f0f0;
-  }
-  .nav-section li a.active {
-    background-color: #006a4e;
-    color: #fff;
-  }
-  .dashboard-content {
-    flex-grow: 1;
-    padding: 2rem 3rem;
-    background-color: #f9f9f9;
-  }
-  .content-section {
-    display: none;
-  }
-  .content-section.active {
-    display: block;
-  }
-  .content-section h2 {
-    font-size: 2rem;
-    color: #006a4e;
-    margin-top: 0;
-    margin-bottom: 2rem;
-  }
-  .league-list {
-    list-style: none;
-    padding: 0;
-  }
-  .league-item {
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 18px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-  .league-item-body {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 0.5rem;
-  }
-  .league-item h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-    color: #006a4e;
-  }
-  .league-item-meta p {
-    margin: 0.2rem 0;
-    color: #666;
-  }
-  .league-item-details h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-    color: #006a4e;
-  }
-  .league-item-details p {
-    margin: 0.2rem 0;
-    color: #666;
-  }
-  .league-item-action {
-    margin-top: 0;
-  }
-  .league-item-action .btn {
-    background-color: #006a4e;
-    color: white;
-    text-decoration: none;
-    padding: 0.6rem 1rem;
-    border-radius: 5px;
-    font-weight: bold;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .btn-danger {
-    background-color: #dc3545;
-    border: none;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  #leagues-section.content-section.active {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .join-league-section {
-    background-color: #006a4e;
-    border: 1px solid #e0e0e0;
-    border-radius: 18px;
-    padding: 2rem;
-    margin-bottom: 2.5rem;
-    color: white;
-  }
-  .join-league-section h3 {
-    margin-top: 0;
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-  }
-  .join-league-section,
-  .league-list {
-    width: 100%;
-    max-width: 850px; /* You can adjust this value */
-    box-sizing: border-box;
-  }
-  .join-league-form {
-    display: flex;
-    gap: 1rem;
-  }
-  .join-league-form input[type="text"] {
-    flex-grow: 1;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
-  }
-  .join-league-form .btn {
-    padding: 12px 25px;
-    font-size: 1rem;
-    background-color: white;
-    color: #006a4e;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-  }
-  @media (min-width: 992px) {
-    .dashboard-container {
-      flex-direction: row;
-    }
+<!-- Link to the new stylesheet -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/dashboards.css') }}"
+/>
 
-    /* Responsive Styles */
-    @media (max-width: 992px) {
-      .dashboard-nav {
-        border-right: none;
-        border-bottom: 1px solid #e0e0e0;
-      }
-      .dashboard-content {
-        padding: 2rem 1.5rem;
-      }
-    }
+<div class="dashboard-wrapper">
+  <div class="dashboard-header">
+    <h3>Dashboard</h3>
+  </div>
 
-    /* AMENDED: Styles for small mobile screens */
-    @media (max-width: 576px) {
-      .dashboard-content {
-        padding: 2rem 1rem;
-      }
-      .league-item-body {
-        /* This ensures the details and button stay aligned */
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .join-league-form {
-        flex-direction: column;
-        align-items: stretch;
-      }
-    }
-  }
-</style> -->
+  <!-- Slider Tabs -->
+  <div class="tabs-container">
+    <div class="tab active" data-tab="leagues">My Leagues</div>
+    <div class="tab" data-tab="profile">My Profile</div>
+  </div>
 
-<div class="page-wrapper">
-  <div class="dashboard-container">
-    <aside class="dashboard-nav">
-      <div class="profile-info">
-        <div class="profile-icon">
-          {{ current_user.full_name[0] if current_user.full_name }}
-        </div>
-        <strong>{{ current_user.full_name }}</strong>
-        <p>{{ current_user.email }}</p>
-      </div>
-
-      <div class="nav-section">
-        <h3>Payouts</h3>
-        <ul>
-          <li><a href="#" class="nav-link">Prize Payouts</a></li>
-        </ul>
-      </div>
-
-      <div class="nav-section">
-        <h3>My Leagues</h3>
-        <ul>
-          <li>
-            <a
-              href="#leagues"
-              class="nav-link active"
-              data-target="leagues-section"
-              >Leagues</a
-            >
-          </li>
-        </ul>
-      </div>
-
-      <div class="nav-section">
-        <h3>Account Settings</h3>
-        <ul>
-          <li>
-            <a href="#stripe" class="nav-link" data-target="stripe-section"
-              >Update Stripe Details</a
-            >
-          </li>
-          <li>
-            <a href="#settings" class="nav-link" data-target="settings-section"
-              >Delete Account</a
-            >
-          </li>
-        </ul>
-      </div>
-    </aside>
-
-    <main class="dashboard-content">
-      <div id="leagues-section" class="content-section active">
-        <h2>My Leagues</h2>
-
-        <div class="join-league-section">
-          <h3>Join a New League</h3>
-          <form
-            action="{{ url_for('league.join_league') }}"
-            method="POST"
-            class="join-league-form"
-          >
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <input
-              type="text"
-              name="league_code"
-              placeholder="Enter League Code"
-              required
-            />
-            <button type="submit" class="btn">Join League</button>
-          </form>
-        </div>
-
-        {% if user_leagues %}
-        <ul class="league-list">
-          {% for league in user_leagues %}
-          <li class="league-item">
-            <h4>{{ league.league_name }}</h4>
-            <div class="league-item-body">
-              <div class="league-item-meta">
-                <p>{{ league.entry_name }}</p>
-                <p>League code: <strong>{{ league.league_code }}</strong></p>
-              </div>
-              <div class="league-item-action">
-                <a
-                  href="{{ url_for('league.view_league', league_id=league.league_id) }}"
-                  class="btn"
-                >
-                  View League
-                  <span style="font-size: 1.2rem; line-height: 1">></span>
-                </a>
-              </div>
-            </div>
-          </li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <p>You haven't joined any leagues yet. Find a league to join!</p>
-        {% endif %}
-      </div>
-
-      <div id="stripe-section" class="content-section">
-        <h2>Update Stripe Details</h2>
-        <p>
-          Manage your Stripe account to ensure you can receive prize payouts.
-        </p>
-        <form action="{{ url_for('main.onboard_stripe') }}" method="POST">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <button type="submit" class="btn btn-primary">
-            Update Stripe Account
-          </button>
-        </form>
-      </div>
-
-      <div id="settings-section" class="content-section">
-        <h2>Account Settings</h2>
-        <p>
-          Permanently delete your account and all associated data. This action
-          cannot be undone.
-        </p>
-        <form
-          action="{{ url_for('auth.delete_account') }}"
-          method="POST"
-          onsubmit="return confirm('Are you sure you want to permanently delete your account? This action cannot be undone.');"
+  <!-- Leagues Content -->
+  <div id="leagues" class="tab-content active">
+    <div class="action-buttons">
+      <a href="{{ url_for('league.join_league') }}" class="action-btn primary">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
         >
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <button type="submit" class="btn btn-danger">Delete Account</button>
-        </form>
-      </div>
-    </main>
+          <path
+            d="M12 4V20M4 12H20"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Join a League
+      </a>
+      <a
+        href="{{ url_for('league.create_league') }}"
+        class="action-btn secondary"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 4V20M4 12H20"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Create a League
+      </a>
+    </div>
+
+    <div class="leagues-table-container">
+      <h2>My Leagues</h2>
+      <table class="leagues-table">
+        <thead>
+          <tr>
+            <th>League</th>
+            <th class="rank">Current Rank</th>
+            <th class="rank">Last Rank</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for league in user_leagues %}
+          <tr>
+            <td>
+              <a
+                href="{{ url_for('league.view_league', league_id=league.league_id) }}"
+                class="league-name"
+              >
+                {{ league.league_name }}
+              </a>
+            </td>
+            <td class="rank">{{ league.current_rank or '-' }}</td>
+            <td class="rank">{{ league.last_rank or '-' }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" style="text-align: center; padding: 2rem">
+              You haven't joined any leagues yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Profile Content -->
+  <div id="profile" class="tab-content">
+    <div class="profile-section">
+      <h2>My Profile</h2>
+      <p>Manage your account details and payout information.</p>
+      <form action="{{ url_for('main.onboard_stripe') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="action-btn primary">
+          Update Stripe Payout Details
+        </button>
+      </form>
+    </div>
   </div>
 </div>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const navLinks = document.querySelectorAll(".nav-link");
-    const contentSections = document.querySelectorAll(".content-section");
+  document.addEventListener("DOMContentLoaded", () => {
+    const tabs = document.querySelectorAll(".tab");
+    const tabContents = document.querySelectorAll(".tab-content");
 
-    function switchTab(targetId) {
-      navLinks.forEach((nav) => nav.classList.remove("active"));
-      contentSections.forEach((section) => section.classList.remove("active"));
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        // Deactivate all tabs and content
+        tabs.forEach((t) => t.classList.remove("active"));
+        tabContents.forEach((c) => c.classList.remove("active"));
 
-      const activeLink = document.querySelector(`a[data-target="${targetId}"]`);
-      if (activeLink) {
-        activeLink.classList.add("active");
-      }
-
-      const activeSection = document.getElementById(targetId);
-      if (activeSection) {
-        activeSection.classList.add("active");
-      }
-    }
-
-    navLinks.forEach((link) => {
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        const targetId = this.getAttribute("data-target");
-        window.location.hash = targetId;
-        switchTab(targetId);
+        // Activate the clicked tab and its content
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.tab).classList.add("active");
       });
     });
-
-    // On page load, check for a hash and switch to the correct tab
-    if (window.location.hash) {
-      const targetId = window.location.hash.substring(1);
-      switchTab(targetId);
-    } else {
-      // Default to the first tab if no hash is present
-      switchTab("leagues-section");
-    }
   });
 </script>
 {% endblock %}

@@ -90,6 +90,7 @@ def club_dashboard():
     # current_user is a Club object here, so current_user.id is the club_id
     created_leagues = League.query.filter_by(club_id=current_user.id).all()
 
+    club = current_user
     club_revenue = 0
 
     # ---  Calculate Club Revenue ---
@@ -123,7 +124,7 @@ def club_dashboard():
             # Add more details as needed, e.g., number of entries, status
         })
 
-    return render_template('main/club_dashboard.html', club_leagues=club_leagues, club_revenue=club_revenue)
+    return render_template('main/club_dashboard.html', club=club, club_leagues=club_leagues, club_revenue=club_revenue)
 
 
 
