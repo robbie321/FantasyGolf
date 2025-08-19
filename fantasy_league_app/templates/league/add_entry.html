@@ -1,241 +1,426 @@
 ﻿{% extends 'base.html' %} {% block content %}
 <style>
-  .page-wrapper {
-    padding: 4rem 1rem;
-    background-color: #f7f7f7;
-  }
-  .form-container {
+  /* --- Player Picker Styles (identical to edit_entry) --- */
+  .picker-wrapper {
     max-width: 800px;
-    margin: 0 auto;
-    background-color: #ffffff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    padding: 3rem;
+    margin: 2rem auto;
+    padding: 0 1rem;
   }
-  .form-header {
+  .picker-header {
     text-align: center;
     margin-bottom: 2rem;
   }
-  .form-header h1 {
+  .picker-header h1 {
     font-family: "Merriweather", serif;
-    margin: 0;
+    font-size: 2.5rem;
+    color: #006a4e;
+    margin-bottom: 0.5rem;
   }
-  .form-header p {
-    font-size: 1.2rem;
+  .picker-header p {
     color: #555;
+    font-size: 1.1rem;
   }
-  .player-selection-grid {
+  .player-picks-container {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
     margin-bottom: 2rem;
   }
-  .form-group {
-    margin-bottom: 1rem;
-  }
-  .form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: bold;
-  }
-  .form-group select,
-  .form-group input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
-    font-size: 1rem;
-  }
-  .odds-display {
-    text-align: center;
-    margin: 2rem 0;
-    padding: 1rem;
-    border: 2px solid #006a4e;
+  .player-slot {
+    background-color: white;
+    border: 2px dashed #ccc;
     border-radius: 8px;
+    aspect-ratio: 1 / 1.2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
   }
-  .odds-display h3 {
-    margin: 0;
-    font-family: "Merriweather", serif;
+  .player-slot.empty {
+    background-color: rgba(0, 106, 78, 0.05);
+    border-color: rgba(0, 106, 78, 0.4);
   }
-  #combined-odds {
-    font-size: 2rem;
+  .player-slot-icon {
+    width: 40px;
+    height: 40px;
+    color: #006a4e;
+    margin-bottom: 0.5rem;
+  }
+  .player-slot-text {
     font-weight: bold;
     color: #006a4e;
   }
-  #odds-warning {
-    color: #dc3545;
-    font-weight: bold;
-    display: none; /* Hidden by default */
+  .player-info h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    text-align: center;
   }
-  .btn-submit {
+  .player-info p {
+    margin: 0;
+    color: #555;
+    font-weight: bold;
+    text-align: center;
+  }
+  .summary-section {
+    background-color: #f7f7f7;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  .summary-section .odds-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+  .summary-section .odds-label {
+    color: #555;
+  }
+  .summary-section .odds-value {
+    font-weight: bold;
+    color: #006a4e;
+  }
+  .summary-section .odds-value.invalid {
+    color: #dc3545;
+  }
+  .save-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  .summary-section h3 {
+    margin-top: 0;
+    color: #006a4e;
+  }
+  .summary-section p {
+    font-weight: bold;
+    margin-bottom: 1rem;
+  }
+  .summary-section .form-group {
+    max-width: 200px;
+    margin: 0 auto;
+  }
+
+  /* --- Popup Styles --- */
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    padding: 12px;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+  .popup-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+  .popup-container {
+    background-color: white;
+    width: 100%;
+    max-height: 80vh;
+    border-radius: 16px 16px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+  }
+  .popup-overlay.active .popup-container {
+    transform: translateY(0);
+  }
+  .popup-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .popup-header h3 {
+    margin: 0;
+  }
+  .popup-close {
+    background: transparent;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+  }
+  .popup-body {
+    overflow-y: auto;
+    padding: 0 1.5rem;
+  }
+  .player-list-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .player-list-table td {
+    padding: 1rem 0.5rem;
+    border-bottom: 1px solid #eee;
+  }
+  .player-list-table tr:last-child td {
+    border-bottom: none;
+  }
+  .add-player-btn {
     background-color: #006a4e;
     color: white;
     border: none;
-    border-radius: 5px;
-    font-size: 1.1rem;
-    font-weight: bold;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 1.5rem;
+    line-height: 1;
     cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  /* NEW: Style for the disabled button */
-  .btn-submit:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
   }
 </style>
 
-<div class="page-wrapper">
-  <div class="form-container">
-    <div class="form-header">
-      <h1>Create Your Entry for {{ league.name }}</h1>
-      <p><strong>Entry Name:</strong> {{ current_user.full_name }}</p>
+<div class="picker-wrapper">
+  <div class="picker-header">
+    <h1>Create Your Entry</h1>
+    <p>You are joining: <strong>{{ league.name }}</strong></p>
+  </div>
+
+  <form
+    id="add-entry-form"
+    action="{{ url_for('league.add_entry', league_id=league.id) }}"
+    method="POST"
+  >
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <input
+      type="hidden"
+      id="player1_id"
+      name="player1_id"
+      value="{{ entry.player1_id or '' }}"
+    />
+    <input
+      type="hidden"
+      id="player2_id"
+      name="player2_id"
+      value="{{ entry.player2_id or '' }}"
+    />
+    <input
+      type="hidden"
+      id="player3_id"
+      name="player3_id"
+      value="{{ entry.player3_id or '' }}"
+    />
+
+    <div class="player-picks-container">
+      <div class="player-slot" data-slot="1">
+        <div class="player-slot-icon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 4V20M4 12H20"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+        <span class="player-slot-text">Add Player</span>
+      </div>
+      <div class="player-slot" data-slot="2">
+        <div class="player-slot-icon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 4V20M4 12H20"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+        <span class="player-slot-text">Add Player</span>
+      </div>
+      <div class="player-slot" data-slot="3">
+        <div class="player-slot-icon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 4V20M4 12H20"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+        <span class="player-slot-text">Add Player</span>
+      </div>
     </div>
 
-    <form
-      id="addEntryForm"
-      method="POST"
-      action="{{ url_for('league.add_entry', league_id=league.id) }}"
-    >
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <div class="player-selection-grid">
-        <div class="form-group">
-          <label for="player1">Select Player 1</label>
-          <select id="player1" name="player1" class="player-select" required>
-            <option value="" data-odds="0">-- Choose a Player --</option>
-            {% for player in players %}
-            <option value="{{ player.id }}" data-odds="{{ player.odds }}">
-              {{ player.name }} {{ player.surname }} ({{ player.odds }})
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="player2">Select Player 2</label>
-          <select id="player2" name="player2" class="player-select" required>
-            <option value="" data-odds="0">-- Choose a Player --</option>
-            {% for player in players %}
-            <option value="{{ player.id }}" data-odds="{{ player.odds }}">
-              {{ player.name }} {{ player.surname }} ({{ player.odds }})
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="player3">Select Player 3</label>
-          <select id="player3" name="player3" class="player-select" required>
-            <option value="" data-odds="0">-- Choose a Player --</option>
-            {% for player in players %}
-            <option value="{{ player.id }}" data-odds="{{ player.odds }}">
-              {{ player.name }} {{ player.surname }} ({{ player.odds }})
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-      </div>
-
-      <div class="odds-display">
-        <h3>Combined Odds</h3>
-        <span id="combined-odds">0.00</span>
-        <p id="odds-warning">Combined odds must be at least 100.</p>
-      </div>
-
+    <div class="summary-section">
+      <h3>Tie-Breaker Question</h3>
+      <p>{{ league.tie_breaker_question }}</p>
       <div class="form-group">
-        <label for="tie_breaker_answer"
-          >{{ league.tie_breaker_question }}</label
+        <label for="tie_breaker_answer" style="display: none"
+          >Your Answer</label
         >
         <input
           type="number"
           id="tie_breaker_answer"
           name="tie_breaker_answer"
-          placeholder="Enter a whole number"
+          class="form-input"
+          value="{{ entry.tie_breaker_answer or '' }}"
+          placeholder="Enter your guess"
           required
         />
       </div>
+    </div>
 
-      <button type="submit" id="submit-button" class="btn-submit">
-        Submit Entry
-      </button>
-    </form>
+    <div class="summary-section">
+      <div class="odds-row">
+        <span class="odds-label">Total Combined Odds:</span>
+        <span id="total-odds" class="odds-value">0</span>
+      </div>
+      <div class="odds-row">
+        <span class="odds-label">League Odds Limit:</span>
+        <span class="odds-value">{{ league.odds_limit }}</span>
+      </div>
+    </div>
+
+    <button
+      type="submit"
+      id="save-btn"
+      class="btn btn-primary save-btn"
+      style="width: 100%"
+    >
+      Submit Entry
+    </button>
+  </form>
+</div>
+
+<div class="popup-overlay" id="player-list-overlay">
+  <div class="popup-container">
+    <div class="popup-header">
+      <h3>Select a Player</h3>
+      <button class="popup-close" id="popup-close-btn">&times;</button>
+    </div>
+    <div class="popup-body" id="player-list-body"></div>
   </div>
 </div>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const playerSelects = document.querySelectorAll(".player-select");
-    const oddsDisplay = document.getElementById("combined-odds");
-    const oddsWarning = document.getElementById("odds-warning");
-    const submitButton = document.getElementById("submit-button");
-    const entryForm = document.getElementById("addEntryForm");
+  // This JavaScript is identical to the 'edit_entry.html' script.
+  // It handles the player selection popup, odds calculation, and button state.
+  document.addEventListener('DOMContentLoaded', () => {
+      const availablePlayers = {{ available_players|tojson }};
+      const leagueOddsLimit = {{ league.odds_limit }};
+      const playerSlots = document.querySelectorAll('.player-slot');
+      const playerListOverlay = document.getElementById('player-list-overlay');
+      const playerListBody = document.getElementById('player-list-body');
+      const popupCloseBtn = document.getElementById('popup-close-btn');
+      const totalOddsEl = document.getElementById('total-odds');
+      const saveBtn = document.getElementById('save-btn');
+      let activeSlot = null;
+      let selectedPlayers = {};
 
-    let totalOdds = 0;
-
-    function updateFormState() {
-      const selectedIds = Array.from(playerSelects)
-        .map((select) => select.value)
-        .filter((value) => value !== "");
-
-      totalOdds = 0; // Reset total odds before recalculating
-
-      playerSelects.forEach((currentSelect) => {
-        const currentSelectedValue = currentSelect.value;
-
-        if (currentSelectedValue) {
-          totalOdds += parseFloat(
-            currentSelect.options[currentSelect.selectedIndex].dataset.odds
-          );
-        }
-
-        Array.from(currentSelect.options).forEach((option) => {
-          option.disabled = false;
-          if (
-            selectedIds.includes(option.value) &&
-            option.value !== currentSelectedValue
-          ) {
-            option.disabled = true;
+      function updateOdds() {
+          let total = 0;
+          for (const slot in selectedPlayers) {
+              total += selectedPlayers[slot].odds;
           }
-        });
+          totalOddsEl.textContent = total;
+
+          if (total >= leagueOddsLimit) {
+              totalOddsEl.classList.remove('invalid');
+              saveBtn.disabled = false;
+          } else {
+              totalOddsEl.classList.add('invalid');
+              saveBtn.disabled = true;
+          }
+      }
+
+      function openPlayerList(slotElement) {
+          activeSlot = slotElement.dataset.slot;
+          renderPlayerList();
+          playerListOverlay.classList.add('active');
+          document.body.style.overflow = 'hidden';
+      }
+
+      function closePlayerList() {
+          playerListOverlay.classList.remove('active');
+          document.body.style.overflow = 'auto';
+      }
+
+      function getSelectedPlayerIds() {
+          return Object.values(selectedPlayers).map(p => p.id);
+      }
+
+      function renderPlayerList() {
+          const selectedIds = getSelectedPlayerIds();
+          let tableHtml = '<table class="player-list-table"><tbody>';
+          availablePlayers.forEach(player => {
+              if (!selectedIds.includes(player.id)) {
+                  tableHtml += `
+                      <tr>
+                          <td><strong>${player.name} ${player.surname}</strong></td>
+                          <td>${player.odds}</td>
+                          <td>
+                              <button type="button" class="add-player-btn" data-player-id="${player.id}">+</button>
+                          </td>
+                      </tr>`;
+              }
+          });
+          tableHtml += '</tbody></table>';
+          playerListBody.innerHTML = tableHtml;
+      }
+
+      function selectPlayer(playerId) {
+          const player = availablePlayers.find(p => p.id == playerId);
+          if (!player) return;
+
+          selectedPlayers[activeSlot] = player;
+          document.getElementById(`player${activeSlot}_id`).value = playerId;
+
+          const slotDiv = document.querySelector(`.player-slot[data-slot="${activeSlot}"]`);
+          slotDiv.innerHTML = `
+              <div class="player-info">
+                  <h4>${player.name} ${player.surname}</h4>
+                  <p>${player.odds}</p>
+              </div>`;
+          slotDiv.classList.remove('empty');
+
+          updateOdds();
+          closePlayerList();
+      }
+
+      playerSlots.forEach(slot => {
+          slot.classList.add('empty');
+          slot.addEventListener('click', () => openPlayerList(slot));
       });
 
-      oddsDisplay.textContent = totalOdds.toFixed(2);
+      popupCloseBtn.addEventListener('click', closePlayerList);
+      playerListOverlay.addEventListener('click', (e) => {
+          if (e.target === playerListOverlay) closePlayerList();
+      });
 
-      // --- VALIDATION LOGIC ---
-      // Check if all three players are selected
-      const allPlayersSelected = selectedIds.length === 3;
+      playerListBody.addEventListener('click', (e) => {
+          if (e.target.classList.contains('add-player-btn')) {
+              selectPlayer(e.target.dataset.playerId);
+          }
+      });
 
-      if (allPlayersSelected && totalOdds >= 100) {
-        oddsWarning.style.display = "none";
-        submitButton.disabled = false; // Enable the button
-      } else {
-        submitButton.disabled = true; // Disable the button
-        if (allPlayersSelected && totalOdds < 100) {
-          oddsWarning.style.display = "block"; // Show warning only if all players are selected
-        } else {
-          oddsWarning.style.display = "none";
-        }
-      }
-    }
-
-    // Add listener to each dropdown
-    playerSelects.forEach((select) => {
-      select.addEventListener("change", updateFormState);
-    });
-
-    // Add a final check on form submit
-    entryForm.addEventListener("submit", function (event) {
-      if (totalOdds < 100) {
-        event.preventDefault(); // Stop the form from submitting
-        alert(
-          "Your combined odds are below 100. Please adjust your player selection."
-        );
-      }
-    });
-
-    // Initial call to set the form state correctly on page load
-    updateFormState();
+      updateOdds(); // Initial check
   });
 </script>
 {% endblock %}

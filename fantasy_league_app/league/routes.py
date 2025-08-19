@@ -310,8 +310,13 @@ def add_entry(league_id):
         favorites = sorted(players_in_bucket, key=lambda p: p.odds)[:league.no_favorites_rule]
         excluded_player_ids = {p.id for p in favorites}
 
-    # Filter the list of available players
-    available_players = [p for p in players_in_bucket if p.id not in excluded_player_ids]
+
+    # Fetch and prepare player data for the template's JavaScript
+    players_from_bucket = sorted(league.player_bucket.players, key=lambda p: p.odds)
+    available_players = [
+        {"id": p.id, "name": p.name, "surname": p.surname, "odds": p.odds}
+        for p in players_from_bucket
+    ]
 
     # --- Handle Form Submission ---
     if request.method == 'POST':
@@ -320,25 +325,25 @@ def add_entry(league_id):
             flash(f'This league has just become full. Your entry could not be submitted.', 'danger')
             return redirect(url_for('main.user_dashboard'))
 
-        player1_id = request.form.get('player1')
-        player2_id = request.form.get('player2')
-        player3_id = request.form.get('player3')
+        player1_id = request.form.get('player1_id')
+        player2_id = request.form.get('player2_id')
+        player3_id = request.form.get('player3_id')
         tie_breaker_answer = request.form.get('tie_breaker_answer')
 
-        # Basic validation
-        if not all([player1_id, player2_id, player3_id, tie_breaker_answer]):
-            flash('Please fill out all fields.', 'danger')
-            return redirect(url_for('league.add_entry', league_id=league.id))
+        # --- Validation Logic (same as edit_entry) ---
+        if not all([player1_id, player2_id, player3_id]):
+            flash('Your team must have three players selected.', 'danger')
+            return redirect(url_for('league.add_entry', league_id=league_id))
 
         p1 = Player.query.get(player1_id)
         p2 = Player.query.get(player2_id)
         p3 = Player.query.get(player3_id)
         total_odds = p1.odds + p2.odds + p3.odds
 
-        # --- Odds Cap Rule Check ---
-        if league.odds_limit and total_odds > league.odds_limit:
-            flash(f'The combined odds of your players ({total_odds:.2f}) exceed the league limit of {league.odds_limit}.', 'danger')
-            return redirect(url_for('league.add_entry', league_id=league.id))
+         # --- Odds Cap Rule Check ---
+        if league.odds_limit and total_odds < league.odds_limit:
+            flash(f'The combined total of your players ({total_odds:.2f}) do not meet the minimum total of {league.odds_limit}.', 'danger')
+            return redirect(url_for('league.edit_entry', entry_id=entry.id))
 
         # --- Payment Logic ---
         if league.entry_fee >= 5:
@@ -371,14 +376,18 @@ def add_entry(league_id):
             db.session.add(new_entry)
             db.session.commit()
 
+
             # Send confirmation email
             send_entry_confirmation_email(current_user, league)
 
             flash('Your free entry has been successfully submitted!', 'success')
             return redirect(url_for('main.user_dashboard'))
 
+    empty_entry = {'player1': None, 'player2': None, 'player3': None, 'tie_breaker_answer': ''}
+
     # --- Handle Page Load (GET Request) ---
-    return render_template('league/add_entry.html', league=league, players=available_players)
+    return render_template('league/add_entry.html', league=league, title="Create Your Entry",
+        entry=empty_entry, available_players=available_players)
 
 
 
@@ -399,28 +408,41 @@ def edit_entry(entry_id):
     # --- "No Favorites" Rule Logic ---
     players_in_bucket = league.player_bucket.players
     excluded_player_ids = set()
-    if league.no_favorites_rule > 0:
+    if  league.no_favorites_rule > 0:
         # Sort players by odds (lowest odds are favorites) and get the top N
         favorites = sorted(players_in_bucket, key=lambda p: p.odds)[:league.no_favorites_rule]
         excluded_player_ids = {p.id for p in favorites}
 
+    # Fetch all players from the league's bucket
+    players_from_bucket = sorted(league.player_bucket.players, key=lambda p: p.odds)
+
     # Filter the list of available players
-    available_players = [p for p in players_in_bucket if p.id not in excluded_player_ids]
+    available_players = [
+        {
+            "id": player.id,
+            "name": player.name,
+            "surname": player.surname,
+            "odds": player.odds
+        }
+        for player in players_from_bucket
+    ]
 
     if request.method == 'POST':
-        player1_id = request.form.get('player1')
-        player2_id = request.form.get('player2')
-        player3_id = request.form.get('player3')
+        player1_id = request.form.get('player1_id')
+        player2_id = request.form.get('player2_id')
+        player3_id = request.form.get('player3_id')
         tie_breaker_answer = request.form.get('tie_breaker_answer')
 
-        selected_ids = {player1_id, player2_id, player3_id}
-        if None in selected_ids or '' in selected_ids or len(selected_ids) != 3:
-            flash('You must select three different players.', 'danger')
-            return redirect(url_for('league.edit_entry', entry_id=entry.id))
+        # 1. Check if all three player slots are filled.
+        if not all([player1_id, player2_id, player3_id]):
+            flash('Your team must have three players selected.', 'danger')
+            return redirect(url_for('league.edit_entry', entry_id=entry_id))
 
-        if not tie_breaker_answer or not tie_breaker_answer.isdigit():
-            flash('You must provide a valid number for the tie-breaker.', 'danger')
-            return redirect(url_for('league.edit_entry', entry_id=entry.id))
+        # 2. Check if the three selected players are unique from each other.
+        selected_ids = {player1_id, player2_id, player3_id}
+        if len(selected_ids) < 3:
+            flash('You must select three different players. You cannot have duplicates in your team.', 'danger')
+            return redirect(url_for('league.edit_entry', entry_id=entry_id))
 
         p1 = Player.query.get(player1_id)
         p2 = Player.query.get(player2_id)
@@ -428,13 +450,14 @@ def edit_entry(entry_id):
         total_odds = p1.odds + p2.odds + p3.odds
 
         # --- Odds Cap Rule Check ---
-        if league.odds_limit and total_odds > league.odds_limit:
-            flash(f'The combined odds of your players ({total_odds:.2f}) exceed the league limit of {league.odds_limit}.', 'danger')
+        if league.odds_limit and total_odds < league.odds_limit:
+            flash(f'The combined total of your players ({total_odds:.2f}) do not meet the minimum total of {league.odds_limit}.', 'danger')
             return redirect(url_for('league.edit_entry', entry_id=entry.id))
 
         if total_odds < 100:
             flash('The combined odds of your selected players must be at least 100.', 'danger')
             return redirect(url_for('league.edit_entry', entry_id=entry.id))
+
 
         entry.player1_id = p1.id
         entry.player2_id = p2.id
@@ -442,11 +465,18 @@ def edit_entry(entry_id):
         entry.total_odds = total_odds
         entry.tie_breaker_answer = int(tie_breaker_answer)
 
+        if tie_breaker_answer:
+            try:
+                entry.tie_breaker_answer = int(tie_breaker_answer)
+            except ValueError:
+                flash('Invalid tie-breaker answer. Please enter a number.', 'danger')
+                return redirect(url_for('league.edit_entry', entry_id=entry_id))
+
         db.session.commit()
         flash('Your entry has been successfully updated!', 'success')
         return redirect(url_for('main.user_dashboard'))
 
-    return render_template('league/edit_entry.html', league=league, players=available_players, entry=entry)
+    return render_template('league/edit_entry.html', league=league, available_players=available_players, entry=entry)
 
 
 # --- Stripe Success and Cancel Routes ---
