@@ -73,7 +73,8 @@ def user_dashboard():
                 'league_name': entry.league.name,
                 'league_code': entry.league.league_code,
                 'total_odds': entry.total_odds,
-                'league_id': entry.league.id
+                'league_id': entry.league.id,
+                'current_rank': entry.current_rank
             })
 
     return render_template('main/user_dashboard.html', user_leagues=user_leagues, today=datetime.utcnow())

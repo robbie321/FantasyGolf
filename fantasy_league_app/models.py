@@ -236,6 +236,8 @@ class LeagueEntry(db.Model):
     player2_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
     player3_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
 
+    current_rank = db.Column(db.Integer, nullable=True)
+
     player1 = db.relationship('Player', foreign_keys=[player1_id], backref='entries_as_player1', lazy=True)
     player2 = db.relationship('Player', foreign_keys=[player2_id], backref='entries_as_player2', lazy=True)
     player3 = db.relationship('Player', foreign_keys=[player3_id], backref='entries_as_player3', lazy=True)

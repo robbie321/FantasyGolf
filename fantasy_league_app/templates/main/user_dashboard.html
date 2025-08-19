@@ -19,7 +19,7 @@
   <!-- Leagues Content -->
   <div id="leagues" class="tab-content active">
     <div class="action-buttons">
-      <a href="{{ url_for('league.join_league') }}" class="action-btn primary">
+      <button id="join-league-btn" class="action-btn primary">
         <svg
           width="24"
           height="24"
@@ -36,7 +36,7 @@
           />
         </svg>
         Join a League
-      </a>
+      </button>
       <a
         href="{{ url_for('league.create_league') }}"
         class="action-btn secondary"
@@ -161,6 +161,30 @@
   </div>
 </div>
 
+<div class="popup-overlay" id="join-league-overlay">
+  <div class="popup-container" id="join-league-popup">
+    <button class="popup-close" id="popup-close-btn">&times;</button>
+    <h3>Join a League</h3>
+    <p>Enter the 8-character code for the league you want to join.</p>
+    <form action="{{ url_for('league.join_league') }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="form-group">
+        <input
+          type="text"
+          name="league_code"
+          placeholder="e.g. A1B2C3D4"
+          required
+          minlength="6"
+          maxlength="6"
+        />
+      </div>
+      <button type="submit" class="action-btn primary full-width">
+        Submit Code
+      </button>
+    </form>
+  </div>
+</div>
+
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     const tabs = document.querySelectorAll(".tab");
@@ -178,5 +202,28 @@
       });
     });
   });
+
+  // --- Join League Popup Logic ---
+  const joinLeagueBtn = document.getElementById("join-league-btn");
+  const joinLeagueOverlay = document.getElementById("join-league-overlay");
+  const popupCloseBtn = document.getElementById("popup-close-btn");
+
+  if (joinLeagueBtn) {
+    joinLeagueBtn.addEventListener("click", () => {
+      joinLeagueOverlay.classList.add("active");
+    });
+  }
+  if (popupCloseBtn) {
+    popupCloseBtn.addEventListener("click", () => {
+      joinLeagueOverlay.classList.remove("active");
+    });
+  }
+  if (joinLeagueOverlay) {
+    joinLeagueOverlay.addEventListener("click", (e) => {
+      if (e.target === joinLeagueOverlay) {
+        joinLeagueOverlay.classList.remove("active");
+      }
+    });
+  }
 </script>
 {% endblock %}

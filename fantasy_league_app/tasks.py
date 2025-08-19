@@ -68,6 +68,46 @@ def update_active_league_scores(app):
 
             if updated_count > 0:
                 for league in leagues:
+                    print(f"Calculating ranks for league: {league.name} (ID: {league.id})")
+
+                    # Fetch all entries for the league
+                    entries = league.entries
+                    if not entries:
+                        continue
+
+                    # Calculate total score for each entry
+                    scored_entries = []
+                    for entry in entries:
+                        # Ensure players and scores exist to prevent errors
+                        p1_score = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
+                        p2_score = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
+                        p3_score = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
+                        total_score = p1_score + p2_score + p3_score
+                        scored_entries.append({'entry': entry, 'score': total_score})
+
+                    # Sort entries by score (lower is better in golf)
+                    sorted_entries = sorted(scored_entries, key=lambda x: x['score'])
+
+                    # --- Ranking Logic to Handle Ties ---
+                    last_score = -9999 # Initialize with a score that's impossible to have
+                    last_rank = 0
+                    for i, item in enumerate(sorted_entries):
+                        if item['score'] > last_score:
+                            # If the score is different, this is the new rank
+                            rank = i + 1
+                        else:
+                            # If the score is the same, use the same rank as the previous entry
+                            rank = last_rank
+
+                        item['entry'].current_rank = rank
+                        last_score = item['score']
+                        last_rank = rank
+
+                    # Commit rank updates for this league
+                    db.session.commit()
+                    print(f"Successfully updated ranks for {len(entries)} entries in {league.name}.")
+
+                    # Emit update to clients
                     print(f"Emitting scores_updated for league_id: {league.id}")
                     socketio.emit('scores_updated', {'league_id': league.id}, room=f'league_{league.id}')
 

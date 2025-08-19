@@ -179,3 +179,80 @@ body {
     color: #aaa;
     margin-bottom: 1.5rem;
 }
+
+
+/* --- JOIN LEAGUE POPUP --- */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end; /* Align popup to the bottom */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.popup-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.popup-container {
+    background-color: var(--masters-card-bg);
+    color: var(--masters-text-light);
+    width: 100%;
+    padding: 2rem;
+    padding-top: 3rem;
+    border-radius: 16px 16px 0 0;
+    box-sizing: border-box;
+    position: relative;
+    transform: translateY(100%);
+    transition: transform 0.3s ease-out;
+}
+
+.popup-overlay.active .popup-container {
+    transform: translateY(0);
+}
+
+.popup-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    color: #aaa;
+    font-size: 2rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.popup-container h3 {
+    font-size: 1.8rem;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.popup-container p {
+    color: #aaa;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.popup-container .form-group input {
+    background-color: var(--masters-dark-bg);
+    border: 1px solid var(--masters-border);
+    color: rgb(0, 0, 0);
+    text-align: center;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+}
+
+.action-btn.full-width {
+    width: 100%;
+}
