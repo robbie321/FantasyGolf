@@ -1,5 +1,5 @@
 {% extends 'base.html' %} {% block content %}
-<style>
+<!-- <style>
   /* --- Player Picker Styles --- */
   .picker-wrapper {
     max-width: 800px;
@@ -216,7 +216,7 @@
     line-height: 1;
     cursor: pointer;
   }
-</style>
+</style> -->
 
 <div class="picker-wrapper">
   <div class="picker-header">
@@ -252,9 +252,10 @@
         data-player-id="{{ entry.player1_id or '' }}"
       >
         {% if entry.player1 %}
+        <div class="player-odds-bubble">{{ entry.player1.odds }}</div>
+
         <div class="player-info">
           <h4>{{ entry.player1.full_name() }}</h4>
-          <p>{{ entry.player1.odds }}</p>
         </div>
         {% else %}
         <div class="player-slot-icon">
@@ -281,9 +282,10 @@
         data-player-id="{{ entry.player2_id or '' }}"
       >
         {% if entry.player2 %}
+        <div class="player-odds-bubble">{{ entry.player2.odds }}</div>
+
         <div class="player-info">
           <h4>{{ entry.player2.full_name() }}</h4>
-          <p>{{ entry.player2.odds }}</p>
         </div>
         {% else %}
         <div class="player-slot-icon">
@@ -310,9 +312,10 @@
         data-player-id="{{ entry.player3_id or '' }}"
       >
         {% if entry.player3 %}
+        <div class="player-odds-bubble">{{ entry.player3.odds }}</div>
+
         <div class="player-info">
           <h4>{{ entry.player3.full_name() }}</h4>
-          <p>{{ entry.player3.odds }}</p>
         </div>
         {% else %}
         <div class="player-slot-icon">
@@ -480,9 +483,9 @@
           // Update the visual slot
           const slotDiv = document.querySelector(`.player-slot[data-slot="${activeSlot}"]`);
           slotDiv.innerHTML = `
+              <div class="player-odds-bubble">${playerOdds}</div>
               <div class="player-info">
-                  <h4>${player.name} ${player.surname}</h4>
-                  <p>${player.odds}</p>
+                  <h4>${playerName}</h4>
               </div>
           `;
           slotDiv.classList.remove('empty');

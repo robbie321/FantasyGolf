@@ -395,6 +395,41 @@
         {% endif %}
       </div>
 
+      {% if user_entry %}
+      <div class="picker-wrapper">
+        <h2>My Team</h2>
+        <div class="player-picks-container">
+          <div class="player-slot">
+            {% if user_entry.player1 %}
+            <div class="player-odds-bubble">{{ user_entry.player1.odds }}</div>
+
+            <div class="player-info">
+              <h4>{{ user_entry.player1.full_name() }}</h4>
+            </div>
+            {% endif %}
+          </div>
+          <div class="player-slot">
+            {% if user_entry.player2 %}
+            <div class="player-odds-bubble">{{ user_entry.player2.odds }}</div>
+
+            <div class="player-info">
+              <h4>{{ user_entry.player2.full_name() }}</h4>
+            </div>
+            {% endif %}
+          </div>
+          <div class="player-slot">
+            {% if user_entry.player3 %}
+            <div class="player-odds-bubble">{{ user_entry.player3.odds }}</div>
+
+            <div class="player-info">
+              <h4>{{ user_entry.player3.full_name() }}</h4>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
       <div class="league-details-grid">
         <div class="detail-card">
           <h3>Prize Details</h3>

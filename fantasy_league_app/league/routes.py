@@ -568,7 +568,7 @@ def view_league(league_id):
     sorted_entries = sorted(entries, key=lambda e: e.total_score)
     current_user_entry = LeagueEntry.query.filter_by(league_id=league.id, user_id=current_user.id).first()
 
-    return render_template('league/view_league.html', league=league, entries=sorted_entries, scores=display_scores, current_user_entry=current_user_entry,
+    return render_template('league/view_league.html', league=league, entries=sorted_entries, scores=display_scores, user_entry=current_user_entry,
     now=datetime.utcnow())
 
 

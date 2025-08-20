@@ -1,5 +1,5 @@
 ﻿{% extends 'base.html' %} {% block content %}
-<style>
+<!-- <style>
   /* --- Player Picker Styles (identical to edit_entry) --- */
   .picker-wrapper {
     max-width: 800px;
@@ -178,7 +178,7 @@
     line-height: 1;
     cursor: pointer;
   }
-</style>
+</style> -->
 
 <div class="picker-wrapper">
   <div class="picker-header">
@@ -394,10 +394,11 @@
 
           const slotDiv = document.querySelector(`.player-slot[data-slot="${activeSlot}"]`);
           slotDiv.innerHTML = `
+              <div class="player-odds-bubble">${playerOdds}</div>
               <div class="player-info">
-                  <h4>${player.name} ${player.surname}</h4>
-                  <p>${player.odds}</p>
-              </div>`;
+                  <h4>${playerName}</h4>
+              </div>
+          `;
           slotDiv.classList.remove('empty');
 
           updateOdds();

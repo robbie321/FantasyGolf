@@ -39,6 +39,12 @@
       class="btn"
       >View Dashboard</a
     >
+    <a
+      href="{{ url_for('player.all_players') }}"
+      class="btn btn-outline"
+      style="margin-top: 1rem"
+      >View All Players</a
+    >
     {% else %}
     <a href="{{ url_for('auth.login_choice') }}" class="btn">Login</a>
     <a href="{{ url_for('auth.register') }}" class="btn btn-outline"
