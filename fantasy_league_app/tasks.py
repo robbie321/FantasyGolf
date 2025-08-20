@@ -149,13 +149,13 @@ def send_deadline_reminders(app):
             )
         ).all()
 
-        if not leagues_needing_reminder:
+        if not leagues_nearing_reminder:
             print(f"--- No deadline reminders to send at {datetime.now()} ---")
             return
 
         print(f"--- Found {len(leagues_needing_reminder)} league(s) needing reminders. ---")
 
-        for league in leagues_needing_reminder:
+        for league in leagues_nearing_reminder:
             recipients = [entry.user.email for entry in league.entries]
 
             if not recipients:
