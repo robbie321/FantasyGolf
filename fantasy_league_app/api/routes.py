@@ -3,6 +3,7 @@ from flask_login import login_required
 from fantasy_league_app.models import Player
 import requests
 from . import api_bp
+import re
 # fantasy_league_app/api/routes.py
 
 from flask import jsonify, current_app
@@ -42,3 +43,47 @@ def get_player_stats(dg_id):
         return jsonify(player_stats)
     else:
         return jsonify({'error': f'Live stats not found for this player.'}), 404
+
+
+# --- NEW: Live Leaderboard API Endpoint ---
+@api_bp.route('/live-leaderboard/<string:tour>')
+def get_live_leaderboard(tour):
+    """
+    Fetches the live in-play leaderboard from the DataGolf API.
+    """
+    api_key = current_app.config.get('DATA_GOLF_API_KEY')
+    if not api_key:
+        return jsonify({'error': 'API key not configured'}), 500
+
+    url = f"https://feeds.datagolf.com/preds/in-play?tour={tour}&dead_heat=no&odds_format=percent&key={api_key}"
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        data = response.json()
+
+        # Check for the 'data' key in the response
+        if 'data' in data:
+            def get_sort_key(player):
+                """Helper function to extract a number from the position string."""
+                pos = player.get('current_pos', '999')
+                # Find all numbers in the string (e.g., 'T21' -> '21')
+                numbers = re.findall(r'\d+', pos)
+                if numbers:
+                    return int(numbers[0])
+                # Return a large number for non-standard positions like 'CUT' or 'WD'
+                return 999
+
+            sorted_data = sorted(data['data'], key=get_sort_key)
+            return jsonify(sorted_data)
+        else:
+            # Handle cases where the API returns a valid response but no data
+            # (e.g., tournament not live)
+            return jsonify([])
+
+    except requests.exceptions.RequestException as e:
+        current_app.logger.error(f"Failed to fetch live leaderboard for tour '{tour}': {e}")
+        return jsonify({'error': 'Failed to fetch data from external API'}), 503
+    except Exception as e:
+        current_app.logger.error(f"An unexpected error occurred: {e}")
+        return jsonify({'error': 'An internal server error occurred'}), 500

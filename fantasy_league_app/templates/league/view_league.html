@@ -430,276 +430,391 @@
       </div>
       {% endif %}
 
-      <div class="league-details-grid">
-        <div class="detail-card">
-          <h3>Prize Details</h3>
-          <p>{{ league.prize_details or 'Not specified.' }}</p>
+      <div class="collapsible-container">
+        <button class="collapsible-toggle" id="details-toggle">
+          <span>View league details</span>
+          <svg class="arrow" width="16" height="16" viewBox="0 0 24 24">
+            <path d="m7 10 5 5 5-5z" />
+          </svg>
+        </button>
+        <div class="collapsible-content" id="details-content">
+          <div class="league-details-grid">
+            <div class="detail-card">
+              <h3>Prize Details</h3>
+              <p>{{ league.prize_details or 'Not specified.' }}</p>
+            </div>
+            <div class="detail-card">
+              <h3>League Rules</h3>
+              <p>{{ league.rules or 'Standard rules apply.' }}</p>
+            </div>
+            <div class="detail-card">
+              <h3>Tournament Dates</h3>
+              <p>
+                <strong>Starts:</strong> {{ league.start_date.strftime('%d %b
+                %Y, %H:%M') }}
+              </p>
+              <p>
+                <strong>Ends:</strong> {{ league.end_date.strftime('%d %b %Y,
+                %H:%M') }}
+              </p>
+            </div>
+          </div>
         </div>
-        <div class="detail-card">
-          <h3>League Rules</h3>
-          <p>{{ league.rules or 'Standard rules apply.' }}</p>
-        </div>
-        <div class="detail-card">
-          <h3>Tournament Dates</h3>
-          <p>
-            <strong>Starts:</strong>
-            {{ league.start_date.strftime('%d %b %Y, %H:%M') }}
-          </p>
-          <p>
-            <strong>Ends:</strong>
-            {{ league.end_date.strftime('%d %b %Y, %H:%M') }}
-          </p>
-        </div>
-      </div>
-
-      {% if league.has_entry_deadline_passed %}
-      <div class="leaderboard-container">
-        <h2>Leaderboard</h2>
-        <table class="leaderboard-table">
-          <thead>
-            <tr>
-              <th class="rank">Rank</th>
-              <th>Entry Name</th>
-              <th>Player 1</th>
-              <th>Player 2</th>
-              <th>Player 3</th>
-              <th class="score">Total Score</th>
-            </tr>
-          </thead>
-          <tbody id="leaderboard-body">
-            {% for entry in entries %}
-            <tr
-              class="{% if entry.user_id == current_user.id %}my-entry{% endif %}"
-            >
-              <td class="rank" data-label="Rank">{{ loop.index }}</td>
-              <td data-label="Entry Name">{{ entry.entry_name }}</td>
-
-              <td data-label="Player 1" class="player-cell">
-                <a
-                  href="#"
-                  class="player-name-link"
-                  data-player-id="{{ entry.player1.dg_id }}"
-                >
-                  {{ entry.player1.full_name() }}
-                </a>
-                {% set score1 = scores.get(entry.player1_id, 0) %}
-                <span
-                  class="score-value {% if score1 > 0 %}score-positive{% elif score1 < 0 %}score-negative{% else %}score-even{% endif %}"
-                >
-                  {{ score1 }}
-                </span>
-              </td>
-
-              <td data-label="Player 2" class="player-cell">
-                <a
-                  href="#"
-                  class="player-name-link"
-                  data-player-id="{{ entry.player2.dg_id }}"
-                >
-                  {{ entry.player2.full_name() }}
-                </a>
-                {% set score2 = scores.get(entry.player2_id, 0) %}
-                <span
-                  class="score-value {% if score2 > 0 %}score-positive{% elif score2 < 0 %}score-negative{% else %}score-even{% endif %}"
-                >
-                  {{ score2 }}
-                </span>
-              </td>
-
-              <td data-label="Player 3" class="player-cell">
-                <a
-                  href="#"
-                  class="player-name-link"
-                  data-player-id="{{ entry.player3.dg_id }}"
-                >
-                  {{ entry.player3.full_name() }}
-                </a>
-                {% set score3 = scores.get(entry.player3_id, 0) %}
-                <span
-                  class="score-value {% if score3 > 0 %}score-positive{% elif score3 < 0 %}score-negative{% else %}score-even{% endif %}"
-                >
-                  {{ score3 }}
-                </span>
-              </td>
-
-              <td
-                class="score {% if entry.total_score > 0 %}score-positive{% elif entry.total_score < 0 %}score-negative{% else %}score-even{% endif %}"
-                data-label="Total Score"
+        {% if league.has_entry_deadline_passed %}
+        <div class="leaderboard-container">
+          <div class="leaderboard-header">
+            <h2>Leaderboard</h2>
+            {% if not league.is_finalized %}
+             <button class="btn" id="view-live-leaderboard-btn" data-tour="{{ league.tour }}">View live leaderboard</button>
+            {% endif %}
+            </button>
+          </div>
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th class="rank">Rank</th>
+                <th>Entry Name</th>
+                <th>Player 1</th>
+                <th>Player 2</th>
+                <th>Player 3</th>
+                <th class="score">Total Score</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+              {% for entry in entries %}
+              <tr
+                class="{% if entry.user_id == current_user.id %}my-entry{% endif %}"
               >
-                {{ entry.total_score }}
-              </td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="6" style="text-align: center; padding: 2rem">
-                No entries in this league yet.
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+                <td class="rank" data-label="Rank">{{ loop.index }}</td>
+                <td data-label="Entry Name">{{ entry.entry_name }}</td>
+
+                <td data-label="Player 1" class="player-cell">
+                  <a
+                    href="#"
+                    class="player-name-link"
+                    data-player-id="{{ entry.player1.dg_id }}"
+                  >
+                    {{ entry.player1.full_name() }}
+                  </a>
+                  {% set score1 = scores.get(entry.player1_id, 0) %}
+                  <span
+                    class="score-value {% if score1 > 0 %}score-positive{% elif score1 < 0 %}score-negative{% else %}score-even{% endif %}"
+                  >
+                    {{ score1 }}
+                  </span>
+                </td>
+
+                <td data-label="Player 2" class="player-cell">
+                  <a
+                    href="#"
+                    class="player-name-link"
+                    data-player-id="{{ entry.player2.dg_id }}"
+                  >
+                    {{ entry.player2.full_name() }}
+                  </a>
+                  {% set score2 = scores.get(entry.player2_id, 0) %}
+                  <span
+                    class="score-value {% if score2 > 0 %}score-positive{% elif score2 < 0 %}score-negative{% else %}score-even{% endif %}"
+                  >
+                    {{ score2 }}
+                  </span>
+                </td>
+
+                <td data-label="Player 3" class="player-cell">
+                  <a
+                    href="#"
+                    class="player-name-link"
+                    data-player-id="{{ entry.player3.dg_id }}"
+                  >
+                    {{ entry.player3.full_name() }}
+                  </a>
+                  {% set score3 = scores.get(entry.player3_id, 0) %}
+                  <span
+                    class="score-value {% if score3 > 0 %}score-positive{% elif score3 < 0 %}score-negative{% else %}score-even{% endif %}"
+                  >
+                    {{ score3 }}
+                  </span>
+                </td>
+
+                <td
+                  class="score {% if entry.total_score > 0 %}score-positive{% elif entry.total_score < 0 %}score-negative{% else %}score-even{% endif %}"
+                  data-label="Total Score"
+                >
+                  {{ entry.total_score }}
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 2rem">
+                  No entries in this league yet.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="leaderboard-locked">
+          <h3>Leaderboard Locked</h3>
+          <p>
+            The leaderboard will be revealed after the entry deadline has
+            passed.
+          </p>
+          <p>
+            <strong>Deadline:</strong>
+            {{ league.entry_deadline.strftime('%A, %d %B %Y at %H:%M') }} (UTC)
+          </p>
+        </div>
+        {% endif %}
       </div>
-      {% else %}
-      <div class="leaderboard-locked">
-        <h3>Leaderboard Locked</h3>
-        <p>
-          The leaderboard will be revealed after the entry deadline has passed.
-        </p>
-        <p>
-          <strong>Deadline:</strong>
-          {{ league.entry_deadline.strftime('%A, %d %B %Y at %H:%M') }} (UTC)
-        </p>
+    </div>
+
+    <div class="popup-overlay" id="live-leaderboard-overlay">
+      <div class="popup-container">
+        <div class="popup-header">
+          <h3>Live Tournament Leaderboard</h3>
+          <button class="popup-close" id="popup-close-btn">&times;</button>
+        </div>
+        <div class="popup-body" id="live-leaderboard-body">
+          <table class="live-leaderboard-table">
+            <thead>
+              <tr>
+                <th>Pos</th>
+                <th>Player</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
-      {% endif %}
     </div>
   </div>
-</div>
 
-<div id="playerStatsModal" class="modal">
-  <div class="modal-content">
-    <span class="close-btn">&times;</span>
-    <h2 id="modalPlayerName"></h2>
-    <div id="modalPlayerStats"></div>
+  <div id="playerStatsModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <h2 id="modalPlayerName"></h2>
+      <div id="modalPlayerStats"></div>
+    </div>
   </div>
-</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // --- Countdown Timer Logic ---
-    const countdownElement = document.getElementById("countdown");
-    if (countdownElement) {
-      const deadline = new Date(
-        countdownElement.dataset.deadline + "Z"
-      ).getTime();
-      const timer = setInterval(function () {
-        const now = new Date().getTime();
-        const distance = deadline - now;
-        if (distance < 0) {
-          clearInterval(timer);
-          countdownElement.innerHTML =
-            "<h3>The entry deadline has passed.</h3>";
-          return;
-        }
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-        const hours = Math.floor(
-          (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-        );
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-        document.getElementById("days").innerText = String(days).padStart(2, "0");
-        document.getElementById("hours").innerText = String(hours).padStart(
-          2,
-          "0"
-        );
-        document.getElementById("minutes").innerText = String(minutes).padStart(
-          2,
-          "0"
-        );
-        document.getElementById("seconds").innerText = String(seconds).padStart(
-          2,
-          "0"
-        );
-      }, 1000);
-    }
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // --- Countdown Timer Logic ---
+      const countdownElement = document.getElementById("countdown");
+      if (countdownElement) {
+        const deadline = new Date(
+          countdownElement.dataset.deadline + "Z"
+        ).getTime();
+        const timer = setInterval(function () {
+          const now = new Date().getTime();
+          const distance = deadline - now;
+          if (distance < 0) {
+            clearInterval(timer);
+            countdownElement.innerHTML =
+              "<h3>The entry deadline has passed.</h3>";
+            return;
+          }
+          const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+          const hours = Math.floor(
+            (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+          );
+          const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+          document.getElementById("days").innerText = String(days).padStart(2, "0");
+          document.getElementById("hours").innerText = String(hours).padStart(
+            2,
+            "0"
+          );
+          document.getElementById("minutes").innerText = String(minutes).padStart(
+            2,
+            "0"
+          );
+          document.getElementById("seconds").innerText = String(seconds).padStart(
+            2,
+            "0"
+          );
+        }, 1000);
+      }
 
-    // --- Player Stats Modal Logic ---
-    const modal = document.getElementById("playerStatsModal");
-    const closeBtn = document.querySelector(".modal .close-btn");
-    const modalPlayerName = document.getElementById("modalPlayerName");
-    const modalPlayerStats = document.getElementById("modalPlayerStats");
+      // --- Player Stats Modal Logic ---
+      const modal = document.getElementById("playerStatsModal");
+      const closeBtn = document.querySelector(".modal .close-btn");
+      const modalPlayerName = document.getElementById("modalPlayerName");
+      const modalPlayerStats = document.getElementById("modalPlayerStats");
 
-    const closeModal = () => {
-      if (modal) modal.style.display = "none";
-    };
-    if (closeBtn) closeBtn.onclick = closeModal;
-    window.onclick = (event) => {
-      if (event.target == modal) closeModal();
-    };
+      const closeModal = () => {
+        if (modal) modal.style.display = "none";
+      };
+      if (closeBtn) closeBtn.onclick = closeModal;
+      window.onclick = (event) => {
+        if (event.target == modal) closeModal();
+      };
 
-    function setupModalEventListeners() {
-      document.querySelectorAll(".player-name-link").forEach((link) => {
-        link.addEventListener("click", function (e) {
-          e.preventDefault();
-          const playerId = this.dataset.playerId;
-          modalPlayerName.textContent = "Loading...";
-          modalPlayerStats.innerHTML = "";
-          modal.style.display = "block";
-          fetch(`/api/player-stats/${playerId}`)
-            .then((response) => {
-              if (!response.ok) {
-                return response.json().then((errorData) => {
-                  throw new Error(
-                    errorData.error ||
-                      `Server responded with status: ${response.status}`
-                  );
-                });
-              }
-              return response.json();
-            })
-            .then((data) => {
-              modalPlayerName.textContent = data.player_name.replace(", ", " ");
-              let statsHtml = `
-                <div class="player-stat"><span class="player-stat-label">Strokes Gained: Total</span><span class="player-stat-value">${data.sg_total.toFixed(2)}</span></div>
-                <div class="player-stat"><span class="player-stat-label">Strokes Gained: Putting</span><span class="player-stat-value">${data.sg_putt.toFixed(2)}</span></div>
-                <div class="player-stat"><span class="player-stat-label">Strokes Gained: Approach</span><span class="player-stat-value">${data.sg_app.toFixed(2)}</span></div>
-                <div class="player-stat"><span class="player-stat-label">Strokes Gained: Off the Tee</span><span class="player-stat-value">${data.sg_ott.toFixed(2)}</span></div>
-                <div class="player-stat"><span class="player-stat-label">Driving Distance</span><span class="player-stat-value">${data.distance.toFixed(0)} yds</span></div>
-                <div class="player-stat"><span class="player-stat-label">Driving Accuracy</span><span class="player-stat-value">${data.accuracy.toFixed(1)}%</span></div>
-              `;
-              modalPlayerStats.innerHTML = statsHtml;
-            })
-            .catch((error) => {
-              modalPlayerName.textContent = "Error";
-              modalPlayerStats.innerHTML = `<p>${error.message}</p>`;
-              console.error("Error fetching player stats:", error);
-            });
+      function setupModalEventListeners() {
+        document.querySelectorAll(".player-name-link").forEach((link) => {
+          link.addEventListener("click", function (e) {
+            e.preventDefault();
+            const playerId = this.dataset.playerId;
+            modalPlayerName.textContent = "Loading...";
+            modalPlayerStats.innerHTML = "";
+            modal.style.display = "block";
+            fetch(`/api/player-stats/${playerId}`)
+              .then((response) => {
+                if (!response.ok) {
+                  return response.json().then((errorData) => {
+                    throw new Error(
+                      errorData.error ||
+                        `Server responded with status: ${response.status}`
+                    );
+                  });
+                }
+                return response.json();
+              })
+              .then((data) => {
+                modalPlayerName.textContent = data.player_name.replace(", ", " ");
+                let statsHtml = `
+                  <div class="player-stat"><span class="player-stat-label">Strokes Gained: Total</span><span class="player-stat-value">${data.sg_total.toFixed(2)}</span></div>
+                  <div class="player-stat"><span class="player-stat-label">Strokes Gained: Putting</span><span class="player-stat-value">${data.sg_putt.toFixed(2)}</span></div>
+                  <div class="player-stat"><span class="player-stat-label">Strokes Gained: Approach</span><span class="player-stat-value">${data.sg_app.toFixed(2)}</span></div>
+                  <div class="player-stat"><span class="player-stat-label">Strokes Gained: Off the Tee</span><span class="player-stat-value">${data.sg_ott.toFixed(2)}</span></div>
+                  <div class="player-stat"><span class="player-stat-label">Driving Distance</span><span class="player-stat-value">${data.distance.toFixed(0)} yds</span></div>
+                  <div class="player-stat"><span class="player-stat-label">Driving Accuracy</span><span class="player-stat-value">${data.accuracy.toFixed(1)}%</span></div>
+                `;
+                modalPlayerStats.innerHTML = statsHtml;
+              })
+              .catch((error) => {
+                modalPlayerName.textContent = "Error";
+                modalPlayerStats.innerHTML = `<p>${error.message}</p>`;
+                console.error("Error fetching player stats:", error);
+              });
+          });
         });
+      }
+
+      setupModalEventListeners();
+
+      // --- Real-Time Leaderboard Logic ---
+      const socket = io();
+      const leagueId = {{ league.id }};
+      socket.on("connect", () => {
+        console.log("Socket connected, joining room:", `league_${leagueId}`);
+        socket.emit("join", { room: `league_${leagueId}` });
       });
-    }
+      socket.on("scores_updated", (data) => {
+        if (data.league_id === leagueId) {
+          updateLeaderboard();
+        }
+      });
 
-    setupModalEventListeners();
-
-    // --- Real-Time Leaderboard Logic ---
-    const socket = io();
-    const leagueId = {{ league.id }};
-    socket.on("connect", () => {
-      console.log("Socket connected, joining room:", `league_${leagueId}`);
-      socket.emit("join", { room: `league_${leagueId}` });
-    });
-    socket.on("scores_updated", (data) => {
-      if (data.league_id === leagueId) {
-        updateLeaderboard();
+      function updateLeaderboard() {
+        fetch(`/league/api/${leagueId}/leaderboard`)
+          .then((response) => response.json())
+          .then((data) => {
+            const leaderboardBody = document.getElementById("leaderboard-body");
+            if (!leaderboardBody) return;
+            leaderboardBody.innerHTML = ""; // Clear existing rows
+            if (data.length === 0) {
+              leaderboardBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;">No entries in this league yet.</td></tr>`;
+              return;
+            }
+            let rank = 1;
+            data.forEach((entry) => {
+              const row = document.createElement("tr");
+              if (entry.is_current_user) {
+                row.classList.add("my-entry");
+              }
+              // ... (construct and append row HTML based on new structure) ...
+              // This part needs careful reconstruction matching the table structure
+              leaderboardBody.appendChild(row);
+              rank++;
+            });
+            // Re-attach modal listeners after updating leaderboard
+            setupModalEventListeners();
+          })
+          .catch((error) => console.error("Error updating leaderboard:", error));
       }
     });
 
-    function updateLeaderboard() {
-      fetch(`/league/api/${leagueId}/leaderboard`)
-        .then((response) => response.json())
-        .then((data) => {
-          const leaderboardBody = document.getElementById("leaderboard-body");
-          if (!leaderboardBody) return;
-          leaderboardBody.innerHTML = ""; // Clear existing rows
-          if (data.length === 0) {
-            leaderboardBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;">No entries in this league yet.</td></tr>`;
-            return;
+
+     document.addEventListener('DOMContentLoaded', function() {
+          const toggleButton = document.getElementById('details-toggle');
+          const content = document.getElementById('details-content');
+          const buttonText = toggleButton.querySelector('span');
+          const buttonArrow = toggleButton.querySelector('.arrow');
+
+          if (toggleButton) {
+              toggleButton.addEventListener('click', function() {
+                  // Check if the content is currently open
+                  const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+
+                  if (isOpen) {
+                      content.style.maxHeight = '0px';
+                      buttonText.textContent = 'View league details';
+                      buttonArrow.style.transform = 'rotate(0deg)';
+                  } else {
+                      // Set max-height to the content's scroll height to make it expand
+                      content.style.maxHeight = content.scrollHeight + 'px';
+                      buttonText.textContent = 'Hide league details';
+                      buttonArrow.style.transform = 'rotate(180deg)';
+                  }
+              });
           }
-          let rank = 1;
-          data.forEach((entry) => {
-            const row = document.createElement("tr");
-            if (entry.is_current_user) {
-              row.classList.add("my-entry");
+      });
+
+      // --- Live Leaderboard Logic ---
+        const viewBtn = document.getElementById('view-live-leaderboard-btn');
+        const overlay = document.getElementById('live-leaderboard-overlay');
+        const closeBtn = document.getElementById('popup-close-btn');
+        const leaderboardBody = document.querySelector('#live-leaderboard-body tbody');
+
+        const openPopup = () => overlay.classList.add('active');
+        const closePopup = () => overlay.classList.remove('active');
+
+        viewBtn.addEventListener('click', async () => {
+            const tour = viewBtn.dataset.tour;
+            leaderboardBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Loading...</td></tr>';
+            openPopup();
+
+            try {
+                const response = await fetch(`/api/live-leaderboard/${tour}`);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const players = await response.json();
+
+                leaderboardBody.innerHTML = ''; // Clear loading message
+
+                if (players.length === 0) {
+                    leaderboardBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Live data not available for this tour.</td></tr>';
+                    return;
+                }
+
+                players.forEach(player => {
+                    const row = `
+                        <tr>
+                            <td class="pos">${player.current_pos}</td>
+                            <td class="player-name">${player.player_name}</td>
+                            <td><span class="live-score">${player.current_score}</span></td>
+                        </tr>
+                    `;
+                    leaderboardBody.insertAdjacentHTML('beforeend', row);
+                });
+
+            } catch (error) {
+                console.error('Failed to fetch live leaderboard:', error);
+                leaderboardBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Could not load live data.</td></tr>';
             }
-            // ... (construct and append row HTML based on new structure) ...
-            // This part needs careful reconstruction matching the table structure
-            leaderboardBody.appendChild(row);
-            rank++;
-          });
-          // Re-attach modal listeners after updating leaderboard
-          setupModalEventListeners();
-        })
-        .catch((error) => console.error("Error updating leaderboard:", error));
-    }
-  });
-</script>
-{% endblock %}
+        });
+
+        closeBtn.addEventListener('click', closePopup);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                closePopup();
+            }
+        });
+  </script>
+  {% endblock %}
+</div>
