@@ -1,0 +1,129 @@
+﻿{% extends 'base.html' %} {% block content %}
+<div class="video-hero-container">
+  <video autoplay loop muted playsinline id="background-video">
+    <source
+      src="{{ url_for('static', filename='videos/golf_background.mp4') }}"
+      type="video/mp4"
+    />
+    Your browser does not support the video tag.
+  </video>
+  <div class="hero-content">
+    <h1>Fantasy Golf League</h1>
+    <p>Create or join a league and compete with friends.</p>
+    <div class="action-buttons">
+      {% if current_user.is_authenticated %} {% if current_user.is_site_admin %}
+      <a href="{{ url_for('admin.admin_dashboard') }}" class="btn"
+        >Go to Admin Dashboard</a
+      >
+      {% elif current_user.is_club_admin %}
+      <a href="{{ url_for('main.club_dashboard') }}" class="btn"
+        >Go to Club Dashboard</a
+      >
+      {% else %}
+      <a href="{{ url_for('main.user_dashboard') }}" class="btn"
+        >Go to My Dashboard</a
+      >
+      {% endif %} {% else %}
+      <a href="{{ url_for('auth.register') }}" class="btn">Register Now</a>
+      <a href="{{ url_for('auth.login_choice') }}" class="btn">Login</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="mobile-hero">
+  <div class="action-buttons">
+    {% if current_user.is_authenticated %}
+    <a
+      href="{{ url_for('main.user_dashboard') if not current_user.is_club_admin and not current_user.is_site_admin else url_for('main.club_dashboard') if current_user.is_club_admin else url_for('admin.admin_dashboard') }}"
+      class="btn"
+      >View Dashboard</a
+    >
+    <a
+      href="{{ url_for('player.all_players') }}"
+      class="btn btn-outline"
+      style="margin-top: 1rem"
+      >View All Players</a
+    >
+    {% else %}
+    <a href="{{ url_for('auth.login_choice') }}" class="btn">Login</a>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-outline"
+      >Register</a
+    >
+    {% endif %}
+  </div>
+  <hr style="margin-top: 2rem" />
+</div>
+
+<div class="dual-column-layout">
+  <!-- Top 10 World Rankings Section -->
+  <div class="page-section">
+    <div class="content-wrapper">
+      <h2 style="text-align: center">Top 10 World Rankings</h2>
+      {% if top_players %}
+      <table class="rankings-table">
+        <thead>
+          <tr>
+            <th style="width: 10%">Rank</th>
+            <th>Player Name</th>
+            <th style="width: 25%">Primary Tour</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for player in top_players %}
+          <tr>
+            <td data-label="Rank" class="rank">{{ player.datagolf_rank }}</td>
+            <td data-label="Player">{{ player.player_name }}</td>
+            <td data-label="Primary Tour" class="sg-total">
+              {{ player.primary_tour }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p>
+        Could not load world rankings at this time. Please check back later.
+      </p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="page-section">
+    <div class="content-wrapper">
+      <h2 style="text-align: center">Top 10 Public Leagues</h2>
+      {% if top_leagues %}
+      <table class="rankings-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>League Name</th>
+            <th>Entries</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for league in top_leagues %}
+          <tr>
+            <td data-label="Rank" class="rank">{{ loop.index }}</td>
+            <td data-label="League Name">{{ league.name }}</td>
+            <td data-label="Entries">{{ league.entries|length }}</td>
+            <td data-label="Action" class="td-full-width-action">
+              <a
+                href="{{ url_for('league.view_league', league_id=league.id) }}"
+                class="btn"
+                >View & Join</a
+              >
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p>There are no public leagues available at the moment.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

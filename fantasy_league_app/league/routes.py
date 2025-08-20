@@ -13,6 +13,7 @@ from ..data_golf_client import DataGolfClient
 from ..stripe_client import process_payouts
 import secrets
 from ..forms import LeagueForm
+from ..utils import get_league_creation_status
 
 
 
@@ -43,6 +44,25 @@ def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str,
     A helper function to handle the creation of any type of league.
     Returns (new_league, error_message)
     """
+
+    # --- Automatic Date Calculation Logic ---
+    today = datetime.utcnow()
+
+    if tour == 'alt': # LIV Tournaments start on Friday
+        target_weekday = 4 # Friday
+        end_day_delta = 2 # Ends on Sunday
+    else: # PGA, Euro, KFT start on Thursday
+        target_weekday = 3 # Thursday
+        end_day_delta = 3 # Ends on Sunday
+
+    days_until_target = (target_weekday - today.weekday() + 7) % 7
+    if days_until_target == 0: # If today is the target day, schedule for next week
+        days_until_target = 7
+
+    start_date = (today + timedelta(days=days_until_target)).replace(hour=6, minute=0, second=0, microsecond=0)
+    end_date = start_date + timedelta(days=end_day_delta)
+    # --- End of Date Logic ---
+
     # --- Validation ---
     try:
         entry_fee = float(entry_fee_str)
@@ -110,7 +130,7 @@ def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str,
         name=name,
         league_code=league_code,
         start_date=start_date,
-        end_date=start_date + timedelta(days=4),
+        end_date=end_date,
         player_bucket_id=player_bucket_id,
         entry_fee=entry_fee,
         prize_amount=prize_amount,
@@ -182,13 +202,19 @@ def create_league():
         flash('You do not have permission to create a league.', 'warning')
         return redirect(url_for('main.user_dashboard'))
 
+    status = get_league_creation_status()
+    if not status["is_creation_enabled"]:
+        flash(status["message"], "warning")
+        return redirect(url_for('main.club_dashboard'))
+
     form = LeagueForm()
-    form.player_bucket_id.choices = [(b.id, b.name) for b in PlayerBucket.query.order_by('name').all()]
+    form.player_bucket_id.choices = [
+        (b.id, b.name) for b in PlayerBucket.query.filter(PlayerBucket.tour.in_(status["available_tours"])).order_by('name').all()
+    ]
 
     if form.validate_on_submit():
         new_league, error = _create_new_league(
             name=form.name.data,
-            start_date_str=form.start_date.data.strftime('%Y-%m-%d'),
             player_bucket_id=form.player_bucket_id.data,
             entry_fee_str=str(form.entry_fee.data),
             prize_amount_str=str(form.prize_amount.data),

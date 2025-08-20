@@ -227,6 +227,11 @@
           margin-top: 1.5rem;
         "
       >
+        <img
+          src="{{ url_for('static', filename='/fantasy_league_app/static/images/headshots' + player.dg_id|string + '.png') }}"
+          alt="Headshot of {{ player.last_name}}"
+          class="player-headshot-icon"
+        />
         <p><strong>Country:</strong> {{ player.country }}</p>
         <p><strong>College:</strong> {{ player.college or 'N/A' }}</p>
         <p><strong>Turned Pro:</strong> {{ player.turned_pro or 'N/A' }}</p>

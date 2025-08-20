@@ -88,6 +88,11 @@
   <div class="content-container">
     <div class="profile-header" style="text-align: left; margin-bottom: 2rem">
       <h1>{{ player.first_name }} {{ player.last_name }}</h1>
+      <img
+        src="{{ url_for('static', filename='images/headshots/' + player.dg_id|string + '.png') }}"
+        alt="Headshot of {{ player.full_name() }}"
+        class="player-headshot-icon"
+      />
       <div
         style="
           display: grid;

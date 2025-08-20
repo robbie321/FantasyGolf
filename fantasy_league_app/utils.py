@@ -1,7 +1,7 @@
 from flask import current_app
 from fantasy_league_app import db, mail
 from fantasy_league_app.models import Player
-
+from datetime import datetime, timedelta
 from functools import wraps
 from flask import redirect, url_for, request
 from flask_login import current_user
@@ -54,12 +54,59 @@ def get_all_players_for_dropdown():
     players = Player.query.order_by(Player.name, Player.surname).all()
     return [f'{p.full_name()} ({p.odds:.2f})' for p in players]
 
-
 def is_testing_mode_active():
     """Checks if the testing mode flag file exists."""
     flag_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', current_app.config['TESTING_MODE_FLAG'])
     return os.path.exists(flag_path)
 
+def get_league_creation_status():
+    """
+    Checks the current time to determine if league creation is allowed and for which tours.
+    All times are handled in UTC.
+    """
+    now = datetime.utcnow()
+    # weekday(): Monday is 0, Sunday is 6.
+    # Wednesday is 2, Thursday is 3, Monday is 0.
+    weekday = now.weekday()
+
+    # Define the cutoff times
+    pga_cutoff_day = 2 # Wednesday
+    pga_cutoff_hour = 18 # 6 PM UTC
+    liv_cutoff_day = 3 # Thursday
+    liv_cutoff_hour = 18 # 6 PM UTC
+    reopen_day = 0 # Monday
+    reopen_hour = 13 # 1:30 PM UTC -> 13.5
+    reopen_minute = 30
+
+    # --- Check for the weekend lockout period ---
+    # Lockout starts Thursday at 6 PM UTC
+    is_after_thursday_cutoff = (weekday == 3 and (now.hour >= 18))
+    # Lockout includes all of Friday, Saturday, Sunday
+    is_weekend = weekday in [4, 5, 6]
+    # Lockout ends Monday at 1:30 PM UTC
+    is_before_monday_reopen = (weekday == 0 and (now.hour < 13 or (now.hour == 13 and now.minute < 30)))
+
+    if is_after_thursday_cutoff or is_weekend or is_before_monday_reopen:
+        return {
+            "is_creation_enabled": False,
+            "available_tours": [],
+            "message": "League creation is currently disabled. It will reopen on Monday at 1:30 PM UTC."
+        }
+
+    # --- If not in lockout, determine which tours are available ---
+    available_tours = ['pga', 'euro', 'kft', 'alt']
+
+    # Check if PGA/Euro/KFT deadline has passed (Wednesday 6 PM UTC)
+    if weekday == 2 and now.hour >= 18:
+        available_tours.remove('pga')
+        available_tours.remove('euro')
+        available_tours.remove('kft')
+
+    return {
+        "is_creation_enabled": True,
+        "available_tours": available_tours,
+        "message": ""
+    }
 
 def send_entry_confirmation_email(user, league):
     """Sends an email to a user confirming their league entry."""

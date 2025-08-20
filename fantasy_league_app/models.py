@@ -92,6 +92,7 @@ class PlayerBucket(db.Model):
     description = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     event_id = db.Column(db.String(50), nullable=True)
+    tour = db.Column(db.String(10), nullable=False)
     # Many-to-many relationship with Player
     players = db.relationship('Player', secondary=player_bucket_association, back_populates='player_buckets')
     # Relationship to leagues that use this bucket (one-to-many from League to PlayerBucket)

@@ -16,6 +16,7 @@ from ..forms import LeagueForm
 from ..stripe_client import create_payout
 from . import admin_bp
 from ..tasks import finalize_finished_leagues
+from ..utils import get_league_creation_status
 
 @admin_bp.route('/dashboard')
 @login_required
@@ -316,15 +317,18 @@ def manage_player_buckets():
 @login_required
 def create_player_bucket():
     if not getattr(current_user, 'is_site_admin', False): return redirect(url_for('main.index'))
-    if request.method == 'POST':
-        name = request.form['name']
-        description = request.form.get('description')
-        new_bucket = PlayerBucket(name=name, description=description)
+    form = PlayerBucketForm()
+    if form.validate_on_submit():
+        new_bucket = PlayerBucket(
+            name=form.name.data,
+            description=form.description.data,
+            tour=form.tour.data
+        )
         db.session.add(new_bucket)
         db.session.commit()
         flash(f'Bucket "{name}" created successfully.', 'success')
         return redirect(url_for('admin.manage_player_buckets'))
-    return render_template('admin/create_player_bucket.html')
+    return render_template('admin/create_player_bucket.html', form=form)
 
 
 # ---  Route for Deleting a Player Bucket ---
@@ -490,13 +494,21 @@ def create_public_league():
     if not getattr(current_user, 'is_site_admin', False):
         return redirect(url_for('main.index'))
 
+    status = get_league_creation_status()
+    if not status["is_creation_enabled"]:
+        flash(status["message"], "warning")
+        return redirect(url_for('admin.admin_dashboard'))
+
     form = LeagueForm()
-    form.player_bucket_id.choices = [(b.id, b.name) for b in PlayerBucket.query.order_by('name').all()]
+    form = LeagueForm()
+    # Filter player buckets based on available tours
+    form.player_bucket_id.choices = [
+        (b.id, b.name) for b in PlayerBucket.query.filter(PlayerBucket.tour.in_(status["available_tours"])).order_by('name').all()
+    ]
 
     if form.validate_on_submit():
         new_league, error = _create_new_league(
             name=form.name.data,
-            start_date_str=form.start_date.data.strftime('%Y-%m-%d'),
             player_bucket_id=form.player_bucket_id.data,
             entry_fee_str=str(form.entry_fee.data),
             prize_amount_str = int(form.prize_amount.data),

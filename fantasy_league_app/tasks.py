@@ -304,7 +304,8 @@ def update_player_buckets(app):
                 new_bucket = PlayerBucket(
                     name=event_name,
                     description=f"Players for {event_name}",
-                    event_id=event_id
+                    event_id=event_id,
+                    tour=tour
                 )
                 db.session.add(new_bucket)
 

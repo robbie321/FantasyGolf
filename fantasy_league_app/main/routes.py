@@ -3,9 +3,9 @@ from flask import render_template, url_for, redirect, flash, current_app, reques
 from flask_login import login_required, current_user
 from fantasy_league_app.models import League, LeagueEntry, User
 from . import main_bp
-from fantasy_league_app import db, stripe_client #: Import db for joinedload - THIS IS THE FIX
+from fantasy_league_app import db, stripe_client
 from fantasy_league_app.utils import password_reset_required
-from sqlalchemy import func
+from sqlalchemy import func, distinct
 from datetime import datetime, timedelta
 import requests
 from ..data_golf_client import DataGolfClient
@@ -16,21 +16,42 @@ def offline():
 
 @main_bp.route('/')
 def index():
+# --- Calculate Homepage Stats ---
+    active_players = db.session.query(func.count(distinct(LeagueEntry.user_id))).scalar()
+    live_leagues = League.query.filter(League.is_finalized == False).count()
+    total_prizes = db.session.query(func.sum(League.prize_amount)).filter(League.payout_status == 'paid').scalar() or 0
+
+    # Calculate this week's prize pool
+    today = datetime.utcnow().date()
+    start_of_week = today - timedelta(days=today.weekday())
+    end_of_week = start_of_week + timedelta(days=6)
+    this_week_prize_pool = db.session.query(func.sum(League.entry_fee * db.session.query(func.count(LeagueEntry.id)).filter(LeagueEntry.league_id == League.id).as_scalar())) \
+        .filter(League.start_date >= start_of_week, League.start_date <= end_of_week).scalar() or 0
+
+    stats = {
+        'active_players': active_players,
+        'live_leagues': live_leagues,
+        'total_prizes': f"€{total_prizes:,.2f}",
+        'this_week_prize_pool': f"€{this_week_prize_pool:,.2f}"
+    }
+    # --- END of Stats Calculation ---
+
     client = DataGolfClient()
     top_players, error = client.get_player_rankings()
     if error:
         flash(f"Could not load world rankings: {error}", "warning")
+        top_players = [] # Ensure top_players is a list even on error
 
-    top_players = top_players[:10] # Get the top 10
+    top_players = top_players[:10]
 
-            # --- Fetch Top 10 Public Leagues ---
     top_leagues = League.query.filter_by(is_public=True)\
         .outerjoin(League.entries)\
         .group_by(League.id)\
         .order_by(func.count(LeagueEntry.id).desc())\
         .limit(10).all()
 
-    return render_template('main/index.html', top_players=top_players, top_leagues=top_leagues)
+    return render_template('main/index.html', stats=stats, top_players=top_players, top_leagues=top_leagues)
+
 
 # --- Route for Browsing Public Leagues ---
 @main_bp.route('/browse-leagues')
