@@ -1,0 +1,113 @@
+{% extends 'base.html' %} {% block content %}
+<!-- Link to the new stylesheet -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/dashboards.css') }}"
+/>
+
+<div class="dashboard-wrapper">
+  <div class="dashboard-header">
+    <h3>{{ club.club_name }} Dashboard</h3>
+  </div>
+
+  <!-- Slider Tabs -->
+  <div class="tabs-container">
+    <div class="tab active" data-tab="leagues">Club Leagues</div>
+    <div class="tab" data-tab="profile">Club Profile</div>
+  </div>
+
+  <!-- Leagues Content -->
+  <div id="leagues" class="tab-content active">
+    <div class="action-buttons">
+      <a
+        href="{{ url_for('league.create_league') }}"
+        class="action-btn primary"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 4V20M4 12H20"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Create a New League
+      </a>
+    </div>
+
+    <div class="leagues-table-container">
+      <h2>Leagues Created by {{ club.name }}</h2>
+      <table class="leagues-table">
+        <thead>
+          <tr>
+            <th>League</th>
+            <th class="rank">Entries</th>
+            <th class="rank">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for league in club_leagues %}
+          <tr>
+            <td>
+              <a
+                href="{{ url_for('league.view_league', league_id=league.id) }}"
+                class="league-name"
+              >
+                {{ league.name }}
+              </a>
+            </td>
+            <td class="rank">{{ league.entries|length }}</td>
+            <td class="rank">
+              {% if league.is_finalized %}Finished{% else %}Active{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" style="text-align: center; padding: 2rem">
+              Your club hasn't created any leagues yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Profile Content -->
+  <div id="profile" class="tab-content">
+    <div class="profile-section">
+      <h2>Club Profile</h2>
+      <p>Manage your club's details and payout information.</p>
+      <form action="{{ url_for('main.onboard_stripe') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="action-btn primary">
+          Update Stripe Payout Details
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const tabs = document.querySelectorAll(".tab");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        tabs.forEach((t) => t.classList.remove("active"));
+        tabContents.forEach((c) => c.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.tab).classList.add("active");
+      });
+    });
+  });
+</script>
+{% endblock %}

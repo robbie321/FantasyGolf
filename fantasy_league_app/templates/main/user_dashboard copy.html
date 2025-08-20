@@ -1,0 +1,229 @@
+{% extends 'base.html' %} {% block content %}
+<!-- Link to the new stylesheet -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/dashboards.css') }}"
+/>
+
+<div class="dashboard-wrapper">
+  <div class="dashboard-header">
+    <h3>Dashboard</h3>
+  </div>
+
+  <!-- Slider Tabs -->
+  <div class="tabs-container">
+    <div class="tab active" data-tab="leagues">My Leagues</div>
+    <div class="tab" data-tab="profile">My Profile</div>
+  </div>
+
+  <!-- Leagues Content -->
+  <div id="leagues" class="tab-content active">
+    <div class="action-buttons">
+      <button id="join-league-btn" class="action-btn primary">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 4V20M4 12H20"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Join a League
+      </button>
+      <a
+        href="{{ url_for('league.create_league') }}"
+        class="action-btn secondary"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 4V20M4 12H20"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Create a League
+      </a>
+    </div>
+
+    <div class="leagues-table-container">
+      <h2>My Leagues</h2>
+      <table class="leagues-table">
+        <thead>
+          <tr>
+            <th>League</th>
+            <th class="rank">Current Rank</th>
+            <th class="rank"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for league in user_leagues %}
+          <tr>
+            <td>
+              <a
+                href="{{ url_for('league.view_league', league_id=league.league_id) }}"
+                class="league-name"
+              >
+                {{ league.league_name }}
+              </a>
+            </td>
+            <td class="rank">{{ league.current_rank or '-' }}</td>
+
+            <td class="rank view-link">
+              {% if league.start_date > today %}
+              <a
+                href="{{ url_for('league.edit_entry', entry_id=league.entry_id) }}"
+                title="Edit Entry"
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M18.5 2.5C18.8978 2.10218 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10218 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10218 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </a>
+              {% else %}
+              <span title="League is active">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="limegreen"
+                    stroke-width="2"
+                  />
+                  <circle cx="12" cy="12" r="6" fill="limegreen" />
+                </svg>
+              </span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" style="text-align: center; padding: 2rem">
+              You haven't joined any leagues yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Profile Content -->
+  <div id="profile" class="tab-content">
+    <div class="profile-section">
+      <h2>My Profile</h2>
+      <p>Manage your account details and payout information.</p>
+      <form action="{{ url_for('main.onboard_stripe') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="action-btn primary">
+          Update Stripe Payout Details
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="popup-overlay" id="join-league-overlay">
+  <div class="popup-container" id="join-league-popup">
+    <button class="popup-close" id="popup-close-btn">&times;</button>
+    <h3>Join a League</h3>
+    <p>Enter the 8-character code for the league you want to join.</p>
+    <form action="{{ url_for('league.join_league') }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="form-group">
+        <input
+          type="text"
+          name="league_code"
+          placeholder="e.g. A1B2C3D4"
+          required
+          minlength="6"
+          maxlength="6"
+        />
+      </div>
+      <button type="submit" class="action-btn primary full-width">
+        Submit Code
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const tabs = document.querySelectorAll(".tab");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        // Deactivate all tabs and content
+        tabs.forEach((t) => t.classList.remove("active"));
+        tabContents.forEach((c) => c.classList.remove("active"));
+
+        // Activate the clicked tab and its content
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.tab).classList.add("active");
+      });
+    });
+  });
+
+  // --- Join League Popup Logic ---
+  const joinLeagueBtn = document.getElementById("join-league-btn");
+  const joinLeagueOverlay = document.getElementById("join-league-overlay");
+  const popupCloseBtn = document.getElementById("popup-close-btn");
+
+  if (joinLeagueBtn) {
+    joinLeagueBtn.addEventListener("click", () => {
+      joinLeagueOverlay.classList.add("active");
+    });
+  }
+  if (popupCloseBtn) {
+    popupCloseBtn.addEventListener("click", () => {
+      joinLeagueOverlay.classList.remove("active");
+    });
+  }
+  if (joinLeagueOverlay) {
+    joinLeagueOverlay.addEventListener("click", (e) => {
+      if (e.target === joinLeagueOverlay) {
+        joinLeagueOverlay.classList.remove("active");
+      }
+    });
+  }
+</script>
+{% endblock %}

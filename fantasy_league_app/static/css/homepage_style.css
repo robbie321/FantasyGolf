@@ -1,6 +1,6 @@
 /* --- HERO SECTION --- */
 .hero-section {
-    /* position: relative; */
+    position: relative;
     height: 80vh;
     display: none; /* Hidden on mobile by default */
     align-items: center;
