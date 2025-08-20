@@ -404,7 +404,10 @@
             <div class="player-odds-bubble">{{ user_entry.player1.odds }}</div>
 
             <div class="player-info">
-              <h4>{{ user_entry.player1.full_name() }}</h4>
+              <!-- <h4>{{ user_entry.player1.full_name() }}</h4> -->
+               <img src="{{ url_for('static', filename='images/headshots/' + user_entry.player1.dg_id|string + '.png') }}"
+     alt="Headshot of {{ user_entry.player1.full_name() }}"
+     class="player-headshot-icon">
             </div>
             {% endif %}
           </div>
@@ -413,7 +416,10 @@
             <div class="player-odds-bubble">{{ user_entry.player2.odds }}</div>
 
             <div class="player-info">
-              <h4>{{ user_entry.player2.full_name() }}</h4>
+              <!-- <h4>{{ user_entry.player2.full_name() }}</h4> -->
+               <img src="{{ url_for('static', filename='images/headshots/' + user_entry.player2.dg_id|string + '.png') }}"
+     alt="Headshot of {{ user_entry.player2.full_name() }}"
+     class="player-headshot-icon">
             </div>
             {% endif %}
           </div>
@@ -422,7 +428,10 @@
             <div class="player-odds-bubble">{{ user_entry.player3.odds }}</div>
 
             <div class="player-info">
-              <h4>{{ user_entry.player3.full_name() }}</h4>
+              <!-- <h4>{{ user_entry.player3.full_name() }}</h4> -->
+               <img src="{{ url_for('static', filename='images/headshots/' + user_entry.player3.dg_id|string + '.png') }}"
+     alt="Headshot of {{ user_entry.player3.full_name() }}"
+     class="player-headshot-icon">
             </div>
             {% endif %}
           </div>
@@ -464,7 +473,7 @@
         <div class="leaderboard-container">
           <div class="leaderboard-header">
             <h2>Leaderboard</h2>
-            {% if not league.is_finalized %}
+            {% if now >= league.start_date and not league.is_finalized %}
              <button class="btn" id="view-live-leaderboard-btn" data-tour="{{ league.tour }}">View live leaderboard</button>
             {% endif %}
             </button>
