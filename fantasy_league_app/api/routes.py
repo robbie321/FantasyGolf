@@ -45,7 +45,7 @@ def get_player_stats(dg_id):
         return jsonify({'error': f'Live stats not found for this player.'}), 404
 
 
-# --- NEW: Live Leaderboard API Endpoint ---
+# --- Live Leaderboard API Endpoint ---
 @api_bp.route('/live-leaderboard/<string:tour>')
 def get_live_leaderboard(tour):
     """

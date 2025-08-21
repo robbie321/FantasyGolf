@@ -5,6 +5,7 @@ from sqlalchemy import func
 
 from . import db, mail, socketio # Make sure mail is imported if you use it in other tasks
 from flask_mail import Message
+from flask import current_app
 
 from .data_golf_client import DataGolfClient
 
@@ -17,99 +18,92 @@ from .utils import send_winner_notification_email
 def update_active_league_scores(app):
     """
     This function is the scheduled job. It finds all leagues that are currently
-    active and updates the scores for players in those leagues.
+    active, groups them by tour, and efficiently updates scores and ranks.
     """
     with app.app_context():
-        print(f"--- Running scheduled score update at {datetime.now()} ---")
+        current_app.logger.info(f"--- Running scheduled score update at {datetime.now()} ---")
 
         now = datetime.utcnow()
-        active_leagues = League.query.filter(League.start_date <= now, League.end_date >= now).all()
+        active_leagues = League.query.filter(League.start_date <= now, League.end_date >= now, League.is_finalized == False).all()
 
         if not active_leagues:
-            print("No active leagues found. Skipping API call.")
+            current_app.logger.info("No active leagues found. Skipping score update.")
             return
 
+        # Group active leagues by tour to minimize API calls
         leagues_by_tour = defaultdict(list)
         for league in active_leagues:
             leagues_by_tour[league.tour].append(league)
 
-        print(f"Found active leagues for tours: {list(leagues_by_tour.keys())}")
+        current_app.logger.info(f"Found active leagues for tours: {list(leagues_by_tour.keys())}")
 
         client = DataGolfClient()
         for tour, leagues in leagues_by_tour.items():
-            print(f"Fetching scores for tour: {tour}")
+            current_app.logger.info(f"Fetching scores for tour: {tour}")
             live_stats, error = client.get_live_tournament_stats(tour)
 
             if error:
-                print(f"An unexpected error occurred for tour '{tour}': {error}")
-                continue  # Skip to the next tour
+                current_app.logger.error(f"API Error for tour '{tour}': {error}")
+                continue
+
+            # --- EFFICIENT SCORE UPDATE ---
+            # Create a map of dg_id to the new score for quick lookups
+            score_map = {player.get('dg_id'): player.get('total', 0) for player in live_stats if player.get('dg_id')}
+
+            # Get all unique player IDs that need updating for this tour
+            player_ids_to_update = score_map.keys()
+
+            # Fetch all relevant players from the database in one query
+            players_in_db = Player.query.filter(Player.dg_id.in_(player_ids_to_update)).all()
 
             updated_count = 0
-            for api_player in live_stats:
-                dg_id = api_player.get('dg_id')
-                if not dg_id:
-                    continue
-
-                player_in_db = Player.query.filter_by(dg_id=dg_id).first()
-
-                if player_in_db:
-                    player_in_db.current_score = api_player.get('total', 0)
-
-                    tee_time_data = api_player.get('tee_time', None)
-                    if isinstance(tee_time_data, list) and tee_time_data:
-                        player_in_db.tee_time = tee_time_data[0]
-                    else:
-                        player_in_db.tee_time = tee_time_data
-
+            for player in players_in_db:
+                new_score = score_map.get(player.dg_id)
+                if new_score is not None and player.current_score != new_score:
+                    player.current_score = new_score
                     updated_count += 1
 
-            db.session.commit()
-            print(f"Successfully updated scores for {updated_count} players on tour '{tour}'.")
-
             if updated_count > 0:
-                for league in leagues:
-                    print(f"Calculating ranks for league: {league.name} (ID: {league.id})")
+                db.session.commit()
+                current_app.logger.info(f"Successfully updated scores for {updated_count} players on tour '{tour}'.")
+            else:
+                current_app.logger.info(f"No score changes for players on tour '{tour}'.")
+            # --- END OF EFFICIENT SCORE UPDATE ---
 
-                    # Fetch all entries for the league
-                    entries = league.entries
-                    if not entries:
-                        continue
+            # --- RANK CALCULATION (Now runs after scores are updated) ---
+            for league in leagues:
+                current_app.logger.info(f"Calculating ranks for league: {league.name} (ID: {league.id})")
 
-                    # Calculate total score for each entry
-                    scored_entries = []
-                    for entry in entries:
-                        # Ensure players and scores exist to prevent errors
-                        p1_score = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
-                        p2_score = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
-                        p3_score = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
-                        total_score = p1_score + p2_score + p3_score
-                        scored_entries.append({'entry': entry, 'score': total_score})
+                entries = league.entries
+                if not entries:
+                    continue
 
-                    # Sort entries by score (lower is better in golf)
-                    sorted_entries = sorted(scored_entries, key=lambda x: x['score'])
+                scored_entries = []
+                for entry in entries:
+                    p1_score = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
+                    p2_score = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
+                    p3_score = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
+                    total_score = p1_score + p2_score + p3_score
+                    scored_entries.append({'entry': entry, 'score': total_score})
 
-                    # --- Ranking Logic to Handle Ties ---
-                    last_score = -9999 # Initialize with a score that's impossible to have
-                    last_rank = 0
-                    for i, item in enumerate(sorted_entries):
-                        if item['score'] > last_score:
-                            # If the score is different, this is the new rank
-                            rank = i + 1
-                        else:
-                            # If the score is the same, use the same rank as the previous entry
-                            rank = last_rank
+                sorted_entries = sorted(scored_entries, key=lambda x: x['score'])
 
-                        item['entry'].current_rank = rank
-                        last_score = item['score']
-                        last_rank = rank
+                last_score = -9999
+                last_rank = 0
+                for i, item in enumerate(sorted_entries):
+                    rank = i + 1 if item['score'] > last_score else last_rank
+                    item['entry'].current_rank = rank
+                    last_score = item['score']
+                    last_rank = rank
 
-                    # Commit rank updates for this league
-                    db.session.commit()
-                    print(f"Successfully updated ranks for {len(entries)} entries in {league.name}.")
+                db.session.commit()
+                current_app.logger.info(f"Successfully updated ranks for {len(entries)} entries in {league.name}.")
 
-                    # Emit update to clients
-                    print(f"Emitting scores_updated for league_id: {league.id}")
-                    socketio.emit('scores_updated', {'league_id': league.id}, room=f'league_{league.id}')
+                # Emit update to clients
+                socketio.emit('scores_updated', {'league_id': league.id}, room=f'league_{league.id}')
+
+        current_app.logger.info("--- Weekly bucket update finished. ---")
+
 
 # --- Task to reset all player scores weekly ---
 def reset_player_scores(app):

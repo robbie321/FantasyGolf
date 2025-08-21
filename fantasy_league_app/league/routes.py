@@ -36,7 +36,7 @@ def _get_sorted_leaderboard(league_id):
 # Make sure the client is imported at the top of the file
 from ..data_golf_client import DataGolfClient
 
-def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str,
+def _create_new_league(name, player_bucket_id, entry_fee_str,
                          prize_amount_str, max_entries, odds_limit, rules,
                          prize_details, no_favorites_rule, tour, is_public,
                          club_id=None, allow_past_creation=False):
@@ -68,7 +68,7 @@ def _create_new_league(name, start_date_str, player_bucket_id, entry_fee_str,
         entry_fee = float(entry_fee_str)
         prize_amount = int(prize_amount_str)
         user_id = current_user.id
-        start_date = datetime.fromisoformat(start_date_str)
+        start_date = start_date
         max_entries_val = int(max_entries) if max_entries else None
         odds_limit_val = int(odds_limit) if odds_limit else None
     except (ValueError, TypeError):
@@ -245,7 +245,7 @@ def create_user_league():
     if request.method == 'POST':
         new_league, error = _create_new_league(
             name=request.form.get('name'),
-            start_date_str=request.form.get('start_date'),
+            # start_date_str=start_date,
             player_bucket_id=request.form.get('player_bucket_id'),
             entry_fee_str=request.form.get('entry_fee'),
             prize_amount_str=request.form.get('prize_amount'),
