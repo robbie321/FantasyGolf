@@ -36,4 +36,10 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', 'wehh kfob ejkj isfm') # Your email app password
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', MAIL_USERNAME)
 
+
+    # --- Redis and Caching Configuration ---
+    CACHE_TYPE = 'RedisCache'
+    CACHE_REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+    CACHE_DEFAULT_TIMEOUT = 300 # Default cache timeout in seconds (5 minutes)
+
     TESTING_MODE_FLAG = 'testing_mode.flag'

@@ -248,7 +248,7 @@ iframe {
 }
 
 /* Default mobile styles for the leaderboard table */
-.leaderboard-table thead {
+/* .leaderboard-table thead {
   display: none;
 }
 .leaderboard-table,
@@ -285,6 +285,31 @@ iframe {
   white-space: nowrap;
   font-weight: bold;
   text-align: left;
+} */
+
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse; /* Changed from separate */
+  border-spacing: 0;
+}
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 0.4rem; /* Mobile-friendly padding */
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+.leaderboard-table th {
+  background-color: #f8f8f8;
+  font-weight: bold;
+}
+.leaderboard-table .rank {
+  width: 50px;
+  text-align: center;
+}
+.leaderboard-table .score {
+  font-weight: bold;
+  text-align: right;
 }
 
 
@@ -390,6 +415,69 @@ iframe {
   border-radius: 8px;
   padding: 1.5rem;
   margin-bottom: 1rem;
+}
+
+.leaderboard-table .score {
+  font-weight: bold;
+  text-align: right;
+}
+
+/* --- NEW Collapsible Leaderboard Styles --- */
+.leaderboard-main-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+.leaderboard-main-row:hover {
+  background-color: #f9f9f9;
+}
+.toggle-arrow {
+  display: inline-block;
+  margin-left: 10px;
+  transition: transform 0.3s ease;
+  font-size: 0.8em;
+}
+.leaderboard-main-row.is-open .toggle-arrow {
+  transform: rotate(180deg);
+}
+.leaderboard-details-row td {
+  padding: 0; /* Remove padding from the cell itself */
+}
+.details-wrapper {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+  background-color: #fafafa;
+  padding: 0 2rem;
+}
+.leaderboard-details-row.is-open .details-wrapper {
+  max-height: 200px; /* Animate the wrapper */
+  padding: 0.2rem 2rem;
+}
+.player-details-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: row;
+}
+.player-detail {
+  display: flex; /* Use flexbox for alignment */
+  flex-direction: column; /* Keep vertical alignment for the whole card */
+  align-items: center; /* Center content horizontally */
+  gap: 0.5rem; /* Add some space between items */
+}
+
+.player-detail-info {
+  display: flex; /* A new flex container for the name and score */
+  align-items: baseline; /* Aligns the text nicely */
+  gap: 0.75rem; /* Space between name and score */
+}
+
+.player-detail-name {
+  font-weight: 500;
+}
+.player-detail-score {
+  font-weight: bold;
+  font-size: 1.2em;
 }
 
 .winner-banner {
@@ -828,6 +916,121 @@ iframe {
   font-size: 0.75rem;
   text-transform: uppercase;
   color: #6c757d;
+}
+
+
+.profile-slide-in {
+  position: fixed;
+  top: 0;
+  right: -400px; /* Start off-screen */
+  width: 100%;
+  max-width: 400px;
+  height: 100vh;
+  background-color: #ffffff;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+  z-index: 2000;
+  transition: right 0.4s ease-in-out;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-slide-in.is-open {
+  right: 0; /* Slide into view */
+}
+
+.slide-in-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s, visibility 0.4s;
+}
+
+.slide-in-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.profile-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #f7f7f7;
+}
+
+.profile-panel-header h3 {
+  margin: 0;
+  font-family: "Merriweather", serif;
+}
+
+.panel-close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: #888;
+}
+
+.profile-panel-body {
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+/* Styling for the content inside the panel */
+.profile-card {
+  text-align: center;
+}
+
+.profile-headshot {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #006a4e;
+  margin-bottom: 1rem;
+}
+
+.profile-card h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.8rem;
+}
+
+.profile-card .country {
+  font-size: 1.1rem;
+  color: #555;
+  margin-bottom: 2rem;
+}
+
+.profile-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  text-align: left;
+}
+
+.stat-item {
+  background-color: #f9f9f9;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.stat-item .label {
+  font-size: 0.9rem;
+  color: #666;
+  display: block;
+}
+
+.stat-item .value {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #333;
 }
 
 /* --- MAIN & DASHBOARD SECTION --- */
@@ -1398,6 +1601,10 @@ iframe {
   }
   .timer-box .label {
     font-size: 0.6rem;
+  }
+  .player-details-grid {
+    flex-direction: column; /* Stack the players vertically */
+    gap: 1rem;             /* Add space between the stacked player rows */
   }
 
   /* .league-item-body {

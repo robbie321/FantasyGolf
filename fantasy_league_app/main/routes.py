@@ -9,6 +9,7 @@ from sqlalchemy import func, distinct
 from datetime import datetime, timedelta
 import requests
 from ..data_golf_client import DataGolfClient
+from ..models import User, League, LeagueEntry, PlayerScore
 
 @main_bp.route('/offline.html')
 def offline():
@@ -72,33 +73,94 @@ def browse_leagues():
 
     return render_template('main/browse_leagues.html', leagues=leagues, search_query=search_query)
 
+# @main_bp.route('/user_dashboard')
+# @login_required
+# @password_reset_required
+# def user_dashboard():
+#     if getattr(current_user, 'is_club_admin', False):
+#         flash('You do not have permission to access the user dashboard.', 'warning')
+#         return redirect(url_for('main.club_dashboard'))
+
+#     # Fetch leagues the user has joined
+#     my_entries = LeagueEntry.query.filter_by(user_id=current_user.id).options(db.joinedload(LeagueEntry.league)).all()
+
+#     user_leagues = []
+#     for entry in my_entries:
+#         if entry.league:
+#             user_leagues.append({
+#                 'entry_id': entry.id,
+#                 'start_date': entry.league.start_date,
+#                 'league_obj': entry.league,
+#                 'entry_name': entry.entry_name,
+#                 'league_name': entry.league.name,
+#                 'league_code': entry.league.league_code,
+#                 'total_odds': entry.total_odds,
+#                 'league_id': entry.league.id,
+#                 'current_rank': entry.current_rank
+#             })
+
+#     return render_template('main/user_dashboard.html', user_leagues=user_leagues, today=datetime.utcnow())
+
 @main_bp.route('/user_dashboard')
 @login_required
 @password_reset_required
 def user_dashboard():
-    if getattr(current_user, 'is_club_admin', False):
-        flash('You do not have permission to access the user dashboard.', 'warning')
-        return redirect(url_for('main.club_dashboard'))
+    user_entries = LeagueEntry.query.filter_by(user_id=current_user.id).all()
 
-    # Fetch leagues the user has joined
-    my_entries = LeagueEntry.query.filter_by(user_id=current_user.id).options(db.joinedload(LeagueEntry.league)).all()
+    leagues_data = []
+    # Use a cache to avoid re-calculating the same leaderboard multiple times
+    leaderboard_cache = {}
 
-    user_leagues = []
-    for entry in my_entries:
-        if entry.league:
-            user_leagues.append({
-                'entry_id': entry.id,
-                'start_date': entry.league.start_date,
-                'league_obj': entry.league,
-                'entry_name': entry.entry_name,
-                'league_name': entry.league.name,
-                'league_code': entry.league.league_code,
-                'total_odds': entry.total_odds,
-                'league_id': entry.league.id,
-                'current_rank': entry.current_rank
+    for entry in user_entries:
+        league = entry.league
+
+        # Check if we have already calculated the leaderboard for this league
+        if league.id not in leaderboard_cache:
+            all_league_entries = LeagueEntry.query.filter_by(league_id=league.id).all()
+            leaderboard = []
+
+            if league.is_finalized:
+                # --- LOGIC FOR FINALIZED LEAGUES ---
+                historical_scores = {hs.player_id: hs.score for hs in PlayerScore.query.filter_by(league_id=league.id).all()}
+                for e in all_league_entries:
+                    p1_score = historical_scores.get(e.player1_id, 0)
+                    p2_score = historical_scores.get(e.player2_id, 0)
+                    p3_score = historical_scores.get(e.player3_id, 0)
+                    total_score = p1_score + p2_score + p3_score
+                    leaderboard.append({'entry_id': e.id, 'total_score': total_score})
+            else:
+                # --- LOGIC FOR LIVE LEAGUES ---
+                for e in all_league_entries:
+                    s1 = e.player1.current_score if e.player1 and e.player1.current_score is not None else 0
+                    s2 = e.player2.current_score if e.player2 and e.player2.current_score is not None else 0
+                    s3 = e.player3.current_score if e.player3 and e.player3.current_score is not None else 0
+                    total_score = s1 + s2 + s3
+                    leaderboard.append({'entry_id': e.id, 'total_score': total_score})
+
+            # Sort and rank
+            leaderboard.sort(key=lambda x: x['total_score'])
+            for i, item in enumerate(leaderboard):
+                item['rank'] = i + 1
+
+            # Cache the result
+            leaderboard_cache[league.id] = leaderboard
+
+        # Find the current user's entry in the calculated leaderboard
+        final_leaderboard = leaderboard_cache[league.id]
+        user_entry_data = next((item for item in final_leaderboard if item['entry_id'] == entry.id), None)
+
+        if user_entry_data:
+            leagues_data.append({
+                'league_name': league.name,
+                'league_id': league.id,
+                'total_score': user_entry_data['total_score'],
+                'current_rank': user_entry_data['rank'], # Use the calculated rank
+                'total_entries': len(final_leaderboard),
+                'prize_pool': f"€{league.prize_amount}",
+                'start_date': league.start_date
             })
 
-    return render_template('main/user_dashboard.html', user_leagues=user_leagues, today=datetime.utcnow())
+    return render_template('main/user_dashboard.html', leagues_data=leagues_data, today=datetime.utcnow())
 
 @main_bp.route('/club_dashboard')
 @login_required

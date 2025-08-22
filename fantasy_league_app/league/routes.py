@@ -569,33 +569,97 @@ def view_league(league_id):
     league = League.query.get_or_404(league_id)
     entries = LeagueEntry.query.filter_by(league_id=league.id).all()
 
-    # This dictionary will hold the correct scores to display
-    display_scores = {}
+    leaderboard = []
 
     if league.is_finalized:
-        # For finalized leagues, fetch historical scores
-        historical_scores = PlayerScore.query.filter_by(league_id=league.id).all()
-        for hs in historical_scores:
-            display_scores[hs.player_id] = hs.score
-    else:
-        # For active leagues, use the live scores
+        # --- LOGIC FOR FINALIZED LEAGUES (Your existing code) ---
+        print("League is finalized. Fetching historical scores.")
+        historical_scores = {hs.player_id: hs.score for hs in PlayerScore.query.filter_by(league_id=league.id).all()}
+
         for entry in entries:
-            for player in [entry.player1, entry.player2, entry.player3]:
-                if player:
-                    display_scores[player.id] = player.current_score
+            p1_score = historical_scores.get(entry.player1_id, 0)
+            p2_score = historical_scores.get(entry.player2_id, 0)
+            p3_score = historical_scores.get(entry.player3_id, 0)
+            total_score = p1_score + p2_score + p3_score
 
-    # Calculate total scores for sorting and display
-    for entry in entries:
-        p1_score = display_scores.get(entry.player1_id, 0)
-        p2_score = display_scores.get(entry.player2_id, 0)
-        p3_score = display_scores.get(entry.player3_id, 0)
-        entry.total_score = p1_score + p2_score + p3_score
+            leaderboard.append({
+                'entry': entry,
+                'user_name': entry.user.full_name,
+                'player1_name': f"{entry.player1.surname} {entry.player1.name} ",
+                'player1_score': p1_score,
+                'player2_name': f"{entry.player2.surname} {entry.player2.name}",
+                'player2_score': p2_score,
+                'player3_name': f"{entry.player3.surname} {entry.player3.name}",
+                'player3_score': p3_score,
+                'total_score': total_score
+            })
 
-    sorted_entries = sorted(entries, key=lambda e: e.total_score)
-    current_user_entry = LeagueEntry.query.filter_by(league_id=league.id, user_id=current_user.id).first()
+    else:
+        # --- LOGIC FOR LIVE LEAGUES (New on-demand calculation) ---
+        print("League is active. Calculating live scores.")
+        for entry in entries:
+            score1 = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
+            score2 = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
+            score3 = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
+            total_score = score1 + score2 + score3
 
-    return render_template('league/view_league.html', league=league, entries=sorted_entries, scores=display_scores, user_entry=current_user_entry,
-    now=datetime.utcnow())
+            leaderboard.append({
+                'entry': entry,
+                'user_name': entry.user.full_name,
+                'player1_name': f"{entry.player1.surname} {entry.player1.name} ",
+                'player1_score': score1,
+                'player2_name': f"{entry.player2.surname} {entry.player2.name}",
+                'player2_score': score2,
+                'player3_name': f"{entry.player3.surname} {entry.player3.name}",
+                'player3_score': score3,
+                'total_score': total_score
+            })
+
+    # --- COMMON LOGIC FOR SORTING AND RANKING ---
+    # This part is the same for both live and finalized leagues
+    leaderboard.sort(key=lambda x: x['total_score'])
+    for i, item in enumerate(leaderboard):
+        item['rank'] = i + 1
+
+    current_user_entry = next((item for item in leaderboard if item['entry'].user_id == current_user.id), None)
+
+    return render_template('league/view_league.html',
+                           league=league,
+                           leaderboard=leaderboard,
+                           user_entry=current_user_entry,
+                           now=datetime.utcnow())
+
+# def view_league(league_id):
+#     league = League.query.get_or_404(league_id)
+#     entries = LeagueEntry.query.filter_by(league_id=league.id).all()
+
+#     # This dictionary will hold the correct scores to display
+#     display_scores = {}
+
+#     if league.is_finalized:
+#         # For finalized leagues, fetch historical scores
+#         historical_scores = PlayerScore.query.filter_by(league_id=league.id).all()
+#         for hs in historical_scores:
+#             display_scores[hs.player_id] = hs.score
+#     else:
+#         # For active leagues, use the live scores
+#         for entry in entries:
+#             for player in [entry.player1, entry.player2, entry.player3]:
+#                 if player:
+#                     display_scores[player.id] = player.current_score
+
+#     # Calculate total scores for sorting and display
+#     for entry in entries:
+#         p1_score = display_scores.get(entry.player1_id, 0)
+#         p2_score = display_scores.get(entry.player2_id, 0)
+#         p3_score = display_scores.get(entry.player3_id, 0)
+#         entry.total_score = p1_score + p2_score + p3_score
+
+#     sorted_entries = sorted(entries, key=lambda e: e.total_score)
+#     current_user_entry = LeagueEntry.query.filter_by(league_id=league.id, user_id=current_user.id).first()
+
+#     return render_template('league/view_league.html', league=league, entries=sorted_entries, scores=display_scores, user_entry=current_user_entry,
+#     now=datetime.utcnow())
 
 
 # --- Route for Admins to Trigger a Payout ---

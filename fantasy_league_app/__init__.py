@@ -1,8 +1,10 @@
 from flask import Flask, render_template
+from flask_caching import Cache
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_apscheduler import APScheduler
+
 from flask_wtf.csrf import CSRFProtect
 from flask_socketio import SocketIO
 import stripe
@@ -11,7 +13,7 @@ from .config import Config
 
 from flask_mail import Mail # Import Mail
 
-
+cache = Cache()
 db = SQLAlchemy()
 migrate = Migrate()
 mail = Mail()
@@ -22,7 +24,7 @@ login_manager.login_view = 'auth.login_choice'
 scheduler = APScheduler()
 
 
-def create_app():
+def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(Config)
 
@@ -39,18 +41,27 @@ def create_app():
         scheduler.start()
 
     #  import from the renamed 'tasks.py' file.
-    from .tasks import update_active_league_scores, settle_finished_leagues, send_deadline_reminders, update_player_buckets, reset_player_scores, finalize_finished_leagues
+    from .tasks import  settle_finished_leagues, send_deadline_reminders, update_player_buckets, reset_player_scores, finalize_finished_leagues
 
-    if not scheduler.get_job('update_scores'):
-        scheduler.add_job(
-            id='update_scores',
-            func=update_active_league_scores,
-            args=[app],
-            trigger='cron',
-            day_of_week='thu-sun',  # Only run on Thursday, Friday, Saturday, Sunday
-            hour='6-23',          # Only run between 6:00 AM and 11:59 PM
-            minute='*/1'           # Runs every 2 minutes within the specified window
-        )
+    # if not scheduler.get_job('update_scores'):
+    #     scheduler.add_job(
+    #         id='update_scores',
+    #         func=update_active_league_scores,
+    #         args=[app],
+    #         trigger='cron',
+    #         day_of_week='thu-sun',  # Only run on Thursday, Friday, Saturday, Sunday
+    #         hour='6-23',          # Only run between 6:00 AM and 11:59 PM
+    #         minute='*/1'           # Runs every 2 minutes within the specified window
+    #     )
+
+    # scheduler.add_job(
+    #     id='setup_weekly_score_updates',
+    #     func=schedule_score_updates_for_the_week,
+    #     trigger='cron',
+    #     day_of_week='thu',
+    #     hour=5,
+    #     replace_existing=True
+    # )
 
     # --- Add the weekly job for resetting scores ---
     if not scheduler.get_job('reset_scores'):
@@ -59,9 +70,9 @@ def create_app():
             func=reset_player_scores,
             args=[app],
             trigger='cron',
-            day_of_week='wed',  # Run on Tuesday
-            hour=20,             # Run at 5:00 AM
-            minute=52
+            day_of_week='wed',  # Run on wed
+            hour=23,             # Run at 11pm
+            minute=59
         )
 
 
@@ -109,9 +120,12 @@ def create_app():
             hours=1
         )
 
+
     app.jinja_env.globals.update(hasattr=hasattr)
     stripe.api_key = app.config['STRIPE_SECRET_KEY']
     mail.init_app(app)
+
+    cache.init_app(app)
 
 
     from . import models
