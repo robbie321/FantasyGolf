@@ -322,9 +322,11 @@
             <table class="live-leaderboard-table">
               <thead>
                 <tr>
-                  <th>Pos</th>
-                  <th>Player</th>
-                  <th>Score</th>
+                  <th class="pos">Pos</th>
+                  <th class="player-name">Player</th>
+                  <th>Total</th>
+                  <th>Thru</th>
+                  <th>Rnd</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -571,11 +573,35 @@
           }
 
           players.forEach((player) => {
+            // --- Conditional Score Logic ---
+            let scoreText = player.total;
+            let rndScore = player.today;
+            let scoreClass = "score-negative"; // Default to red for under par
+
+            if (player.total === 0) {
+              scoreText = "E";
+              scoreClass = "score-even";
+            } else if (player.total > 0) {
+              scoreText = `+${player.total}`;
+              scoreClass = "score-positive";
+            }
+
+            if (player.today === 0) {
+              rndScore = "E";
+            } else if (player.today > 0) {
+              rndScore = `+${player.today}`;
+            }
+
+            // Display 'F' if thru is 18, otherwise display the number
+            const thruText = player.thru === 18 ? "F" : player.thru;
+
             const row = `
                           <tr>
                               <td class="pos">${player.current_pos}</td>
                               <td class="player-name">${player.player_name}</td>
-                              <td><span class="live-score">${player.current_score}</span></td>
+                              <td><span class="live-score ${scoreClass}">${player.current_score}</span></td>
+                              <td style="text-align:center; font-weight:bold">${thruText}</td>
+                              <td style="text-align:center; font-weight:bold">${rndScore}</td>
                           </tr>
                       `;
             leaderboardBody.insertAdjacentHTML("beforeend", row);

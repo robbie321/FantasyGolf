@@ -1543,47 +1543,55 @@ iframe {
     overflow-y: auto;
     padding: 0;
 }
-
+/* --- Live Leaderboard Popup Styles --- */
 .live-leaderboard-table {
-    width: 100%;
-    border-collapse: collapse;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
 }
-
-.live-leaderboard-table thead th {
-    background-color: #f7f7f7;
-    padding: 0.75rem 1.5rem;
-    text-align: left;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    color: #555;
-}
-
+.live-leaderboard-table th,
 .live-leaderboard-table td {
-    padding: 0.75rem 1.5rem;
-    border-bottom: 1px solid #eee;
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
 }
-
-.live-leaderboard-table tr:last-child td {
-    border-bottom: none;
+.live-leaderboard-table thead th {
+  background-color: #f8f8f8;
+  font-weight: bold;
+  color: #555;
 }
-
 .live-leaderboard-table .pos {
-    font-weight: bold;
-    color: #555;
+  width: 50px;
+  font-weight: bold;
 }
-
 .live-leaderboard-table .player-name {
-    font-weight: bold;
+  font-weight: 500;
+}
+.live-score {
+  font-weight: bold;
+  color: #fff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  min-width: 35px;
+  display: inline-block;
+  text-align: center;
 }
 
-.live-score {
-    background-color: #dc3545; /* Red background */
-    color: white;
-    font-weight: bold;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.9rem;
+/* --- Conditional Score Colors --- */
+.live-score.score-negative {
+  background-color: #e53e3e; /* Red */
+  color: white;
 }
+.live-score.score-even {
+  background-color: #a0aec0; /* Lighter Grey */
+  color: #1a202c; /* Dark text for contrast */
+}
+.live-score.score-positive {
+  background-color: #48bb78; /* Green */
+  color: white;
+}
+
+
 
 /* --- MEDIA QUERIES --- */
 
