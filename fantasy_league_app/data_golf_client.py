@@ -38,6 +38,26 @@ class DataGolfClient:
             return None, error
         return data, None
 
+    def get_in_play_stats(self, tour):
+        """
+        Fetches live in-play prediction stats for a given tour.
+        """
+        endpoint = f"{self.base_url}/preds/in-play"
+        params = {
+            'tour': tour,
+            'dead_heat': 'no',
+            'odds_format': 'percent',
+            'key': self.api_key
+        }
+        try:
+            response = requests.get(endpoint, params=params)
+            response.raise_for_status()
+            data = response.json()
+            # The player data is nested inside the 'data' key
+            return data.get('data', []), None
+        except requests.exceptions.RequestException as e:
+            return None, str(e)
+
     def get_live_tournament_stats(self, tour='pga'):
         """Fetches live tournament stats for a given tour."""
         endpoint = f"preds/live-tournament-stats?tour={tour}&stats=sg_total,total&display=value"
@@ -84,13 +104,13 @@ class DataGolfClient:
             return [], error
         return data.get('schedule', []), None
 
-    def get_tournament_field_updates(self, event_id, tour='pga'):
+    def get_tournament_field_updates(self, tour):
         """Fetches the player field for a specific tournament."""
-        endpoint = f"field-updates?tour={tour}&event_id={event_id}"
+        endpoint = f"field-updates?tour={tour}"
         data, error = self._make_request(endpoint)
         if error:
             return [], error
-        return data.get('field', []), None
+        return data, None
 
 
     def get_player_profiles(self):

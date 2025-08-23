@@ -51,6 +51,7 @@ def get_live_leaderboard(tour):
     """
     Fetches the live in-play leaderboard from the DataGolf API.
     """
+
     api_key = current_app.config.get('DATA_GOLF_API_KEY')
     if not api_key:
         return jsonify({'error': 'API key not configured'}), 500
