@@ -8,7 +8,7 @@ import re
 
 from flask import jsonify, current_app
 from flask_login import login_required
-from ..data_golf_client import DataGolfClient # <-- ADD THIS IMPORT
+from ..data_golf_client import DataGolfClient #
 from ..models import Player
 from . import api_bp
 
