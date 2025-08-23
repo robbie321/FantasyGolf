@@ -158,7 +158,7 @@ def update_active_league_scores(app):
                 for player in players_to_update:
                     score_data = player_scores.get(player.dg_id)
                     if score_data:
-                        player.current_score = score_data.get('total_to_par')
+                        player.current_score = score_data.get('total')
                         player.thru = score_data.get('thru')
 
                 db.session.commit()
