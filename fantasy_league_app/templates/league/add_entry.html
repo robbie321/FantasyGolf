@@ -1,193 +1,13 @@
 ﻿{% extends 'base.html' %} {% block content %}
-<!-- <style>
-  /* --- Player Picker Styles (identical to edit_entry) --- */
-  .picker-wrapper {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-  }
-  .picker-header {
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-  .picker-header h1 {
-    font-family: "Merriweather", serif;
-    font-size: 2.5rem;
-    color: #006a4e;
-    margin-bottom: 0.5rem;
-  }
-  .picker-header p {
-    color: #555;
-    font-size: 1.1rem;
-  }
-  .player-picks-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-  .player-slot {
-    background-color: white;
-    border: 2px dashed #ccc;
-    border-radius: 8px;
-    aspect-ratio: 1 / 1.2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s;
-  }
-  .player-slot.empty {
-    background-color: rgba(0, 106, 78, 0.05);
-    border-color: rgba(0, 106, 78, 0.4);
-  }
-  .player-slot-icon {
-    width: 40px;
-    height: 40px;
-    color: #006a4e;
-    margin-bottom: 0.5rem;
-  }
-  .player-slot-text {
-    font-weight: bold;
-    color: #006a4e;
-  }
-  .player-info h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.1rem;
-    text-align: center;
-  }
-  .player-info p {
-    margin: 0;
-    color: #555;
-    font-weight: bold;
-    text-align: center;
-  }
-  .summary-section {
-    background-color: #f7f7f7;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    text-align: center;
-  }
-  .summary-section .odds-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-  }
-  .summary-section .odds-label {
-    color: #555;
-  }
-  .summary-section .odds-value {
-    font-weight: bold;
-    color: #006a4e;
-  }
-  .summary-section .odds-value.invalid {
-    color: #dc3545;
-  }
-  .save-btn:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
-  .summary-section h3 {
-    margin-top: 0;
-    color: #006a4e;
-  }
-  .summary-section p {
-    font-weight: bold;
-    margin-bottom: 1rem;
-  }
-  .summary-section .form-group {
-    max-width: 200px;
-    margin: 0 auto;
-  }
-
-  /* --- Popup Styles --- */
-  .popup-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    z-index: 1000;
-    display: flex;
-    align-items: flex-end;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
-  }
-  .popup-overlay.active {
-    opacity: 1;
-    visibility: visible;
-  }
-  .popup-container {
-    background-color: white;
-    width: 100%;
-    max-height: 80vh;
-    border-radius: 16px 16px 0 0;
-    transform: translateY(100%);
-    transition: transform 0.3s ease-out;
-    display: flex;
-    flex-direction: column;
-  }
-  .popup-overlay.active .popup-container {
-    transform: translateY(0);
-  }
-  .popup-header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .popup-header h3 {
-    margin: 0;
-  }
-  .popup-close {
-    background: transparent;
-    border: none;
-    font-size: 2rem;
-    cursor: pointer;
-  }
-  .popup-body {
-    overflow-y: auto;
-    padding: 0 1.5rem;
-  }
-  .player-list-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  .player-list-table td {
-    padding: 1rem 0.5rem;
-    border-bottom: 1px solid #eee;
-  }
-  .player-list-table tr:last-child td {
-    border-bottom: none;
-  }
-  .add-player-btn {
-    background-color: #006a4e;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    font-size: 1.5rem;
-    line-height: 1;
-    cursor: pointer;
-  }
-</style> -->
-
 <div class="picker-wrapper">
   <div class="picker-header">
-    <h1>Create Your Entry</h1>
+    <h2>Create Your Team</h2>
     <p>You are joining: <strong>{{ league.name }}</strong></p>
   </div>
 
   <form
     id="add-entry-form"
+    class="add-entry-league-form"
     action="{{ url_for('league.add_entry', league_id=league.id) }}"
     method="POST"
   >
@@ -394,9 +214,9 @@
 
           const slotDiv = document.querySelector(`.player-slot[data-slot="${activeSlot}"]`);
           slotDiv.innerHTML = `
-              <div class="player-odds-bubble">${playerOdds}</div>
+              <div class="player-odds-bubble">${player.odds}</div>
               <div class="player-info">
-                  <h4>${playerName}</h4>
+                  <h4>${player.name} ${player.surname}</h4>
               </div>
           `;
           slotDiv.classList.remove('empty');

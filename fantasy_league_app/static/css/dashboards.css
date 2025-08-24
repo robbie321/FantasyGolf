@@ -78,7 +78,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
-    padding: 15px;
+    padding: 8px;
     border-radius: 8px;
     text-decoration: none;
     font-weight: bold;
@@ -272,8 +272,8 @@ body {
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
-    padding-bottom: 2rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid #e2e8f0;
 }
 
@@ -296,8 +296,13 @@ body {
 
 }
 
+.header-text{
+    width: -webkit-fill-available;
+    margin-bottom: 1.5rem;
+}
+
 .header-actions .btn {
-    padding: 0.75rem 1.5rem;
+    padding: 8px;
     font-weight: 600;
     border-radius: 8px;
     text-decoration: none;

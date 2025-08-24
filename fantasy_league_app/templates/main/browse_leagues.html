@@ -9,7 +9,6 @@
     </p>
 
     <div class="search-bar">
-      <!-- The form is no longer needed, just the input -->
       <input
         type="search"
         id="league-search-input"
@@ -127,14 +126,18 @@
       const searchTerm = searchInput.value.toLowerCase();
 
       leagueCards.forEach(function (card) {
-        const leagueName = card.querySelector("h3").textContent.toLowerCase();
+        const leagueNameElement = card.querySelector("h2.league-name");
 
-        // If the league name includes the search term, show the card
-        if (leagueName.includes(searchTerm)) {
-          card.style.display = "block";
-        } else {
-          // Otherwise, hide it
-          card.style.display = "none";
+        if (leagueNameElement) {
+          const leagueName = leagueNameElement.textContent.toLowerCase();
+
+          // If the league name includes the search term, show the card
+          if (leagueName.includes(searchTerm)) {
+            card.style.display = "flex"; // Use flex to maintain layout
+          } else {
+            // Otherwise, hide it
+            card.style.display = "none";
+          }
         }
       });
     });

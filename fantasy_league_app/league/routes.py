@@ -140,6 +140,7 @@ def _create_new_league(name, player_bucket_id, entry_fee_str,
         prize_details=prize_details,
         no_favorites_rule=no_favorites_rule,
         tour=tour,
+        tie_breaker_question=tie_breaker_question,
         is_public=is_public,
         club_id=club_id,
         user_id=user_id
@@ -147,7 +148,7 @@ def _create_new_league(name, player_bucket_id, entry_fee_str,
     db.session.add(new_league)
     db.session.commit()
 
-    # --- REFACTORED: Fetch initial scores using the client ---
+    # --- Fetch initial scores using the client ---
     if start_date < datetime.utcnow():
         print(f"--- League '{name}' created for an active tournament. Fetching initial scores. ---")
         client = DataGolfClient()

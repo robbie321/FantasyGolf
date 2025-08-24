@@ -126,7 +126,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for tournament in player.get('previous_tournaments', []) %}
+          {% for tournament in stats.get('previous_tournaments', []) %}
           <tr>
             <td>{{ tournament.name }}</td>
             <td style="text-align: center">{{ tournament.seasons[0].year }}</td>

@@ -4,7 +4,7 @@
 /* --- BASE & GLOBAL STYLES (MOBILE-FIRST) --- */
 body {
   margin: 0;
-  padding: 0;
+  padding-bottom: 60px;
   font-family: "Roboto", sans-serif;
   background-color: #f5f8fb;
   color: #333;
@@ -27,6 +27,7 @@ iframe {
   padding: 2rem 0.75rem;
   box-sizing: border-box;
   min-height: calc(100vh - 70px);
+  background-color: #f7f9fb;
 }
 
 .content-container,
@@ -1247,6 +1248,10 @@ iframe {
   color: #006a4e;
 }
 
+.add-entry-league-form{
+ padding:1rem;
+}
+
   /* Styling for the revenue stat card */
   .stat-card {
     background-color: #fff;
@@ -1269,6 +1274,45 @@ iframe {
   }
 
 /* --- BASE SECTION --- */
+/* --- Bottom Navigation Bar (Mobile Only) --- */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: #ffffff;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+.bottom-nav__link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #6b7280; /* Grey for inactive */
+    flex-grow: 1;
+}
+
+.bottom-nav__link.active {
+    color: #006a4e; /* Green for active */
+}
+
+.bottom-nav__icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 2px;
+}
+
+.bottom-nav__text {
+    font-size: 0.75rem;
+}
+
 .navbar {
   display: flex;
   justify-content: space-between;
@@ -1421,7 +1465,7 @@ iframe {
 
 /* Hamburger Toggle Button */
 .navbar-toggle {
-  display: block; /* Shown on mobile by default */
+  display: none; /* Shown on mobile by default */
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1833,6 +1877,14 @@ iframe {
 
 /* For tablets and up */
 @media (min-width: 768px) {
+  /* Hide the bottom nav on larger screens */
+    .bottom-nav {
+        display: none;
+    }
+    /* Remove the extra padding from the body */
+    body {
+        padding-bottom: 0;
+    }
   .form-grid {
     grid-template-columns: 1fr 1fr;
   }

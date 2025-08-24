@@ -16,171 +16,6 @@ from .models import League, Player, PlayerBucket, LeagueEntry, PlayerScore, User
 from .stripe_client import process_payouts,  create_payout
 from .utils import send_winner_notification_email
 
-# def update_active_league_scores(app):
-#     """
-#     This function is the scheduled job. It finds all leagues that are currently
-#     active, groups them by tour, and efficiently updates scores and ranks.
-#     """
-#     with app.app_context():
-#         current_app.logger.info(f"--- Running scheduled score update at {datetime.now()} ---")
-
-#         now = datetime.utcnow()
-#         active_leagues = League.query.filter(League.start_date <= now, League.end_date >= now, League.is_finalized == False).all()
-
-#         if not active_leagues:
-#             current_app.logger.info("No active leagues found. Skipping score update.")
-#             return
-
-#         # Group active leagues by tour to minimize API calls
-#         leagues_by_tour = defaultdict(list)
-#         for league in active_leagues:
-#             leagues_by_tour[league.tour].append(league)
-
-#         current_app.logger.info(f"Found active leagues for tours: {list(leagues_by_tour.keys())}")
-
-#         client = DataGolfClient()
-#         for tour, leagues in leagues_by_tour.items():
-#             current_app.logger.info(f"Fetching scores for tour: {tour}")
-#             live_stats, error = client.get_live_tournament_stats(tour)
-
-#             if error:
-#                 current_app.logger.error(f"API Error for tour '{tour}': {error}")
-#                 continue
-
-#             # --- EFFICIENT SCORE UPDATE ---
-#             # Create a map of dg_id to the new score for quick lookups
-#             score_map = {player.get('dg_id'): player.get('total', 0) for player in live_stats if player.get('dg_id')}
-
-#             # Get all unique player IDs that need updating for this tour
-#             player_ids_to_update = score_map.keys()
-
-#             # Fetch all relevant players from the database in one query
-#             players_in_db = Player.query.filter(Player.dg_id.in_(player_ids_to_update)).all()
-
-#             updated_count = 0
-#             for player in players_in_db:
-#                 new_score = score_map.get(player.dg_id)
-#                 if new_score is not None and player.current_score != new_score:
-#                     player.current_score = new_score
-#                     updated_count += 1
-
-#             if updated_count > 0:
-#                 db.session.commit()
-#                 current_app.logger.info(f"Successfully updated scores for {updated_count} players on tour '{tour}'.")
-#             else:
-#                 current_app.logger.info(f"No score changes for players on tour '{tour}'.")
-#             # --- END OF EFFICIENT SCORE UPDATE ---
-
-#             # --- RANK CALCULATION (Now runs after scores are updated) ---
-#             for league in leagues:
-#                 current_app.logger.info(f"Calculating ranks for league: {league.name} (ID: {league.id})")
-
-#                 entries = league.entries
-#                 if not entries:
-#                     continue
-
-#                 scored_entries = []
-#                 for entry in entries:
-#                     p1_score = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
-#                     p2_score = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
-#                     p3_score = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
-#                     total_score = p1_score + p2_score + p3_score
-#                     scored_entries.append({'entry': entry, 'score': total_score})
-
-#                 sorted_entries = sorted(scored_entries, key=lambda x: x['score'])
-
-#                 last_score = -9999
-#                 last_rank = 0
-#                 for i, item in enumerate(sorted_entries):
-#                     rank = i + 1 if item['score'] > last_score else last_rank
-#                     item['entry'].current_rank = rank
-#                     last_score = item['score']
-#                     last_rank = rank
-
-#                 db.session.commit()
-#                 current_app.logger.info(f"Successfully updated ranks for {len(entries)} entries in {league.name}.")
-
-#                 # Emit update to clients
-#                 socketio.emit('scores_updated', {'league_id': league.id}, room=f'league_{league.id}')
-
-#         current_app.logger.info("--- Weekly bucket update finished. ---")
-
-# def update_active_league_scores(app):
-#     """
-#     This function is the scheduled job. It finds all leagues that are currently
-#     active, groups them by tour, and efficiently updates scores and ranks.
-#     """
-#     print("--- Task triggered. Attempting to enter app context... ---")
-
-#     try:
-#         with app.app_context():
-#             print("--- App context entered successfully. Starting update logic. ---")
-
-#             now = datetime.utcnow()
-#             print(f"--- Current UTC time: {now} ---")
-
-#             print("--- Querying for active leagues... ---")
-#             active_leagues = League.query.filter(
-#                 League.start_date <= now,
-#                 League.end_date >= now,
-#                 League.is_finalized == False
-#             ).all()
-#             print(f"--- Found {len(active_leagues)} active leagues. ---")
-
-#             if not active_leagues:
-#                 print("--- No active leagues found. Task finished. ---")
-#                 return
-
-#             # Group active leagues by tour to minimize API calls
-#             leagues_by_tour = defaultdict(list)
-#             for league in active_leagues:
-#                 leagues_by_tour[league.tour].append(league)
-#             print(f"--- Leagues grouped by tour: {dict(leagues_by_tour)} ---")
-
-#             data_golf_client = DataGolfClient()
-
-#             for tour, leagues in leagues_by_tour.items():
-#                 print(f"--- Updating scores for tour: {tour} ---")
-
-#                 live_scores_data, error = data_golf_client.get_live_tournament_stats(tour)
-#                 if error or not live_scores_data:
-#                     print(f"--- No live data or error for tour {tour}. Error: {error}. Skipping. ---")
-#                     continue
-
-#                 print(f"--- Fetched {len(live_scores_data)} player scores from API for tour {tour}. ---")
-
-#                 player_scores = {player['dg_id']: player for player in live_scores_data}
-#                 all_player_ids_in_tour = list(player_scores.keys())
-
-#                 print(f"--- Updating {len(all_player_ids_in_tour)} players in the database... ---")
-#                 players_to_update = Player.query.filter(Player.dg_id.in_(all_player_ids_in_tour)).all()
-
-#                 for player in players_to_update:
-#                     score_data = player_scores.get(player.dg_id)
-#                     if score_data:
-#                         player.current_score = score_data.get('total')
-#                         player.thru = score_data.get('thru')
-
-#                 db.session.commit()
-#                 print("--- Database commit successful. ---")
-
-#                 # --- Update League Ranks and Notify Frontend ---
-#                 for league in leagues:
-#                     # ... (The rest of the logic remains the same) ...
-#                     entries = LeagueEntry.query.filter_by(league_id=league.id).all()
-#                     # ...
-#                     db.session.commit()
-#                     socketio.emit('scores_updated', {'league_id': league.id}, room=f'league_{league.id}')
-
-#             print("--- Score update process finished successfully. ---")
-
-#     except Exception as e:
-#         # This will catch any unexpected error and print it to your terminal
-#         print(f"!!! AN UNEXPECTED ERROR OCCURRED: {e} !!!")
-#         import traceback
-#         traceback.print_exc()
-
-
 def update_player_scores(app):
     """
     This is the ONLY scheduled task for live scores.
@@ -247,151 +82,69 @@ def update_player_scores(app):
             socketio.emit('scores_updated', {'updated_tours': updated_tours})
             print(f"Broadcast 'scores_updated' event for tours: {updated_tours}")
 
-
-# def update_all_player_scores():
-#     """
-#     This is the ONLY scheduled task for live scores.
-#     It runs every minute, fetches data for all active tours, and updates
-#     the central Player table. It is completely independent of leagues.
-#     """
-#     with scheduler.app.app_context():
-#         print(f"--- Running centralized player score update at {datetime.now()} ---")
-#         tours = ['pga', 'euro', 'kft', 'alt']
-#         api_key = os.environ.get("DATA_GOLF_API_KEY")
-#         updated_tours = []
-
-#         for tour in tours:
-#             try:
-#                 url = f"https://feeds.datagolf.com/real-time/leaderboard?tour={tour}&key={api_key}"
-#                 response = requests.get(url)
-#                 response.raise_for_status()
-#                 data = response.json()
-
-#                 if data and data.get('leaderboard'):
-#                     players_to_update = []
-#                     for player_score in data['leaderboard']:
-#                         players_to_update.append({
-#                             'dg_id': player_score.get('player_id'),
-#                             'current_score': player_score.get('total_to_par'),
-#                             'thru': player_score.get('thru')
-#                         })
-
-#                     # Perform a bulk update for efficiency
-#                     if players_to_update:
-#                         db.session.bulk_update_mappings(Player, players_to_update)
-#                         db.session.commit()
-#                         print(f"Successfully updated {len(players_to_update)} players for tour: '{tour}'")
-#                         if tour not in updated_tours:
-#                             updated_tours.append(tour)
-#                 else:
-#                     print(f"No active tournament found for tour: '{tour}'.")
-
-#             except Exception as e:
-#                 print(f"An error occurred during score update for tour '{tour}': {e}")
-#                 db.session.rollback()
-
-#         # After updating all tours, send a single broadcast
-#         if updated_tours:
-#             socketio.emit('scores_updated', {'updated_tours': updated_tours})
-#             print(f"Broadcast 'scores_updated' event for tours: {updated_tours}")
-
-# def schedule_score_updates_for_the_week():
-#     """
-#     JOB 1 - The Scheduler:
-#     Runs at 5 AM on Thursday. It loops through each tour, finds the earliest
-#     tee time for each, and schedules a DEDICATED update job for each active tour.
-#     """
-#     with current_app.app_context():
-#         print("--- Running weekly task to schedule score updates for each tour ---")
-#         tours = ['pga', 'euro', 'kft', 'alt']
-#         api_key = os.environ.get("DATA_GOLF_API_KEY")
-
-#         for tour in tours:
-#             earliest_tee_time_for_tour = None
-#             url = f"https://feeds.datagolf.com/field-updates?tour={tour}&key={api_key}"
-
-#             print(f"Checking for tournaments on tour: '{tour}'...")
-
-#             try:
-#                 response = requests.get(url)
-#                 response.raise_for_status()
-#                 data = response.json()
-
-#                 if not data.get('field') or not data.get('event_name'):
-#                     print(f"No active tournament found for tour: '{tour}'. Skipping.")
-#                     continue
-
-#                 for player in data.get('field', []):
-#                     tee_time_str = player.get('r1_teetime')
-#                     if tee_time_str:
-#                         tee_time = datetime.strptime(tee_time_str, '%Y-%m-%d %H:%M')
-#                         if earliest_tee_time_for_tour is None or tee_time < earliest_tee_time_for_tour:
-#                             earliest_tee_time_for_tour = tee_time
-
-#             except requests.exceptions.RequestException as e:
-#                 print(f"API Error for tour '{tour}': {e}")
-#                 continue
-#             except (ValueError, TypeError) as e:
-#                 print(f"Data parsing error for tour '{tour}': {e}")
-#                 continue
-
-#             if earliest_tee_time_for_tour:
-#                 start_time = earliest_tee_time_for_tour + timedelta(minutes=20)
-#                 days_until_monday = (7 - start_time.weekday()) % 7
-#                 end_time = (start_time + timedelta(days=days_until_monday)).replace(hour=3, minute=0, second=0)
-
-#                 job_id = f"score_updater_{tour}_{start_time.strftime('%Y-%U')}"
-
-#                 if scheduler.get_job(job_id):
-#                     print(f"Job '{job_id}' already exists. Skipping.")
-#                     continue
-
-#                 scheduler.add_job(
-#                     id=job_id,
-#                     func=update_scores_for_tour,
-#                     trigger='interval',
-#                     minutes=5,
-#                     start_date=start_time,
-#                     end_date=end_time,
-#                     args=[tour]
-#                 )
-#                 print(f"SUCCESS: Created job '{job_id}' for tour '{tour}'.")
-#                 print(f"  > Start: {start_time}, End: {end_time}")
-#             else:
-#                 print(f"No tee times found for tour: '{tour}'. No job created.")
-
-#         print("--- Weekly scheduling task finished ---")
-
-
-def update_scores_for_tour(tour):
+def schedule_score_updates_for_the_week(app):
     """
-    JOB 2 - The Updater:
-    This function is the target of the scheduled jobs. It updates scores
-    for the specific tour it is given.
+    JOB 1 - The Daily Scheduler.
+    Runs every day at 5 AM from Thu-Sun. It finds the current day's tee times
+    and schedules the updater job (update_player_scores) to run for that day.
     """
-    with scheduler.app.app_context():
-        print(f"Running score update for tour: '{tour}' at {datetime.now()}")
-        api_key = os.environ.get("DATA_GOLF_API_KEY")
-        url = f"https://feeds.datagolf.com/real-time/leaderboard?tour={tour}&key={api_key}"
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            data = response.json()
+    with app.app_context():
+        print(f"--- Running DAILY scheduler setup at {datetime.now()} ---")
+        tours = ['pga', 'euro', 'kft', 'alt']
+        data_golf_client = DataGolfClient()
 
-            if data and data.get('leaderboard'):
-                for playerScore in data['leaderboard']:
-                    player = Player.query.filter_by(dg_id=playerScore.get('player_id')).first()
-                    if player:
-                        player.current_score = playerScore.get('total_to_par')
-                        player.thru = playerScore.get('thru')
-                db.session.commit()
-                print(f"Successfully updated scores for players on the '{tour}' tour.")
+        for tour in tours:
+            print(f"Checking for tournament on tour: '{tour}'...")
+
+            field_data, error = data_golf_client.get_tournament_field_updates(tour)
+
+            if error or not field_data or not field_data.get('field'):
+                print(f"No field data for tour '{tour}'. Skipping.")
+                continue
+
+            current_round = field_data.get("current_round")
+            if not current_round:
+                print(f"No current round data for tour '{tour}'. Skipping.")
+                continue
+
+            # --- Find Earliest & Latest Tee Times for the CURRENT Round ---
+            tee_time_key = f"r{current_round}_teetime"
+            earliest_tee_time = None
+            latest_tee_time = None
+
+            for player in field_data['field']:
+                tee_time_str = player.get(tee_time_key)
+                if tee_time_str:
+                    tee_time = datetime.strptime(tee_time_str, '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
+                    if earliest_tee_time is None or tee_time < earliest_tee_time:
+                        earliest_tee_time = tee_time
+                    if latest_tee_time is None or tee_time > latest_tee_time:
+                        latest_tee_time = tee_time
+
+            if earliest_tee_time and latest_tee_time:
+                # --- Calculate the precise window for today's updates ---
+                start_updates_at = earliest_tee_time + timedelta(minutes=20)
+                end_updates_at = latest_tee_time + timedelta(hours=5)
+
+                # Create a unique ID for each day's job
+                job_id = f"live_updater_{tour}_{datetime.now().strftime('%Y-%m-%d')}"
+
+                # Use 'add_job' with 'replace_existing=True' to handle rescheduling
+                scheduler.add_job(
+                    id=job_id,
+                    func=update_player_scores,
+                    args=[app],
+                    trigger='interval',
+                    minutes=1,
+                    start_date=start_updates_at,
+                    end_date=end_updates_at,
+                    replace_existing=True
+                )
+                print(f"SUCCESS: Scheduled/Rescheduled job '{job_id}' for tour '{tour}'.")
+                print(f"  > Updates will run from {start_updates_at} to {end_updates_at}")
             else:
-                print(f"No leaderboard data returned for tour: '{tour}'.")
+                print(f"Could not determine tee times for tour '{tour}' for round {current_round}. No job scheduled.")
 
-        except Exception as e:
-            print(f"An error occurred during score update for tour '{tour}': {e}")
-            db.session.rollback()
 
 # --- Task to reset all player scores weekly ---
 def reset_player_scores(app):
@@ -412,33 +165,29 @@ def reset_player_scores(app):
 
 def send_deadline_reminders(app):
     """
-    Runs periodically to send reminders for leagues whose deadline is approaching.
+    Runs periodically to send reminders for leagues whose entry deadline is approaching.
     """
     with app.app_context():
         now = datetime.utcnow()
-        # Find leagues whose entry deadline is in the next 24 hours and haven't had a reminder sent
+
+        # Find leagues whose start_date is between 24 and 48 hours from now.
+        # This means their entry deadline (start_date - 3 hours) is between 21 and 45 hours away.
         reminder_window_start = now + timedelta(hours=24)
         reminder_window_end = now + timedelta(hours=48)
 
-         # Query against the actual 'start_date' database column.
-        # adjust the window by -1 hour to match the logic of the entry_deadline property
-        # (deadline is 3 hour before the tournament starts).
         leagues_nearing_deadline = League.query.filter(
             League.reminder_sent == False,
-            League.start_date.between(
-                reminder_window_start + timedelta(hours=3),
-                reminder_window_end + timedelta(hours=3)
-            )
+            League.start_date.between(reminder_window_start, reminder_window_end)
         ).all()
 
-        if not leagues_nearing_reminder:
+        if not leagues_nearing_deadline:
             print(f"--- No deadline reminders to send at {datetime.now()} ---")
             return
 
-        print(f"--- Found {len(leagues_needing_reminder)} league(s) needing reminders. ---")
+        print(f"--- Found {len(leagues_nearing_deadline)} league(s) needing reminders. ---")
 
-        for league in leagues_nearing_reminder:
-            recipients = [entry.user.email for entry in league.entries]
+        for league in leagues_nearing_deadline:
+            recipients = [entry.user.email for entry in league.entries if entry.user]
 
             if not recipients:
                 # Mark as sent even if no one has joined to prevent re-checking
@@ -448,22 +197,31 @@ def send_deadline_reminders(app):
             msg = Message(f'Reminder: Entry Deadline for "{league.name}"',
                           sender=app.config['MAIL_DEFAULT_SENDER'],
                           bcc=recipients) # Use BCC to protect privacy
+
+            # Use the entry_deadline property from your model for the email body
+            deadline_str = (league.start_date - timedelta(hours=3)).strftime('%A, %d %B %Y at %H:%M')
+
             msg.body = f"""Hi everyone,
 
 This is a reminder that the deadline to submit or edit your entry for the league "{league.name}" is approaching.
 
-Deadline: {league.entry_deadline.strftime('%A, %d %B %Y at %H:%M')} UTC.
+Deadline: {deadline_str} UTC.
 
 Make sure your picks are in! Good luck.
 """
-            mail.send(msg)
+            try:
+                mail.send(msg)
+                # Mark the league so we don't send reminders again
+                league.reminder_sent = True
+                print(f"Sent reminder for league: {league.name}")
+            except Exception as e:
+                print(f"!!! FAILED to send email for league {league.name}: {e} !!!")
 
-            # Mark the league so we don't send reminders again
-            league.reminder_sent = True
-            print(f"Sent reminder for league: {league.name}")
 
         db.session.commit()
 
+
+#redundant
 def settle_finished_leagues(app):
     """
     This job runs periodically to perform a final score update for leagues

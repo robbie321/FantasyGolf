@@ -13,165 +13,6 @@
       href="{{ url_for('static', filename='css/style.css') }}"
     />
 
-    <!-- <style>
-      @import url("https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;700&display=swap");
-
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: "Roboto", sans-serif;
-        /* CHANGED: Set the default background to white */
-        background-color: #ffffff;
-      }
-      img,
-      video,
-      iframe {
-        max-width: 100%;
-        height: auto;
-      }
-      .navbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: #ffffff;
-        color: #006a4e;
-        padding: 0 2rem;
-        height: 70px;
-        border-bottom: 1px solid #e0e0e0;
-        position: relative; /* Establishes a stacking context */
-        z-index: 100; /* Ensures navbar is on top of other content */
-      }
-      .navbar-brand {
-        font-family: "Playfair Display", serif;
-        font-size: 1.5rem;
-        font-weight: 700;
-        text-decoration: none;
-        color: #006a4e;
-      }
-      .navbar-links a {
-        color: #006a4e;
-        text-decoration: none;
-        margin-left: 1.5rem;
-        font-weight: 700;
-      }
-
-      /* Dropdown styles remain the same... */
-      .navbar-dropdown {
-        position: relative;
-        display: inline-block;
-      }
-      .dropdown-button {
-        background-color: transparent;
-        color: #006a4e;
-        padding: 10px 15px;
-        font-size: 1rem;
-        font-weight: 700;
-        font-family: "Merriweather", serif;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-      }
-      .dropdown-button:hover {
-        background-color: rgba(0, 0, 0, 0.05);
-        border-radius: 5px;
-      }
-      .dropdown-button .arrow {
-        border: solid #006a4e;
-        border-width: 0 2px 2px 0;
-        display: inline-block;
-        padding: 3px;
-        margin-left: 10px;
-        transform: rotate(45deg);
-      }
-      .dropdown-content {
-        display: none;
-        position: absolute;
-        right: 0;
-        background-color: #f1f1f1;
-        min-width: 200px;
-        box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-        z-index: 1;
-        border-radius: 5px;
-        overflow: hidden;
-        font-family: "Roboto", sans-serif;
-      }
-      .dropdown-content a {
-        color: black;
-        padding: 12px 16px;
-        text-decoration: none;
-        display: block;
-        font-weight: normal;
-      }
-      .dropdown-content a:hover {
-        background-color: #ddd;
-      }
-      .show {
-        display: block;
-      }
-
-      .flash-modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.6);
-        display: none; /* Hidden by default */
-        align-items: center;
-        justify-content: center;
-        z-index: 2000;
-        padding: 1rem;
-        box-sizing: border-box;
-      }
-
-      .flash-modal-content {
-        background-color: #ffffff;
-        padding: 2.5rem;
-        border-radius: 8px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        text-align: center;
-        max-width: 500px;
-        width: 100%;
-        position: relative;
-      }
-
-      .flash-modal-content h2 {
-        font-family: "Merriweather", serif;
-        margin-top: 0;
-        margin-bottom: 1rem;
-        color: #dc3545; /* Red for errors */
-      }
-
-      .flash-modal-content .flash-success h2 {
-        color: #28a745; /* Green for success */
-      }
-
-      .flash-modal-content .flash-info h2 {
-        color: #17a2b8; /* Blue for info */
-      }
-
-      .flash-modal-content p {
-        margin: 0;
-        font-size: 1.1rem;
-        color: #333;
-      }
-
-      .flash-modal-close-btn {
-        position: absolute;
-        top: 15px;
-        right: 20px;
-        font-size: 2rem;
-        font-weight: bold;
-        color: #aaa;
-        cursor: pointer;
-        line-height: 1;
-      }
-      .flash-modal-close-btn:hover {
-        color: #333;
-      }
-    </style> -->
-
     {% block head %}{% endblock %}
   </head>
   <body>
@@ -259,7 +100,99 @@
     </div>
 
     <main>{% block content %}{% endblock %}</main>
-
+    {% if current_user.is_authenticated %}
+    <nav class="bottom-nav">
+      <a
+        href="{{ url_for('main.user_dashboard') }}"
+        class="bottom-nav__link {% if request.endpoint == 'main.user_dashboard' %}active{% endif %}"
+      >
+        <svg
+          class="bottom-nav__icon"
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        <span class="bottom-nav__text">Dashboard</span>
+      </a>
+      <a
+        href="{{ url_for('main.browse_leagues') }}"
+        class="bottom-nav__link {% if request.endpoint == 'main.browse_leagues' %}active{% endif %}"
+      >
+        <svg
+          class="bottom-nav__icon"
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <span class="bottom-nav__text">Browse</span>
+      </a>
+      <a
+        href="{{ url_for('player.rankings') }}"
+        class="bottom-nav__link {% if request.endpoint == 'player.rankings' %}active{% endif %}"
+      >
+        <svg
+          class="bottom-nav__icon"
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+          <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+          <path d="M4 22h16"></path>
+          <path
+            d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"
+          ></path>
+          <path
+            d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"
+          ></path>
+          <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+        </svg>
+        <span class="bottom-nav__text">Rankings</span>
+      </a>
+      <a href="{{ url_for('main.user_dashboard') }}" class="bottom-nav__link">
+        <svg
+          class="bottom-nav__icon"
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span class="bottom-nav__text">More</span>
+      </a>
+    </nav>
+    {% endif %}
     <script>
       function toggleDropdown() {
         document.getElementById("myDropdown").classList.toggle("show");
