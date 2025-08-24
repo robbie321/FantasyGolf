@@ -105,80 +105,148 @@ from .utils import send_winner_notification_email
 
 #         current_app.logger.info("--- Weekly bucket update finished. ---")
 
-def update_active_league_scores(app):
+# def update_active_league_scores(app):
+#     """
+#     This function is the scheduled job. It finds all leagues that are currently
+#     active, groups them by tour, and efficiently updates scores and ranks.
+#     """
+#     print("--- Task triggered. Attempting to enter app context... ---")
+
+#     try:
+#         with app.app_context():
+#             print("--- App context entered successfully. Starting update logic. ---")
+
+#             now = datetime.utcnow()
+#             print(f"--- Current UTC time: {now} ---")
+
+#             print("--- Querying for active leagues... ---")
+#             active_leagues = League.query.filter(
+#                 League.start_date <= now,
+#                 League.end_date >= now,
+#                 League.is_finalized == False
+#             ).all()
+#             print(f"--- Found {len(active_leagues)} active leagues. ---")
+
+#             if not active_leagues:
+#                 print("--- No active leagues found. Task finished. ---")
+#                 return
+
+#             # Group active leagues by tour to minimize API calls
+#             leagues_by_tour = defaultdict(list)
+#             for league in active_leagues:
+#                 leagues_by_tour[league.tour].append(league)
+#             print(f"--- Leagues grouped by tour: {dict(leagues_by_tour)} ---")
+
+#             data_golf_client = DataGolfClient()
+
+#             for tour, leagues in leagues_by_tour.items():
+#                 print(f"--- Updating scores for tour: {tour} ---")
+
+#                 live_scores_data, error = data_golf_client.get_live_tournament_stats(tour)
+#                 if error or not live_scores_data:
+#                     print(f"--- No live data or error for tour {tour}. Error: {error}. Skipping. ---")
+#                     continue
+
+#                 print(f"--- Fetched {len(live_scores_data)} player scores from API for tour {tour}. ---")
+
+#                 player_scores = {player['dg_id']: player for player in live_scores_data}
+#                 all_player_ids_in_tour = list(player_scores.keys())
+
+#                 print(f"--- Updating {len(all_player_ids_in_tour)} players in the database... ---")
+#                 players_to_update = Player.query.filter(Player.dg_id.in_(all_player_ids_in_tour)).all()
+
+#                 for player in players_to_update:
+#                     score_data = player_scores.get(player.dg_id)
+#                     if score_data:
+#                         player.current_score = score_data.get('total')
+#                         player.thru = score_data.get('thru')
+
+#                 db.session.commit()
+#                 print("--- Database commit successful. ---")
+
+#                 # --- Update League Ranks and Notify Frontend ---
+#                 for league in leagues:
+#                     # ... (The rest of the logic remains the same) ...
+#                     entries = LeagueEntry.query.filter_by(league_id=league.id).all()
+#                     # ...
+#                     db.session.commit()
+#                     socketio.emit('scores_updated', {'league_id': league.id}, room=f'league_{league.id}')
+
+#             print("--- Score update process finished successfully. ---")
+
+#     except Exception as e:
+#         # This will catch any unexpected error and print it to your terminal
+#         print(f"!!! AN UNEXPECTED ERROR OCCURRED: {e} !!!")
+#         import traceback
+#         traceback.print_exc()
+
+
+def update_player_scores(app):
     """
-    This function is the scheduled job. It finds all leagues that are currently
-    active, groups them by tour, and efficiently updates scores and ranks.
+    This is the ONLY scheduled task for live scores.
+    It runs on a schedule, fetches data for all active tours, and performs
+    a bulk update on the central Player table. It is fast and scalable.
     """
-    print("--- Task triggered. Attempting to enter app context... ---")
+    with app.app_context():
+        print(f"--- Running centralized player score update at {datetime.now()} ---")
 
-    try:
-        with app.app_context():
-            print("--- App context entered successfully. Starting update logic. ---")
+        tours = ['pga', 'euro', 'kft', 'alt']
+        data_golf_client = DataGolfClient()
+        updated_tours = []
 
-            now = datetime.utcnow()
-            print(f"--- Current UTC time: {now} ---")
+        for tour in tours:
+            try:
+               # this method returns the list of players directly
+                live_scores, error = data_golf_client.get_in_play_stats(tour)
 
-            print("--- Querying for active leagues... ---")
-            active_leagues = League.query.filter(
-                League.start_date <= now,
-                League.end_date >= now,
-                League.is_finalized == False
-            ).all()
-            print(f"--- Found {len(active_leagues)} active leagues. ---")
-
-            if not active_leagues:
-                print("--- No active leagues found. Task finished. ---")
-                return
-
-            # Group active leagues by tour to minimize API calls
-            leagues_by_tour = defaultdict(list)
-            for league in active_leagues:
-                leagues_by_tour[league.tour].append(league)
-            print(f"--- Leagues grouped by tour: {dict(leagues_by_tour)} ---")
-
-            data_golf_client = DataGolfClient()
-
-            for tour, leagues in leagues_by_tour.items():
-                print(f"--- Updating scores for tour: {tour} ---")
-
-                live_scores_data, error = data_golf_client.get_live_tournament_stats(tour)
-                if error or not live_scores_data:
-                    print(f"--- No live data or error for tour {tour}. Error: {error}. Skipping. ---")
+                if error:
+                    print(f"API Error for tour '{tour}': {error}")
                     continue
 
-                print(f"--- Fetched {len(live_scores_data)} player scores from API for tour {tour}. ---")
+                if not live_scores or not isinstance(live_scores, list):
+                    print(f"No valid player data found for tour: '{tour}'.")
+                    continue
 
-                player_scores = {player['dg_id']: player for player in live_scores_data}
-                all_player_ids_in_tour = list(player_scores.keys())
+                # --- 1. Create a quick lookup dictionary for API scores ---
+                player_scores_from_api = {player['dg_id']: player for player in live_scores}
+                player_dg_ids = list(player_scores_from_api.keys())
 
-                print(f"--- Updating {len(all_player_ids_in_tour)} players in the database... ---")
-                players_to_update = Player.query.filter(Player.dg_id.in_(all_player_ids_in_tour)).all()
+                # --- 2. Fetch the corresponding players from OUR database ---
+                # This gets us the all-important primary key (player.id)
+                players_in_db = Player.query.filter(Player.dg_id.in_(player_dg_ids)).all()
 
-                for player in players_to_update:
-                    score_data = player_scores.get(player.dg_id)
-                    if score_data:
-                        player.current_score = score_data.get('total')
-                        player.thru = score_data.get('thru')
+                # --- 3. Prepare the data for the bulk update ---
+                players_to_update = []
+                for player in players_in_db:
+                    score_data = player_scores_from_api.get(player.dg_id)
+                    new_score = score_data.get('current_score')
 
-                db.session.commit()
-                print("--- Database commit successful. ---")
+                    if score_data and new_score is not None:
+                        players_to_update.append({
+                            'id': player.id,  # CRITICAL: Provide the primary key
+                            'current_score': new_score,
+                            'thru': score_data.get('thru'),
+                            'today': score_data.get('today')
+                        })
 
-                # --- Update League Ranks and Notify Frontend ---
-                for league in leagues:
-                    # ... (The rest of the logic remains the same) ...
-                    entries = LeagueEntry.query.filter_by(league_id=league.id).all()
-                    # ...
+                # --- 4. Perform the efficient bulk update ---
+                if players_to_update:
+                    db.session.bulk_update_mappings(Player, players_to_update)
                     db.session.commit()
-                    socketio.emit('scores_updated', {'league_id': league.id}, room=f'league_{league.id}')
+                    print(f"Successfully updated {len(players_to_update)} players for tour: '{tour}'")
+                    if tour not in updated_tours:
+                        updated_tours.append(tour)
 
-            print("--- Score update process finished successfully. ---")
+            except Exception as e:
+                print(f"An unexpected error occurred during score update for tour '{tour}': {e}")
+                import traceback
+                traceback.print_exc()
+                db.session.rollback()
 
-    except Exception as e:
-        # This will catch any unexpected error and print it to your terminal
-        print(f"!!! AN UNEXPECTED ERROR OCCURRED: {e} !!!")
-        import traceback
-        traceback.print_exc()
+        if updated_tours:
+            socketio.emit('scores_updated', {'updated_tours': updated_tours})
+            print(f"Broadcast 'scores_updated' event for tours: {updated_tours}")
+
 
 # def update_all_player_scores():
 #     """
@@ -295,35 +363,35 @@ def update_active_league_scores(app):
 #         print("--- Weekly scheduling task finished ---")
 
 
-# def update_scores_for_tour(tour):
-#     """
-#     JOB 2 - The Updater:
-#     This function is the target of the scheduled jobs. It updates scores
-#     for the specific tour it is given.
-#     """
-#     with scheduler.app.app_context():
-#         print(f"Running score update for tour: '{tour}' at {datetime.now()}")
-#         api_key = os.environ.get("DATA_GOLF_API_KEY")
-#         url = f"https://feeds.datagolf.com/real-time/leaderboard?tour={tour}&key={api_key}"
-#         try:
-#             response = requests.get(url)
-#             response.raise_for_status()
-#             data = response.json()
+def update_scores_for_tour(tour):
+    """
+    JOB 2 - The Updater:
+    This function is the target of the scheduled jobs. It updates scores
+    for the specific tour it is given.
+    """
+    with scheduler.app.app_context():
+        print(f"Running score update for tour: '{tour}' at {datetime.now()}")
+        api_key = os.environ.get("DATA_GOLF_API_KEY")
+        url = f"https://feeds.datagolf.com/real-time/leaderboard?tour={tour}&key={api_key}"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
 
-#             if data and data.get('leaderboard'):
-#                 for playerScore in data['leaderboard']:
-#                     player = Player.query.filter_by(dg_id=playerScore.get('player_id')).first()
-#                     if player:
-#                         player.current_score = playerScore.get('total_to_par')
-#                         player.thru = playerScore.get('thru')
-#                 db.session.commit()
-#                 print(f"Successfully updated scores for players on the '{tour}' tour.")
-#             else:
-#                 print(f"No leaderboard data returned for tour: '{tour}'.")
+            if data and data.get('leaderboard'):
+                for playerScore in data['leaderboard']:
+                    player = Player.query.filter_by(dg_id=playerScore.get('player_id')).first()
+                    if player:
+                        player.current_score = playerScore.get('total_to_par')
+                        player.thru = playerScore.get('thru')
+                db.session.commit()
+                print(f"Successfully updated scores for players on the '{tour}' tour.")
+            else:
+                print(f"No leaderboard data returned for tour: '{tour}'.")
 
-#         except Exception as e:
-#             print(f"An error occurred during score update for tour '{tour}': {e}")
-#             db.session.rollback()
+        except Exception as e:
+            print(f"An error occurred during score update for tour '{tour}': {e}")
+            db.session.rollback()
 
 # --- Task to reset all player scores weekly ---
 def reset_player_scores(app):

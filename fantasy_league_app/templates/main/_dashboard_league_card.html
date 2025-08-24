@@ -1,0 +1,148 @@
+<a
+  href="{{ url_for('league.view_league', league_id=data.league.id) }}"
+  class="dashboard-league-card"
+>
+  <div class="card-header">
+    <div class="card-title-group">
+      <h3 class="league-name">{{ data.league.name }}</h3>
+      {% if data.league.is_finalized or now >= data.league.start_date %} {% set
+      rank_class = 'rank-standard' %} {% if data.current_rank == 1 %} {% set
+      rank_class = 'rank-gold' %} {% elif data.current_rank == 2 %} {% set
+      rank_class = 'rank-silver' %} {% elif data.current_rank == 3 %} {% set
+      rank_class = 'rank-bronze' %} {% endif %}
+      <span class="rank-badge {{ rank_class }}"
+        >Rank #{{ data.current_rank }}</span
+      >
+      {% endif %}
+    </div>
+    <div class="status-and-tour">
+      <span class="tour-tag-small">{{ data.league.tour.upper() }}</span>
+      {% if data.league.is_finalized %}
+      <span class="status-badge status-completed">Completed</span>
+      {% elif now >= data.league.start_date %}
+      <span class="status-badge status-live">Live</span>
+      {% else %}
+      <span class="status-badge status-upcoming">Upcoming</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card-info-grid">
+    <div class="info-item">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <line x1="12" y1="1" x2="12" y2="23"></line>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+      </svg>
+      <div class="info-text">
+        <span class="label">Entry Fee</span>
+        <span class="value">€{{ "%.2f"|format(data.league.entry_fee) }}</span>
+      </div>
+    </div>
+    <div class="info-item">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+      </svg>
+      <div class="info-text">
+        <span class="label">Entries</span>
+        <span class="value">{{ data.total_entries }}</span>
+      </div>
+    </div>
+    <div class="info-item">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
+        ></path>
+        <line x1="7" y1="7" x2="7.01" y2="7"></line>
+      </svg>
+      <div class="info-text">
+        <span class="label">Prize Pool</span>
+        <span class="value"
+          >€{{ "%.2f"|format(data.league.prize_amount) }}</span
+        >
+      </div>
+    </div>
+    <div class="info-item">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="16" y1="2" x2="16" y2="6"></line>
+        <line x1="8" y1="2" x2="8" y2="6"></line>
+        <line x1="3" y1="10" x2="21" y2="10"></line>
+      </svg>
+      <div class="info-text">
+        <span class="label">
+          {% if data.league.is_finalized or now >= data.league.start_date %}
+          Ends {% else %} Starts {% endif %}
+        </span>
+        <span class="value">
+          {% if data.league.is_finalized or now >= data.league.start_date %} {{
+          data.league.end_date.strftime('%d/%m/%Y') }} {% else %} {{
+          data.league.start_date.strftime('%d/%m/%Y') }} {% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-footer">
+    <span>
+      {% if data.league.is_finalized %} View Results {% elif now >=
+      data.league.start_date %} View Leaderboard {% else %} View Details {%
+      endif %}
+    </span>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </div>
+</a>

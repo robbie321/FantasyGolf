@@ -1,76 +1,13 @@
 {% extends 'base.html' %} {% block content %}
-<style>
-  .page-wrapper {
-    padding: 4rem 1rem;
-    background-color: #f7f7f7;
-  }
-  .content-container {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  .header {
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-  .header h1 {
-    font-family: "Merriweather", serif;
-  }
-  .search-bar {
-    margin-bottom: 2rem;
-    display: flex;
-    justify-content: center;
-  }
-  .search-bar form {
-    width: 100%;
-    max-width: 700px;
-  }
-  .search-bar input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
-    font-size: 1rem;
-  }
-  .leagues-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-  }
-  .league-card {
-    background-color: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 1.5rem;
-    flex-direction: column;
-  }
-  .league-card h3 {
-    font-family: "Merriweather", serif;
-    font-size: xx-large;
-    margin: 0;
-  }
-  .league-card p {
-    flex-grow: 1;
-    color: #555;
-  }
-  .btn {
-    display: block;
-    text-align: center;
-    margin-top: 1rem;
-    background-color: #006a4e;
-    color: white;
-    text-decoration: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    font-weight: bold;
-  }
-</style>
 
 <div class="page-wrapper">
   <div class="content-container">
-    <div class="header">
-      <h1>Browse Public Leagues</h1>
-    </div>
+    <h1 class="page-title">Available Leagues</h1>
+    <p class="page-subtitle">
+      Join a league below to start playing. New leagues for upcoming tournaments
+      are added weekly.
+    </p>
+
     <div class="search-bar">
       <!-- The form is no longer needed, just the input -->
       <input
@@ -81,25 +18,102 @@
       />
     </div>
 
+    {% if leagues %}
     <div class="leagues-grid">
       {% for league in leagues %}
       <div class="league-card">
-        <h3>{{ league.name }}</h3>
-        <p>
-          <strong>Entry Fee:</strong> €{{ "%.2f"|format(league.entry_fee) }}
-        </p>
-        <p><strong>Entries:</strong> {{ league.entries|length }}</p>
-        <p><strong>Created by:</strong> {{ league.creator_name }}</p>
-        <a
-          href="{{ url_for('league.view_league', league_id=league.id) }}"
-          class="btn"
-          >View & Join</a
-        >
+        <div class="card-header">
+          <h2 class="league-name">{{ league.name }}</h2>
+          <span class="tour-tag">{{ league.tour.upper() }}</span>
+        </div>
+
+        <div class="card-info-grid">
+          <div class="info-item">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <div class="info-text">
+              <span class="label">Prize Pool</span>
+              <span class="value">€{{ league.prize_amount }}</span>
+            </div>
+          </div>
+          <div class="info-item">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <div class="info-text">
+              <span class="label">Entries</span>
+              <span class="value"
+                >{{ league.entries|length }} / {{ league.max_entries }}</span
+              >
+            </div>
+          </div>
+          <div class="info-item">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <div class="info-text">
+              <span class="label">Starts</span>
+              <span class="value"
+                >{{ league.start_date.strftime('%d %b %Y') }}</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <a
+            href="{{ url_for('league.view_league', league_id=league.id) }}"
+            class="btn btn-join"
+            >Join League</a
+          >
+        </div>
       </div>
-      {% else %}
-      <p>No public leagues found.</p>
       {% endfor %}
     </div>
+    {% else %}
+    <div class="no-leagues-message">
+      <p>There are currently no available leagues. Please check back soon!</p>
+    </div>
+    {% endif %}
   </div>
 </div>
 

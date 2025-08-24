@@ -5,162 +5,170 @@
   href="{{ url_for('static', filename='css/dashboards.css') }}"
 />
 
-<div class="dashboard-wrapper">
-  <div class="dashboard-header">
-    <h3>Dashboard</h3>
-  </div>
-
-  <!-- Slider Tabs -->
-  <div class="tabs-container">
-    <div class="tab active" data-tab="leagues">My Leagues</div>
-    <div class="tab" data-tab="profile">My Profile</div>
-  </div>
-
-  <!-- Leagues Content -->
-  <div id="leagues" class="tab-content active">
-    <div class="action-buttons">
-      <button id="join-league-btn" class="action-btn primary">
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M12 4V20M4 12H20"
+<div class="page-wrapper">
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div class="header-text">
+        <h1>Dashboard</h1>
+        <p>Manage your leagues and track your performance</p>
+      </div>
+      <div class="header-actions">
+        <a href="#" class="action-btn primary" id="join-league-btn">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-          />
-        </svg>
-        Join a League
-      </button>
-      <a
-        href="{{ url_for('league.create_league') }}"
-        class="action-btn secondary"
-      >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
+            class="lucide lucide-plus w-5 h-5 mr-2"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14"></path>
+            <path d="M12 5v14"></path>
+          </svg>
+
+          Join a League</a
         >
-          <path
-            d="M12 4V20M4 12H20"
+        <a
+          href="{{ url_for('league.create_user_league') }}"
+          class="btn btn-secondary"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-          />
-        </svg>
-        Create a League
-      </a>
+            class="lucide lucide-plus w-5 h-5 mr-2"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14"></path>
+            <path d="M12 5v14"></path>
+          </svg>
+          Create a League</a
+        >
+      </div>
     </div>
 
-    <div class="leagues-table-container">
-      <h2>My Leagues</h2>
-      <table class="leagues-table">
-        <thead>
-          <tr>
-            <th>League</th>
-            <th class="rank">Current Rank</th>
-            <th class="rank"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for league in leagues_data %}
-          <tr>
-            <td>
-              <a
-                href="{{ url_for('league.view_league', league_id=league.league_id) }}"
-                class="league-name"
-              >
-                {{ league.league_name }}
-              </a>
-            </td>
-            <td class="rank">{{ league.current_rank or '-' }}</td>
-
-            <td class="rank view-link">
-              {% if league.start_date > today %}
-              <a
-                href="{{ url_for('league.edit_entry', entry_id=league.entry_id) }}"
-                title="Edit Entry"
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M18.5 2.5C18.8978 2.10218 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10218 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10218 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </a>
-              {% else %}
-              <span title="League is active">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="limegreen"
-                    stroke-width="2"
-                  />
-                  <circle cx="12" cy="12" r="6" fill="limegreen" />
-                </svg>
-              </span>
-              {% endif %}
-            </td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="3" style="text-align: center; padding: 2rem">
-              You haven't joined any leagues yet.
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <!-- Slider Tabs -->
+    <div class="tabs-container">
+      <div class="tab active" data-tab="my-leagues">My Leagues</div>
+      <div class="tab" data-tab="my-profile">My Profile</div>
     </div>
-  </div>
 
-  <!-- Profile Content -->
-  <div id="profile" class="tab-content">
-    <div class="profile-section">
-      <h2>My Profile</h2>
-      <p>Manage your account details and payout information.</p>
-      <form action="{{ url_for('main.onboard_stripe') }}" method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <button type="submit" class="action-btn primary">
-          Update Stripe Payout Details
-        </button>
-      </form>
+    <div class="tab-content active" id="my-leagues">
+      <div class="league-category">
+        <h2 class="category-title">
+          <span class="live-indicator"></span>
+          Live Leagues
+          <span class="count-badge">{{ live_leagues|length }}</span>
+        </h2>
+        {% if live_leagues %}
+        <div class="dashboard-leagues-grid">
+          {% for data in live_leagues %} {% include
+          'main/_dashboard_league_card.html' with context %} {% endfor %}
+        </div>
+        {% else %}
+        <p class="no-leagues-text">No active leagues right now.</p>
+        {% endif %}
+      </div>
+
+      <div class="league-category">
+        <h2 class="category-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-clock w-5 h-5 text-blue-600"
+            aria-hidden="true"
+          >
+            <path d="M12 6v6l4 2"></path>
+            <circle cx="12" cy="12" r="10"></circle>
+          </svg>
+          Upcoming Leagues
+          <span class="count-badge">{{ upcoming_leagues|length }}</span>
+        </h2>
+        {% if upcoming_leagues %}
+        <div class="dashboard-leagues-grid">
+          {% for data in upcoming_leagues %} {% include
+          'main/_dashboard_league_card.html' with context %} {% endfor %}
+        </div>
+        {% else %}
+        <p class="no-leagues-text">No upcoming leagues. Why not create one?</p>
+        {% endif %}
+      </div>
+
+      <div class="league-category">
+        <h2 class="category-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-trophy w-5 h-5 text-slate-600"
+            aria-hidden="true"
+          >
+            <path
+              d="M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978"
+            ></path>
+            <path
+              d="M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978"
+            ></path>
+            <path d="M18 9h1.5a1 1 0 0 0 0-5H18"></path>
+            <path d="M4 22h16"></path>
+            <path
+              d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"
+            ></path>
+            <path d="M6 9H4.5a1 1 0 0 1 0-5H6"></path>
+          </svg>
+          Past Leagues
+          <span class="count-badge">{{ past_leagues|length }}</span>
+        </h2>
+        {% if past_leagues %}
+        <div class="dashboard-leagues-grid">
+          {% for data in past_leagues %} {% include
+          'main/_dashboard_league_card.html' with context %} {% endfor %}
+        </div>
+        {% else %}
+        <p class="no-leagues-text">No past leagues to show.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Profile Content -->
+    <div id="my-profile" class="tab-content">
+      <div class="profile-section">
+        <h2>My Profile</h2>
+        <p>Manage your account details and payout information.</p>
+        <form action="{{ url_for('main.onboard_stripe') }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button type="submit" class="action-btn primary">
+            Update Stripe Payout Details
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 </div>
-
 <div class="popup-overlay" id="join-league-overlay">
   <div class="popup-container" id="join-league-popup">
     <button class="popup-close" id="popup-close-btn">&times;</button>

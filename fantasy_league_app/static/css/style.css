@@ -6,7 +6,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: "Roboto", sans-serif;
-  background-color: #f7f7f7;
+  background-color: #f5f8fb;
   color: #333;
   line-height: 1.6;
 }
@@ -24,7 +24,7 @@ iframe {
 }
 
 .page-wrapper {
-  padding: 2rem 0rem;
+  padding: 2rem 0.75rem;
   box-sizing: border-box;
   min-height: calc(100vh - 70px);
 }
@@ -140,7 +140,7 @@ iframe {
   font-family: "Merriweather", serif;
   margin-top: 0;
   color: #006a4e;
-  font-size: 2rem; /* Mobile first font size */
+  font-size: 1.5rem; /* Mobile first font size */
 }
 
 /* --- BUTTONS --- */
@@ -296,21 +296,30 @@ iframe {
 }
 .leaderboard-table th,
 .leaderboard-table td {
-  padding: 0.4rem; /* Mobile-friendly padding */
-  border-bottom: 1px solid #eee;
+  padding: 1rem; /* Increased padding */
+  border-bottom: 1px solid #f1f5f9; /* Softer border */
   text-align: left;
+  vertical-align: middle;
 }
 .leaderboard-table th {
-  background-color: #f8f8f8;
-  font-weight: bold;
+  background-color: #f8fafc;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 .leaderboard-table .rank {
-  width: 50px;
+  width: 60px;
   text-align: center;
+  font-weight: bold;
 }
 .leaderboard-table .score {
   font-weight: bold;
   text-align: right;
+}
+.leaderboard-table .my-entry {
+    background-color: #f0fff4; /* Highlight for the current user */
 }
 
 
@@ -723,7 +732,7 @@ iframe {
     background-color: white;
     border: 2px dashed #ccc;
     border-radius: 8px;
-    aspect-ratio: 1 / 1.2;
+    /* aspect-ratio: 1 / 1.2; */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -745,6 +754,28 @@ iframe {
     font-weight: bold;
     color: #006a4e;
   }
+  .player-info {
+    display: flex; /* Add this */
+    flex-direction: column; /* Add this */
+    align-items: center; /* Add this */
+    gap: 0.5rem; /* Add this for spacing */
+}
+
+/* Add this new rule for the name */
+.player-name-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #333;
+    text-align: center;
+}
+
+/* Update this existing rule for the headshot */
+.player-headshot-icon {
+    width: 150px; /* Adjust size as needed */
+    height: 150px;
+    /* border-radius: 50%; */
+    object-fit: cover;
+}
   .player-info h4 {
     margin: 0 0 0.5rem 0;
     font-size: 1.1rem;
@@ -1047,7 +1078,7 @@ iframe {
 }
 
 /* --- MAIN & DASHBOARD SECTION --- */
-.dashboard-container {
+/* .dashboard-container {
   display: flex;
   flex-direction: column;
   font-family: Arial, sans-serif;
@@ -1056,7 +1087,7 @@ iframe {
   min-height: 70vh;
   border-radius: 8px;
   overflow: hidden;
-}
+} */
 .dashboard-nav {
   padding: 2rem;
   border-bottom: 1px solid #e0e0e0;
@@ -1615,6 +1646,152 @@ iframe {
   font-weight: bold;
   font-size: 0.85rem;
 }
+
+
+/* --- Browse Leagues Page Redesign --- */
+
+.page-title {
+    font-family: 'Merriweather', serif;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.page-subtitle {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto 2.5rem auto;
+    color: #666;
+}
+
+.leagues-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.league-card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.league-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.league-name {
+    font-family: 'Merriweather', serif;
+    font-size: 1.4rem;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.tour-tag {
+    background-color: #e0e7ff;
+    color: #4338ca;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+}
+
+.card-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.info-item {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.info-item svg {
+    width: 24px;
+    height: 24px;
+    color: #006a4e; /* Main brand green */
+    flex-shrink: 0;
+}
+
+.info-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-text .label {
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 0.1rem;
+}
+
+.info-text .value {
+    font-weight: bold;
+    color: #333;
+}
+
+.card-footer {
+    margin-top: auto; /* Pushes the button to the bottom */
+}
+
+.btn-join {
+    display: block;
+    text-align: center;
+    background-color: #006a4e;
+    color: #ffffff;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+}
+
+.btn-join:hover {
+    background-color: #00563f;
+}
+
+.no-leagues-message {
+    text-align: center;
+    padding: 3rem;
+    background-color: #fff;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+}
+
+  .search-bar {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: center;
+  }
+  .search-bar form {
+    width: 100%;
+    max-width: 700px;
+  }
+  .search-bar input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 1rem;
+  }
 
 
 

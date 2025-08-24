@@ -27,16 +27,16 @@ class DataGolfClient:
             return [], error
         return data.get('rankings', []), None
 
-    def get_live_player_stats(self, tour='pga'):
-        """
-        Fetches detailed live tournament stats for all players, including all
-        strokes gained categories, distance, and accuracy.
-        """
-        endpoint = f"preds/live-tournament-stats?stats=sg_putt,sg_app,sg_ott,sg_total,distance,accuracy,total&display=value&tour={tour}"
-        data, error = self._make_request(endpoint)
-        if error:
-            return None, error
-        return data, None
+    # def get_live_player_stats(self, tour='pga'):
+    #     """
+    #     Fetches detailed live tournament stats for all players, including all
+    #     strokes gained categories, distance, and accuracy.
+    #     """
+    #     endpoint = f"preds/live-tournament-stats?stats=sg_putt,sg_app,sg_ott,sg_total,distance,accuracy,total&display=value&tour={tour}"
+    #     data, error = self._make_request(endpoint)
+    #     if error:
+    #         return None, error
+    #     return data, None
 
     def get_in_play_stats(self, tour):
         """
@@ -58,9 +58,9 @@ class DataGolfClient:
         except requests.exceptions.RequestException as e:
             return None, str(e)
 
-    def get_live_tournament_stats(self, tour='pga'):
+    def get_live_tournament_stats(self, tour):
         """Fetches live tournament stats for a given tour."""
-        endpoint = f"preds/live-tournament-stats?tour={tour}&stats=sg_total,total&display=value"
+        endpoint = f"preds/live-tournament-stats?stats=sg_putt,sg_app,sg_ott,sg_total,distance,accuracy,total&display=value&tour={tour}"
         data, error = self._make_request(endpoint)
         if error:
             return [], error

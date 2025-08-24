@@ -44,7 +44,7 @@ def create_app(config_class=Config):
     # These are imported here to avoid circular import errors
     from . import models
     from .tasks import (
-        update_active_league_scores,
+        update_player_scores,
         reset_player_scores,
         update_player_buckets,
         finalize_finished_leagues,
@@ -87,7 +87,7 @@ def create_app(config_class=Config):
     app.register_blueprint(player_bp, url_prefix='/player')
 
     # --- Jinja Globals and Stripe API Key ---
-    app.jinja_env.globals.update(hasattr=hasattr)
+    app.jinja_env.globals.update(hasattr=hasattr, getattr=getattr)
     stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
     # --- Scheduler Setup ---
@@ -96,9 +96,17 @@ def create_app(config_class=Config):
         if os.environ.get("SCHEDULER_ENABLED", "false").lower() == "true":
 
             # Add all scheduled jobs
-            if not scheduler.get_job('update_scores'):
-                scheduler.add_job(id='update_scores', func=update_active_league_scores, args=[app], trigger='interval',
-                minutes=1)
+            # if not scheduler.get_job('update_scores'):
+            #     scheduler.add_job(id='update_scores', func=update_active_league_scores, args=[app], trigger='interval',
+            #     minutes=1)
+            if not scheduler.get_job('update_player_scores'):
+                scheduler.add_job(
+                id='update_player_scores',
+                func=update_player_scores, # Use the new function
+                args=[app],
+                trigger='interval',
+                minutes=1
+            )
     # trigger='cron', day_of_week='thu-sun', hour='6-23', minute='*/1')
 
             if not scheduler.get_job('reset_scores'):

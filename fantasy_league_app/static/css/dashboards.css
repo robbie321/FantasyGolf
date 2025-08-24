@@ -1,7 +1,7 @@
 /* fantasy_league_app/static/css/masters_style.css */
 
 :root {
-    --masters-green: #006a4e;
+    --masters-green: #38a169;
     --masters-dark-bg: #ffffff;
     --masters-card-bg: #006a4e;
     --masters-text-light: #006a4e;
@@ -33,7 +33,7 @@ body {
 /* --- Slider Tabs --- */
 .tabs-container {
     display: flex;
-    background-color: #e3e3e3;
+    background-color: #ececf0;
     border-radius: 8px;
     padding: 5px;
     margin-bottom: 1.5rem;
@@ -84,6 +84,7 @@ body {
     font-weight: bold;
     font-size: 1.1rem;
     transition: background-color 0.2s;
+    margin-bottom: 10px;
 }
 
 .action-btn.primary {
@@ -256,4 +257,369 @@ body {
 
 .action-btn.full-width {
     width: 100%;
+}
+
+
+/* --- New User Dashboard Design --- */
+
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.dashboard-header {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.dashboard-header h1 {
+    font-family: 'Merriweather', serif;
+    font-size: 2rem;
+    color: #1a202c;
+    margin: 0;
+}
+
+.dashboard-header p {
+    margin: 0.25rem 0 0 0;
+    color: #718096;
+}
+
+.header-actions {
+    /* display: flex; */
+    width: -webkit-fill-available;
+    gap: 1rem;
+
+}
+
+.header-actions .btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    margin-bottom: 10px;
+
+}
+
+.header-actions .btn-primary {
+    background-color: #facc15; /* Yellow */
+    color: #422006;
+}
+.header-actions .btn-primary:hover {
+    background-color: #f59e0b;
+}
+
+.header-actions .btn-secondary {
+    background-color: #fff;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+}
+.header-actions .btn-secondary:hover {
+    background-color: #f9fafb;
+}
+
+
+/* --- Tabs --- */
+.dashboard-tabs {
+    display: flex;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 2rem;
+}
+
+.tab-item {
+    padding: 1rem 0;
+    margin-right: 2rem;
+    margin-bottom: -1px; /* Overlap border */
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #6b7280;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-item.active {
+    color: #006a4e;
+    border-bottom-color: #006a4e;
+}
+
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
+
+/* --- League Categories --- */
+.league-category {
+    margin-bottom: 3rem;
+}
+
+
+
+.category-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: 'Merriweather', serif;
+    font-size: 1.5rem;
+    color: #1a202c;
+    margin-bottom: 1.5rem;
+}
+
+.live-indicator {
+    width: 10px;
+    height: 10px;
+    background-color: #38a169; /* Green */
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(56, 161, 105, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(56, 161, 105, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(56, 161, 105, 0); }
+}
+
+.count-badge {
+    font-size: 0.8rem;
+    background-color: #e2e8f0;
+    color: #4a5568;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.dashboard-leagues-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.no-leagues-text {
+    color: #6b7280;
+    padding: 2rem;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* --- League Card --- */
+.dashboard-league-card {
+    background-color: #fff;
+    border: 1px solid #bcc2ca;
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+.dashboard-league-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.07);
+}
+
+.dashboard-league-card .card-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+.dashboard-league-card .league-name {
+    font-family: 'Merriweather', serif;
+    font-size: 1.1rem;
+    color: #1a202c;
+    margin: 0;
+}
+.status-and-tour {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+.tour-tag-small {
+    background-color: #ffdfdf;
+    color: #ff7474;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    margin-right: 5px;
+    text-transform: uppercase;
+}
+.status-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+}
+.status-badge.status-live { background-color: #f0fff4; color: #38a169; }
+.status-badge.status-upcoming { background-color: #ebf8ff; color: #3182ce; }
+.status-badge.status-completed { background-color: #edf2f7; color: #718096; }
+
+.dashboard-league-card .card-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding: 1.25rem;
+    flex-grow: 1;
+}
+.dashboard-league-card .info-item {
+    display: flex;
+    flex-direction: row;
+}
+.dashboard-league-card .label {
+    font-size: 0.8rem;
+    color: #718096;
+    margin-bottom: 0.2rem;
+}
+.dashboard-league-card .value {
+    font-weight: 600;
+    font-size: small;
+    color: #1a202c;
+}
+
+.dashboard-league-card .card-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background-color: #f9fafb;
+    border-top: 1px solid #f1f5f9;
+    color: #006a4e;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: 0 0 12px 12px;
+}
+.card-footer svg {
+    margin-left: 0.25rem;
+    transition: transform 0.2s ease;
+}
+.dashboard-league-card:hover .card-footer svg {
+    transform: translateX(4px);
+}
+
+/* Dashboard card header */
+.dashboard-league-card .card-header {
+    display: flex; /* Arrange items horizontally */
+    justify-content: space-between; /* Push items to opposite ends */
+    align-items: flex-start; /* Align items to the top */
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.card-title-group {
+    /* This group will stack the title and rank vertically */
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem; /* Adds space between the name and the rank badge */
+}
+
+/* --- Rank Badge Styles (These remain the same) --- */
+.rank-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.1rem 0.6rem;
+    border-radius: 6px;
+    letter-spacing: 0.02em;
+    width: fit-content; /* Ensures the badge is only as wide as its content */
+}
+
+.rank-badge.rank-gold {
+    background-color: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.rank-badge.rank-silver {
+    background-color: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.rank-badge.rank-bronze {
+    background-color: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fed7aa;
+}
+
+.rank-badge.rank-standard {
+    background-color: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+
+/* --- View League Page Redesign --- */
+
+.league-details-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.league-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.league-info-grid .stat-card .value {
+    font-size: 1.8rem; /* Slightly smaller for this context */
+}
+
+.tour-tag-large {
+    background-color: #eef2ff;
+    color: #4338ca;
+    font-size: 1.2rem;
+    font-weight: 600;
+    padding: 0.3rem 0.8rem;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.my-team-section,
+.leaderboard-section {
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.my-team-section .section-title,
+.leaderboard-section .section-title {
+    margin-top: 0;
+}
+
+.player-picks-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.player-slot {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background-color: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.no-entries-text {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+}
+
+@media(min-width: 768px) {
+    .header-actions {
+        display: flex;
+    }
 }
