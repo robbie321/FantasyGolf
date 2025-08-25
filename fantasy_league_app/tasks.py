@@ -321,113 +321,79 @@ def settle_finished_leagues(app):
 
 def update_player_buckets(app):
     """
-    Scheduled to run weekly. Fetches upcoming tournaments for major tours,
-    creates player buckets for them, and cleans up old, unused buckets.
+    Scheduled task to create new player buckets for upcoming tournaments.
+    It fetches the tournament field and the latest betting odds,
+    applies a cap to the odds, and populates the bucket.
     """
     with app.app_context():
-        print(f"--- Running weekly player bucket update at {datetime.now()} ---")
-
-        API_KEY = app.config.get('DATA_GOLF_API_KEY')
-        if not API_KEY:
-            print("ERROR: Data Golf API key not configured. Aborting task.")
-            return
-
-        tours = ['pga', 'alt', 'euro', 'kft']
-        today = datetime.utcnow().date()
+        print("--- Running scheduled job: update_player_buckets ---")
+        tours = ['pga', 'euro', 'kft', 'alt']
+        data_golf_client = DataGolfClient()
 
         for tour in tours:
-            try:
-                print(f"Processing tour: {tour}")
+            print(f"--- Processing tour: {tour} ---")
 
-                # 1. Fetch the schedule for the current tour
-                schedule_url = f"https://feeds.datagolf.com/get-schedule?tour={tour}&file_format=json&key={API_KEY}"
-                response = requests.get(schedule_url)
-                response.raise_for_status()
-                schedule_data = response.json().get('schedule', [])
+            # --- Step 1: Fetch Tournament Field and Betting Odds ---
+            field_data, field_error = data_golf_client.get_tournament_field_updates(tour)
+            odds_data, odds_error = data_golf_client.get_betting_odds(tour) # Assuming this function exists
 
-                # Find the first upcoming tournament in the next 7 days
-                upcoming_tournament = None
-                for tournament in schedule_data:
-                    start_date = datetime.strptime(tournament.get('start_date'), '%Y-%m-%d').date()
-                    if today <= start_date < today + timedelta(days=7):
-                        upcoming_tournament = tournament
-                        break # Found the first one, stop looking
+            if field_error or odds_error:
+                current_app.logger.error(f"Failed to fetch data for {tour}. Field Error: {field_error}, Odds Error: {odds_error}")
+                continue
 
-                if not upcoming_tournament:
-                    print(f"No upcoming tournaments found for tour '{tour}' in the next 7 days.")
-                    continue # Move to the next tour
+            if not field_data or not field_data.get('field') or not odds_data:
+                print(f"No complete field or odds data found for tour: {tour}. Skipping bucket update.")
+                continue
 
-                event_name = upcoming_tournament.get('event_name')
-                event_id = upcoming_tournament.get('event_id')
+            # --- Step 2: Create an efficient lookup map for odds ---
+            # We assume odds_data is a list of dicts, each with 'dg_id' and 'odds_bet365'
+            odds_map = {player['dg_id']: player.get('odds_bet365') for player in odds_data}
 
-                # 2. Check if a bucket for this event already exists
-                if PlayerBucket.query.filter_by(name=event_name).first():
-                    print(f"Bucket '{event_name}' already exists. Skipping.")
+            # --- Step 3: Get or Create the Player Bucket ---
+            bucket_name = f"{tour.upper()} Players - {field_data.get('event_name', datetime.utcnow().strftime('%Y-%m-%d'))}"
+            latest_bucket = PlayerBucket.query.filter_by(name=bucket_name).first()
+
+            if not latest_bucket:
+                latest_bucket = PlayerBucket(name=bucket_name, tour=tour)
+                db.session.add(latest_bucket)
+                print(f"Created new player bucket: {latest_bucket.name}")
+            else:
+                print(f"Bucket '{bucket_name}' already exists. Updating players.")
+                latest_bucket.players = [] # Clear out old players to ensure an accurate field
+
+            # --- Step 4: Process Players and Apply Odds Cap ---
+            for player_data in field_data['field']:
+                player_dg_id = player_data.get('dg_id')
+                if not player_dg_id:
                     continue
 
-                # 3. Fetch the player field for the new tournament
-                field_url = f"https://feeds.datagolf.com/field-updates?tour={tour}&event_id={event_id}&key={API_KEY}"
-                field_response = requests.get(field_url)
-                field_response.raise_for_status()
-                player_list = field_response.json().get('field', [])
+                player = Player.query.filter_by(dg_id=player_dg_id).first()
+                if not player:
+                    player = Player(dg_id=player_dg_id)
+                    db.session.add(player)
 
-                if not player_list:
-                    print(f"No player field found for '{event_name}'. Skipping bucket creation.")
-                    continue
+                # Update player name details
+                player_name_parts = player_data.get('player_name', ',').split(',')
+                player.surname = player_name_parts[0].strip()
+                player.name = player_name_parts[1].strip() if len(player_name_parts) > 1 else ''
 
-                # 4. Create the new bucket and add players
-                new_bucket = PlayerBucket(
-                    name=event_name,
-                    description=f"Players for {event_name}",
-                    event_id=event_id,
-                    tour=tour
-                )
-                db.session.add(new_bucket)
+                # --- Odds Capping Logic ---
+                odds_from_api = odds_map.get(player_dg_id)
 
-                for api_player in player_list:
-                    dg_id = api_player.get('dg_id')
-                    if not dg_id: continue
+                if odds_from_api and isinstance(odds_from_api, (int, float)):
+                    # If the odds are over 85, cap them at 85.
+                    if odds_from_api > 85:
+                        player.odds = 85
+                    else:
+                        player.odds = odds_from_api
+                else:
+                    # Set a high default for players without odds so they can still be picked
+                    player.odds = 100
 
-                    player = Player.query.filter_by(dg_id=dg_id).first()
-                    if not player:
-                        # Create a new player if they don't exist in our DB
-                        name_parts = api_player.get('player_name', '').split(' ')
-                        name = name_parts[0]
-                        surname = ' '.join(name_parts[1:])
-                        player = Player(dg_id=dg_id, name=name, surname=surname)
-                        db.session.add(player)
+                latest_bucket.players.append(player)
 
-                    new_bucket.players.append(player)
-
-                db.session.commit()
-                print(f"Successfully created bucket '{event_name}' with {len(new_bucket.players)} players.")
-
-            except requests.exceptions.RequestException as e:
-                print(f"API Error for tour '{tour}': {e}")
-            except Exception as e:
-                print(f"An unexpected error occurred for tour '{tour}': {e}")
-                db.session.rollback()
-
-        # 5. Clean up old, unused buckets (moved outside the tour loop to run once at the end)
-        print("\n--- Starting cleanup of old buckets ---")
-        cleanup_date = datetime.utcnow() - timedelta(days=100)
-        old_buckets = PlayerBucket.query.filter(PlayerBucket.created_at < cleanup_date).all()
-
-        deleted_count = 0
-        for bucket in old_buckets:
-            is_in_use_by_active_league = any(not league.is_finalized for league in bucket.leagues)
-
-            if not is_in_use_by_active_league:
-                db.session.delete(bucket)
-                deleted_count += 1
-
-        if deleted_count > 0:
-            db.session.commit()
-            print(f"Cleaned up and deleted {deleted_count} old, unused player buckets.")
-        else:
-            print("No old buckets to clean up.")
-
-        print("--- Weekly bucket update finished. ---")
+        db.session.commit()
+        print("--- Player bucket update finished successfully. ---")
 
 
 # --- Automated Weekly Task to Finalize Leagues ---

@@ -15,6 +15,7 @@ complete] league admins need to set a percentage of the total entry pot instead 
 [complete] do mobile first css for admin page
 [] allow users to create mini leagues
 [] verify email address before user allowed to join leagues
+[] check over finialised leagues payouts
 
 
 

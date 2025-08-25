@@ -236,7 +236,7 @@ def refresh_bucket_odds(bucket_id):
     player_odds = {}
 
     # 1. Use the client to fetch the odds data
-    odds_list, error = client.get_betting_odds()
+    odds_list, error = client.get_betting_odds(bucket.tour)
 
     # 2. Handle potential errors from the client
     if error:

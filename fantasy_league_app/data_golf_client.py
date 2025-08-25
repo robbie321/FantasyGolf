@@ -88,7 +88,7 @@ class DataGolfClient:
         except requests.exceptions.RequestException as e:
             return None, str(e)
 
-    def get_betting_odds(self, tour='pga'):
+    def get_betting_odds(self, tour):
         """Fetches outright win odds for a given tour."""
         endpoint = f"betting-tools/outrights?tour={tour}&market=win&odds_format=decimal&file_format=json"
         data, error = self._make_request(endpoint)
