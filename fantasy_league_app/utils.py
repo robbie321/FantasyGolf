@@ -1,3 +1,4 @@
+import json
 from flask import current_app
 from fantasy_league_app import db, mail
 from fantasy_league_app.models import Player
@@ -5,6 +6,8 @@ from datetime import datetime, timedelta
 from functools import wraps
 from flask import redirect, url_for, request
 from flask_login import current_user
+from pywebpush import webpush, WebPushException
+from .models import PushSubscription
 
 import os
 
@@ -143,4 +146,41 @@ The winner is: {winner.full_name}
 Congratulations to the winner and thank you to everyone who participated.
 """
     mail.send(msg)
+
+
+
+def send_push_notification(user_id, title, body, icon=None):
+    """
+    Sends a push notification to all subscribed devices for a given user.
+    """
+    app = current_app._get_current_object()
+    user_subscriptions = PushSubscription.query.filter_by(user_id=user_id).all()
+
+    if not user_subscriptions:
+        print(f"No push subscriptions found for user {user_id}.")
+        return
+
+    message = json.dumps({
+        "title": title,
+        "body": body,
+        "icon": icon or "/static/images/icons/icon-192x192.png"
+    })
+
+    print(f"Sending push notification to user {user_id}: '{body}'")
+    for sub in user_subscriptions:
+        try:
+            webpush(
+                subscription_info=json.loads(sub.subscription_json),
+                data=message,
+                vapid_private_key=app.config['VAPID_PRIVATE_KEY'],
+                vapid_claims={"sub": app.config['VAPID_CLAIM_EMAIL']}
+            )
+        except WebPushException as ex:
+            print(f"WebPushException for user {user_id}: {ex}")
+            # If the subscription is expired or invalid (404, 410), delete it
+            if ex.response and ex.response.status_code in [404, 410]:
+                db.session.delete(sub)
+
+    db.session.commit()
+
 

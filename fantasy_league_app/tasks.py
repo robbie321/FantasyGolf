@@ -19,8 +19,9 @@ from .utils import send_winner_notification_email
 def update_player_scores(app):
     """
     This is the ONLY scheduled task for live scores.
-    It runs on a schedule, fetches data for all active tours, and performs
+    It runs on a schedule, uses the 'get_in_play_stats' API, and performs
     a bulk update on the central Player table. It is fast and scalable.
+    It also calculates rank changes to send push notifications.
     """
     with app.app_context():
         print(f"--- Running centralized player score update at {datetime.now()} ---")
@@ -31,46 +32,95 @@ def update_player_scores(app):
 
         for tour in tours:
             try:
-               # this method returns the list of players directly
-                live_scores, error = data_golf_client.get_in_play_stats(tour)
+                in_play_stats, error = data_golf_client.get_in_play_stats(tour)
 
-                if error:
-                    print(f"API Error for tour '{tour}': {error}")
+                if error or not in_play_stats or not isinstance(in_play_stats, list):
                     continue
 
-                if not live_scores or not isinstance(live_scores, list):
-                    print(f"No valid player data found for tour: '{tour}'.")
-                    continue
-
-                # --- 1. Create a quick lookup dictionary for API scores ---
-                player_scores_from_api = {player['dg_id']: player for player in live_scores}
+                player_scores_from_api = {player['dg_id']: player for player in in_play_stats}
                 player_dg_ids = list(player_scores_from_api.keys())
 
-                # --- 2. Fetch the corresponding players from OUR database ---
-                # This gets us the all-important primary key (player.id)
-                players_in_db = Player.query.filter(Player.dg_id.in_(player_dg_ids)).all()
+                # --- START: New Notification Logic ---
 
-                # --- 3. Prepare the data for the bulk update ---
+                # 1. Find all active leagues for this tour
+                active_leagues_on_tour = League.query.filter(
+                    League.tour == tour,
+                    League.is_finalized == False,
+                    League.start_date <= datetime.utcnow()
+                ).all()
+
+                # 2. Calculate and store the OLD ranks for each league
+                old_ranks_by_league = {}
+                for league in active_leagues_on_tour:
+                    entries = league.entries
+                    # Calculate total scores based on current DB data
+                    for entry in entries:
+                        s1 = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
+                        s2 = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
+                        s3 = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
+                        entry.temp_score = s1 + s2 + s3
+
+                    entries.sort(key=lambda x: x.temp_score)
+                    old_ranks_by_league[league.id] = {entry.user_id: rank + 1 for rank, entry in enumerate(entries)}
+
+                # --- END: Old Rank Calculation ---
+
+                # 3. Update the Player scores in the database (your existing logic)
+                players_in_db = Player.query.filter(Player.dg_id.in_(player_dg_ids)).all()
                 players_to_update = []
                 for player in players_in_db:
                     score_data = player_scores_from_api.get(player.dg_id)
                     new_score = score_data.get('current_score')
-
                     if score_data and new_score is not None:
                         players_to_update.append({
-                            'id': player.id,  # CRITICAL: Provide the primary key
+                            'id': player.id,
                             'current_score': new_score,
-                            'thru': score_data.get('thru'),
-                            'today': score_data.get('today')
+                            'thru': score_data.get('thru')
                         })
 
-                # --- 4. Perform the efficient bulk update ---
-                if players_to_update:
-                    db.session.bulk_update_mappings(Player, players_to_update)
-                    db.session.commit()
-                    print(f"Successfully updated {len(players_to_update)} players for tour: '{tour}'")
-                    if tour not in updated_tours:
-                        updated_tours.append(tour)
+                if not players_to_update:
+                    continue # Skip if there are no score changes
+
+                db.session.bulk_update_mappings(Player, players_to_update)
+                db.session.commit()
+                print(f"Successfully updated {len(players_to_update)} players for tour: '{tour}'")
+                if tour not in updated_tours:
+                    updated_tours.append(tour)
+
+                # --- START: New Rank Comparison and Notification ---
+
+                # 4. Recalculate ranks with NEW scores and send notifications
+                for league in active_leagues_on_tour:
+                    entries = league.entries # Re-fetch or use existing entry objects
+                    old_ranks = old_ranks_by_league.get(league.id, {})
+
+                    # Recalculate total scores with the new data
+                    for entry in entries:
+                        s1 = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
+                        s2 = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
+                        s3 = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
+                        entry.temp_score = s1 + s2 + s3
+
+                    entries.sort(key=lambda x: x.temp_score)
+
+                    for new_rank_idx, entry in enumerate(entries):
+                        new_rank = new_rank_idx + 1
+                        old_rank = old_ranks.get(entry.user_id)
+
+                        if old_rank is not None:
+                            # NOTIFICATION 5: Big Jumps
+                            if (old_rank - new_rank) >= 5: # Moved UP
+                                send_push_notification(entry.user_id, "Big Mover! 🔥", f"You've jumped up to P{new_rank} in '{league.name}'!")
+                            if (new_rank - old_rank) >= 5: # Moved DOWN
+                                send_push_notification(entry.user_id, "Uh Oh... 😬", f"You've dropped to P{new_rank} in '{league.name}'.")
+
+                            # NOTIFICATION 6: First Place Changes
+                            if new_rank == 1 and old_rank != 1:
+                                send_push_notification(entry.user_id, "You're in the Lead! 🥇", f"You've moved into 1st place in '{league.name}'!")
+                            if old_rank == 1 and new_rank != 1:
+                                send_push_notification(entry.user_id, "Leader Change!", f"You've been knocked out of 1st place in '{league.name}'.")
+
+                # --- END: Notification Logic ---
 
             except Exception as e:
                 print(f"An unexpected error occurred during score update for tour '{tour}': {e}")
@@ -159,6 +209,15 @@ def reset_player_scores(app):
             updated_rows = db.session.query(Player).update({"current_score": 0})
             db.session.commit()
             print(f"Successfully reset scores for {updated_rows} players.")
+            # After resetting, find all users and send them a notification
+            all_users = User.query.filter_by(is_active=True).all()
+            for user in all_users:
+                send_push_notification(
+                    user.id,
+                    "New Week, New Leagues!",
+                    "Player data has been updated. Check out the new leagues for this week's tournaments."
+                )
+
         except Exception as e:
             print(f"ERROR: Could not reset player scores: {e}")
             db.session.rollback()
@@ -168,57 +227,33 @@ def send_deadline_reminders(app):
     Runs periodically to send reminders for leagues whose entry deadline is approaching.
     """
     with app.app_context():
-        now = datetime.utcnow()
+        with app.app_context():
+            now = datetime.utcnow()
 
-        # Find leagues whose start_date is between 24 and 48 hours from now.
-        # This means their entry deadline (start_date - 3 hours) is between 21 and 45 hours away.
-        reminder_window_start = now + timedelta(hours=24)
-        reminder_window_end = now + timedelta(hours=48)
+            # Check for 48h, 24h, and 6h windows
+            windows = [48, 24, 6]
+            for hours in windows:
+                reminder_time = now + timedelta(hours=hours)
 
-        leagues_nearing_deadline = League.query.filter(
-            League.reminder_sent == False,
-            League.start_date.between(reminder_window_start, reminder_window_end)
-        ).all()
+                # Find leagues whose deadline is in the next hour
+                leagues_needing_reminder = League.query.filter(
+                    League.entry_deadline.between(reminder_time, reminder_time + timedelta(hours=1)),
+                    # You might need a more advanced way to track sent reminders per user/window
+                ).all()
 
-        if not leagues_nearing_deadline:
-            print(f"--- No deadline reminders to send at {datetime.now()} ---")
-            return
+                for league in leagues_needing_reminder:
+                    # Find users who have entered but not yet selected 3 players
+                    entries_to_remind = LeagueEntry.query.filter(
+                        LeagueEntry.league_id == league.id,
+                        LeagueEntry.player3_id == None
+                    ).all()
 
-        print(f"--- Found {len(leagues_nearing_deadline)} league(s) needing reminders. ---")
-
-        for league in leagues_nearing_deadline:
-            recipients = [entry.user.email for entry in league.entries if entry.user]
-
-            if not recipients:
-                # Mark as sent even if no one has joined to prevent re-checking
-                league.reminder_sent = True
-                continue
-
-            msg = Message(f'Reminder: Entry Deadline for "{league.name}"',
-                          sender=app.config['MAIL_DEFAULT_SENDER'],
-                          bcc=recipients) # Use BCC to protect privacy
-
-            # Use the entry_deadline property from your model for the email body
-            deadline_str = (league.start_date - timedelta(hours=3)).strftime('%A, %d %B %Y at %H:%M')
-
-            msg.body = f"""Hi everyone,
-
-This is a reminder that the deadline to submit or edit your entry for the league "{league.name}" is approaching.
-
-Deadline: {deadline_str} UTC.
-
-Make sure your picks are in! Good luck.
-"""
-            try:
-                mail.send(msg)
-                # Mark the league so we don't send reminders again
-                league.reminder_sent = True
-                print(f"Sent reminder for league: {league.name}")
-            except Exception as e:
-                print(f"!!! FAILED to send email for league {league.name}: {e} !!!")
-
-
-        db.session.commit()
+                    for entry in entries_to_remind:
+                        send_push_notification(
+                            entry.user_id,
+                            f"Reminder for {league.name}",
+                            f"Your entry is incomplete! The deadline is in {hours} hours."
+                        )
 
 
 #redundant
@@ -445,6 +480,13 @@ def finalize_finished_leagues(app):
 
             league.winners = winners
 
+            for winner in winners:
+                send_push_notification(
+                    winner.id,
+                    f"You Won '{league.name}'!",
+                    f"Congratulations! You finished in the top spot. Your winnings are on the way."
+                )
+
             # --- Payout Logic ---
             club_admin = User.query.get(league.club_id) if not league.is_public else None
             total_prize, error = process_payouts(league, winners, club_admin)
@@ -453,6 +495,14 @@ def finalize_finished_leagues(app):
                 print(f"Stripe payout failed for league {league.id}: {error}")
                 continue
 
+
+            # NOTIFICATION 4: Send "Payment Sent" message
+            for winner in winners:
+                send_push_notification(
+                    winner.id,
+                    "Payment Sent!",
+                    f"Your winnings for the '{league.name}' league have been sent to your connected account."
+                )
             # --- Archive Scores & Finalize ---
             all_players_in_league = set()
             for entry in entries:

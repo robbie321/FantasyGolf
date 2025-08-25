@@ -17,4 +17,5 @@ gunicorn
 psycopg2-binary
 redis
 Flask-Caching
+pywebpush
 

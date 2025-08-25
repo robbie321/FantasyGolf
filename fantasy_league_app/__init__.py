@@ -116,7 +116,7 @@ def create_app(config_class=Config):
                 scheduler.add_job(id='update_buckets', func=update_player_buckets, args=[app], trigger='cron', day_of_week='mon', hour=14, minute=0)
 
             if not scheduler.get_job('finalize_leagues'):
-                scheduler.add_job(id='finalize_leagues', func=finalize_finished_leagues, args=[app], trigger='cron', day_of_week='mon', hour=13, minute=30)
+                scheduler.add_job(id='finalize_leagues', func=finalize_finished_leagues, args=[app], trigger='cron', day_of_week='mon', hour=10, minute=42)
 
             if not scheduler.get_job('deadline_reminders'):
                 scheduler.add_job(id='deadline_reminders', func=send_deadline_reminders, args=[app], trigger='interval', hours=1)

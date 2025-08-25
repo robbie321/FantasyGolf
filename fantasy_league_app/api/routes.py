@@ -2,14 +2,15 @@ from flask import jsonify, current_app
 from flask_login import login_required
 from fantasy_league_app.models import Player
 import requests
-from . import api_bp
+import json
+from .. import db
 import re
 # fantasy_league_app/api/routes.py
-
+from pywebpush import webpush, WebPushException
 from flask import jsonify, current_app
 from flask_login import login_required
 from ..data_golf_client import DataGolfClient #
-from ..models import Player
+from ..models import Player, PushSubscription
 from . import api_bp
 
 @api_bp.route('/player-stats/<int:dg_id>')
@@ -88,3 +89,66 @@ def get_live_leaderboard(tour):
     except Exception as e:
         current_app.logger.error(f"An unexpected error occurred: {e}")
         return jsonify({'error': 'An internal server error occurred'}), 500
+
+
+@api_bp.route('/vapid_public_key', methods=['GET'])
+def vapid_public_key():
+    public_key = current_app.config['VAPID_PUBLIC_KEY']
+    return jsonify({'public_key': public_key})
+
+
+@api_bp.route('/subscribe', methods=['POST'])
+@login_required
+def subscribe():
+    subscription_data = request.get_json()
+
+    # Check if this subscription already exists for this user
+    subscription = PushSubscription.query.filter_by(
+        user_id=current_user.id,
+        endpoint=subscription_data['endpoint']
+    ).first()
+
+    if not subscription:
+        subscription = PushSubscription(
+            user_id=current_user.id,
+            subscription_json=json.dumps(subscription_data)
+        )
+        db.session.add(subscription)
+        db.session.commit()
+
+    return jsonify({'success': True}), 201
+
+# Example of a route to trigger a push notification
+# In your real app, this logic would be in a background task
+@api_bp.route('/send_notification/<int:user_id>', methods=['POST'])
+@login_required
+def send_notification(user_id):
+    if not current_user.is_site_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    user_subscriptions = PushSubscription.query.filter_by(user_id=user_id).all()
+    if not user_subscriptions:
+        return jsonify({'error': 'User has no subscriptions'}), 404
+
+    message = json.dumps({
+        "title": "Fantasy Fairways",
+        "body": "Your league is about to start! Check your picks.",
+        "icon": "/static/images/icons/icon-192x192.png"
+    })
+
+    for sub in user_subscriptions:
+        try:
+            webpush(
+                subscription_info=json.loads(sub.subscription_json),
+                data=message,
+                vapid_private_key=current_app.config['VAPID_PRIVATE_KEY'],
+                vapid_claims={"sub": current_app.config['VAPID_CLAIM_EMAIL']}
+            )
+        except WebPushException as ex:
+            print(f"WebPushException: {ex}")
+            # If the subscription is expired or invalid, delete it
+            if ex.response and ex.response.status_code in [404, 410]:
+                db.session.delete(sub)
+                db.session.commit()
+
+    return jsonify({'success': True, 'sent_to': len(user_subscriptions)})

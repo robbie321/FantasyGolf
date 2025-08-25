@@ -266,3 +266,14 @@ class LeagueEntry(db.Model):
 
 
 
+class PushSubscription(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    subscription_json = db.Column(db.Text, nullable=False)
+
+    @property
+    def endpoint(self):
+        import json
+        return json.loads(self.subscription_json).get('endpoint')
+
+

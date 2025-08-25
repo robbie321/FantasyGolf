@@ -42,4 +42,9 @@ class Config:
     CACHE_REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
     CACHE_DEFAULT_TIMEOUT = 300 # Default cache timeout in seconds (5 minutes)
 
+       # --- VAPID Keys for Push Notifications ---
+    VAPID_PUBLIC_KEY = "/public_key.pem"
+    VAPID_PRIVATE_KEY = "/private_key.pem"
+    VAPID_CLAIM_EMAIL = "mailto:rmalone7@gmail.com"
+
     TESTING_MODE_FLAG = 'testing_mode.flag'

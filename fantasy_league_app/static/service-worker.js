@@ -34,3 +34,27 @@ self.addEventListener('fetch', event => {
       })
   );
 });
+
+
+// Listen for incoming push notifications
+self.addEventListener('push', event => {
+    const data = event.data.json();
+    console.log('Push notification received:', data);
+
+    const title = data.title || 'Fantasy Fairways';
+    const options = {
+        body: data.body,
+        icon: data.icon || '/static/images/icons/icon-192x192.png',
+        badge: '/static/images/icons/icon-96x96.png'
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    event.waitUntil(
+        clients.openWindow('/')
+    );
+});
