@@ -166,14 +166,17 @@ def send_push_notification(user_id, title, body, icon=None):
         "icon": icon or "/static/images/icons/icon-192x192.png"
     })
 
+    # Construct the full path to your VAPID private key
+    private_key_path = os.path.join(app.root_path, '..', app.config['VAPID_PRIVATE_KEY'])
+
     print(f"Sending push notification to user {user_id}: '{body}'")
     for sub in user_subscriptions:
         try:
             webpush(
                 subscription_info=json.loads(sub.subscription_json),
                 data=message,
-                vapid_private_key=app.config['VAPID_PRIVATE_KEY'],
-                vapid_claims={"sub": app.config['VAPID_CLAIM_EMAIL']}
+                vapid_private_key=private_key_path,
+                vapid_claims={"sub": f"mailto:{app.config['VAPID_CLAIM_EMAIL']}"}
             )
         except WebPushException as ex:
             print(f"WebPushException for user {user_id}: {ex}")

@@ -44,8 +44,8 @@ class Config:
     CACHE_DEFAULT_TIMEOUT = 300 # Default cache timeout in seconds (5 minutes)
 
        # --- VAPID Keys for Push Notifications ---
-    VAPID_PUBLIC_KEY = "/public_key.pem"
-    VAPID_PRIVATE_KEY = "/private_key.pem"
+    VAPID_PUBLIC_KEY = "public_key.pem"
+    VAPID_PRIVATE_KEY = "private_key.pem"
     VAPID_CLAIM_EMAIL = "mailto:rmalone7@gmail.com"
 
     TESTING_MODE_FLAG = 'testing_mode.flag'
