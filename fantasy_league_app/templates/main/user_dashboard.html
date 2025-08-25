@@ -165,6 +165,14 @@
             Update Stripe Payout Details
           </button>
         </form>
+
+        <button
+          id="notifications-button"
+          class="action-btn secondary"
+          style="margin-top: 1rem"
+        >
+          Enable Push Notifications
+        </button>
       </div>
     </div>
   </div>
@@ -209,6 +217,10 @@
         document.getElementById(tab.dataset.tab).classList.add("active");
       });
     });
+
+    document
+      .getElementById("notifications-button")
+      .addEventListener("click", askForPushPermission);
   });
 
   // --- Join League Popup Logic ---
