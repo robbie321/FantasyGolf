@@ -38,21 +38,37 @@ self.addEventListener('fetch', event => {
 
 // Listen for incoming push notifications
 self.addEventListener('push', event => {
-    const data = event.data.json();
-    console.log('Push notification received:', data);
+    console.log('Service Worker: Push event received!');
 
-    const title = data.title || 'Fantasy Fairways';
-    const options = {
-        body: data.body,
-        icon: data.icon || '/static/images/icons/icon-192x192.png',
-        badge: '/static/images/icons/icon-96x96.png'
-    };
+    if (!event.data) {
+        console.error('Service Worker: Push event but no data');
+        return;
+    }
 
-    event.waitUntil(self.registration.showNotification(title, options));
+    try {
+        const data = event.data.json();
+        console.log('Service Worker: Push data parsed:', data);
+
+        const title = data.title || 'Fantasy Fairways';
+        const options = {
+            body: data.body,
+            icon: data.icon || '/static/images/icons/icon-192x192.png',
+            badge: '/static/images/icons/icon-96x96.png'
+        };
+
+        event.waitUntil(
+            self.registration.showNotification(title, options)
+        );
+        console.log('Service Worker: Notification should be displayed.');
+
+    } catch (e) {
+        console.error('Service Worker: Error parsing push data', e);
+    }
 });
 
 // Handle notification click
 self.addEventListener('notificationclick', event => {
+    console.log('Service Worker: Notification clicked.');
     event.notification.close();
     event.waitUntil(
         clients.openWindow('/')
