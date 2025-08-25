@@ -1,5 +1,5 @@
 # --- File: fantasy_league_app/main/routes.py (UPDATED - Fix NameError: db is not defined) ---
-from flask import render_template, url_for, redirect, flash, current_app, request
+from flask import render_template, url_for, redirect, flash, current_app, request, send_from_directory
 from flask_login import login_required, current_user
 from fantasy_league_app.models import League, LeagueEntry, User
 from . import main_bp
@@ -400,3 +400,8 @@ def stripe_connect_refresh():
         if getattr(current_user, 'is_club_admin', False):
             return redirect(url_for('main.club_dashboard'))
         return redirect(url_for('main.user_dashboard'))
+
+@main_bp.route('/service-worker.js')
+def service_worker():
+    """Serves the service worker file with the correct MIME type."""
+    return send_from_directory(current_app.static_folder, 'service-worker.js', mimetype='application/javascript')

@@ -40,12 +40,14 @@ class Config:
 
     # --- Redis and Caching Configuration ---
     CACHE_TYPE = 'RedisCache'
-    CACHE_REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+    CACHE_REDIS_URL = os.environ.get('REDISCLOUD_URL', 'redis://localhost:6379/0')
     CACHE_DEFAULT_TIMEOUT = 300 # Default cache timeout in seconds (5 minutes)
 
        # --- VAPID Keys for Push Notifications ---
-    VAPID_PUBLIC_KEY = "public_key.pem"
-    VAPID_PRIVATE_KEY = "private_key.pem"
-    VAPID_CLAIM_EMAIL = "mailto:rmalone7@gmail.com"
+
+    VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', 'public_key.pem') or 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMikeN4Y56qUl9NKtb6vvneJs+0BC7DfKXJlCQGCY23qRKl5uJS36c3SWJqVVvv6eo+5rvgnNOb8Rv1dUKcdEZQ=='
+    VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', 'private_key.pem') or 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgJEK++bJ3qsf4NV4jkIHX/RHFlzs0ZlaBe7AK8F865T6hRANCAAQyKR43hjnqpSX00q1vq++d4mz7QELsN8pcmUJAYJjbepEqXm4lLfpzdJYmpVW+/p6j7mu+Cc05vxG/V1Qpx0Rl'
+    VAPID_CLAIM_EMAIL = os.environ.get('VAPID_CLAIM_EMAIL', 'mailto:rmalone7@gmail.com')
+
 
     TESTING_MODE_FLAG = 'testing_mode.flag'

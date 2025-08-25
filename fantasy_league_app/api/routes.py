@@ -93,28 +93,43 @@ def get_live_leaderboard(tour):
 
 @api_bp.route('/vapid_public_key', methods=['GET'])
 def vapid_public_key():
-    public_key = current_app.config['VAPID_PUBLIC_KEY']
-    return jsonify({'public_key': public_key})
+    """Provides the VAPID public key to the frontend."""
+    public_key = current_app.config.get('VAPID_PUBLIC_KEY')
 
+    # Check if the key is missing or is still the default placeholder
+    if not public_key or 'YOUR_GENERATED_PUBLIC_KEY' in public_key:
+        print("!!! LOG ERROR: VAPID_PUBLIC_KEY is not configured on the server.")
+        return jsonify({'error': 'VAPID public key not configured on the server.'}), 500
+
+    print(f"LOG: Sending VAPID public key to client: {public_key[:10]}...")
+    return jsonify({'public_key': public_key})
 
 @api_bp.route('/subscribe', methods=['POST'])
 @login_required
 def subscribe():
+    """Saves a user's push notification subscription to the database."""
+    print(f"LOG: Received a new subscription request for user {current_user.id}")
     subscription_data = request.get_json()
+    if not subscription_data:
+        print("LOG ERROR: No subscription data received in request.")
+        return jsonify({'error': 'No subscription data provided'}), 400
 
-    # Check if this subscription already exists for this user
-    subscription = PushSubscription.query.filter_by(
-        user_id=current_user.id,
-        endpoint=subscription_data['endpoint']
-    ).first()
+    endpoint = subscription_data.get('endpoint')
 
-    if not subscription:
-        subscription = PushSubscription(
+    # Check if this exact subscription already exists for this user
+    subscription = PushSubscription.query.filter_by(user_id=current_user.id, endpoint=endpoint).first()
+
+    if subscription:
+        print(f"LOG: Subscription for endpoint {endpoint} already exists for user {current_user.id}.")
+    else:
+        print(f"LOG: Creating new subscription for user {current_user.id}.")
+        new_subscription = PushSubscription(
             user_id=current_user.id,
             subscription_json=json.dumps(subscription_data)
         )
-        db.session.add(subscription)
+        db.session.add(new_subscription)
         db.session.commit()
+        print(f"LOG: Successfully saved new subscription for user {current_user.id}.")
 
     return jsonify({'success': True}), 201
 

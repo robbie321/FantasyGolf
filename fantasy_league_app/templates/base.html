@@ -213,170 +213,107 @@
     </nav>
     {% endif %}
     <script>
-              function toggleDropdown() {
-                document.getElementById("myDropdown").classList.toggle("show");
-              }
-              // Close dropdown if clicking outside
-              window.onclick = function (event) {
-                if (!event.target.matches(".dropdown-button")) {
-                  var dropdowns = document.getElementsByClassName("dropdown-content");
-                  for (var i = 0; i < dropdowns.length; i++) {
-                    var openDropdown = dropdowns[i];
-                    if (openDropdown.classList.contains("show")) {
-                      openDropdown.classList.remove("show");
-                    }
-                  }
-                }
-              };
+      function toggleDropdown() {
+        document.getElementById("myDropdown").classList.toggle("show");
+      }
+      // Close dropdown if clicking outside
+      window.onclick = function (event) {
+        if (!event.target.matches(".dropdown-button")) {
+          var dropdowns = document.getElementsByClassName("dropdown-content");
+          for (var i = 0; i < dropdowns.length; i++) {
+            var openDropdown = dropdowns[i];
+            if (openDropdown.classList.contains("show")) {
+              openDropdown.classList.remove("show");
+            }
+          }
+        }
+      };
 
-              document.addEventListener("DOMContentLoaded", function () {
-                const toggler = document.getElementById("navbar-toggler-btn");
-                const linksContainer = document.getElementById(
-                  "navbar-links-container"
-                );
+      document.addEventListener("DOMContentLoaded", function () {
+        const toggler = document.getElementById("navbar-toggler-btn");
+        const linksContainer = document.getElementById(
+          "navbar-links-container"
+        );
 
-                if (toggler && linksContainer) {
-                  toggler.addEventListener("click", function () {
-                    linksContainer.classList.toggle("is-active");
-                    toggler.classList.toggle("is-active");
-                  });
-                }
-              });
+        if (toggler && linksContainer) {
+          toggler.addEventListener("click", function () {
+            linksContainer.classList.toggle("is-active");
+            toggler.classList.toggle("is-active");
+          });
+        }
+      });
 
-              // --- Toast Notification Logic ---
-              document.addEventListener("DOMContentLoaded", () => {
-                const toasts = document.querySelectorAll(".toast");
+      // --- Toast Notification Logic ---
+      document.addEventListener("DOMContentLoaded", () => {
+        const toasts = document.querySelectorAll(".toast");
 
-                toasts.forEach((toast, index) => {
-                  // Stagger the appearance of multiple toasts
-                  setTimeout(() => {
-                    toast.classList.add("show");
-                  }, index * 200);
+        toasts.forEach((toast, index) => {
+          // Stagger the appearance of multiple toasts
+          setTimeout(() => {
+            toast.classList.add("show");
+          }, index * 200);
 
-                  // Auto-hide after 5 seconds
-                  const timer = setTimeout(() => {
-                    toast.classList.remove("show");
-                    setTimeout(() => toast.remove(), 500); // Remove from DOM after animation
-                  }, 5000);
+          // Auto-hide after 5 seconds
+          const timer = setTimeout(() => {
+            toast.classList.remove("show");
+            setTimeout(() => toast.remove(), 500); // Remove from DOM after animation
+          }, 5000);
 
-                  // Allow manual closing
-                  const closeButton = toast.querySelector(".toast__close");
-                  if (closeButton) {
-                    closeButton.addEventListener("click", () => {
-                      clearTimeout(timer); // Stop auto-hide timer
-                      toast.classList.remove("show");
-                      setTimeout(() => toast.remove(), 500);
-                    });
-                  }
-                });
-              });
+          // Allow manual closing
+          const closeButton = toast.querySelector(".toast__close");
+          if (closeButton) {
+            closeButton.addEventListener("click", () => {
+              clearTimeout(timer); // Stop auto-hide timer
+              toast.classList.remove("show");
+              setTimeout(() => toast.remove(), 500);
+            });
+          }
+        });
+      });
 
-              // --- Dismiss PWA Prompt ---
-      const pwaPrompt = document.getElementById('ios-pwa-prompt');
-      const closePwaPromptBtn = document.getElementById('close-pwa-prompt');
+      // --- Dismiss PWA Prompt ---
+      const pwaPrompt = document.getElementById("ios-pwa-prompt");
+      const closePwaPromptBtn = document.getElementById("close-pwa-prompt");
 
       if (pwaPrompt && closePwaPromptBtn) {
-          closePwaPromptBtn.addEventListener('click', () => {
-              pwaPrompt.style.display = 'none';
-          });
+        closePwaPromptBtn.addEventListener("click", () => {
+          pwaPrompt.style.display = "none";
+        });
       }
 
-              // --- Hamburger Menu Logic ---
-              const navbarToggle = document.getElementById("navbar-toggle");
-              const navbarLinks = document.getElementById("navbar-links");
-              const menuOverlay = document.getElementById("mobile-menu-overlay");
+      // --- Hamburger Menu Logic ---
+      const navbarToggle = document.getElementById("navbar-toggle");
+      const navbarLinks = document.getElementById("navbar-links");
+      const menuOverlay = document.getElementById("mobile-menu-overlay");
 
-              if (navbarToggle) {
-                navbarToggle.addEventListener("click", () => {
-                  navbarLinks.classList.toggle("active");
-                  menuOverlay.classList.toggle("active");
-                  document.body.classList.toggle("menu-open");
-                });
+      if (navbarToggle) {
+        navbarToggle.addEventListener("click", () => {
+          navbarLinks.classList.toggle("active");
+          menuOverlay.classList.toggle("active");
+          document.body.classList.toggle("menu-open");
+        });
 
-                menuOverlay.addEventListener("click", () => {
-                  navbarLinks.classList.remove("active");
-                  menuOverlay.classList.remove("active");
-                  document.body.classList.remove("menu-open");
-                });
-              }
-              if ("serviceWorker" in navigator) {
-                window.addEventListener("load", () => {
-                  navigator.serviceWorker
-                    .register("{{ url_for('static', filename='service-worker.js') }}")
-                    .then((registration) => {
-                      console.log(
-                        "ServiceWorker registration successful with scope: ",
-                        registration.scope
-                      );
-                    })
-                    .catch((error) => {
-                      console.log("ServiceWorker registration failed: ", error);
-                    });
-                });
-              }
-
-
-              function urlBase64ToUint8Array(base64String) {
-                const padding = '='.repeat((4 - base64String.length % 4) % 4);
-                const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-                const rawData = window.atob(base64);
-                const outputArray = new Uint8Array(rawData.length);
-                for (let i = 0; i < rawData.length; ++i) {
-                    outputArray[i] = rawData.charCodeAt(i);
-                }
-                return outputArray;
-            }
-
-
-            async function subscribeUser() {
-                if ('serviceWorker' in navigator && 'PushManager' in window) {
-                    try {
-                        const registration = await navigator.serviceWorker.ready;
-                        let subscription = await registration.pushManager.getSubscription();
-
-                        if (subscription === null) {
-                            // Get VAPID public key from our server
-                            const response = await fetch('/api/vapid_public_key');
-                            const data = await response.json();
-                            const vapidPublicKey = data.public_key;
-                            const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
-
-                            subscription = await registration.pushManager.subscribe({
-                                userVisibleOnly: true,
-                                applicationServerKey: convertedVapidKey
-                            });
-                        }
-
-                        // Send the subscription object to our backend
-                        await fetch('/api/subscribe', {
-                            method: 'POST',
-                            body: JSON.stringify(subscription),
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': '{{ csrf_token() }}' // For CSRF protection
-                            }
-                        });
-                        console.log('User is subscribed.');
-
-                    } catch (error) {
-                        console.error('Failed to subscribe the user: ', error);
-                    }
-                }
-            }
-
-            // Ask for permission when a user is logged in
-            {% if current_user.is_authenticated %}
-                if (Notification.permission === 'default') {
-                    // You can trigger this on a button click for better UX
-                    Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                            subscribeUser();
-                        }
-                    });
-                } else if (Notification.permission === 'granted') {
-                    subscribeUser();
-                }
-            {% endif %}
+        menuOverlay.addEventListener("click", () => {
+          navbarLinks.classList.remove("active");
+          menuOverlay.classList.remove("active");
+          document.body.classList.remove("menu-open");
+        });
+      }
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/service-worker.js")
+            .then((registration) => {
+              console.log(
+                "ServiceWorker registration successful with scope: ",
+                registration.scope
+              );
+            })
+            .catch((error) => {
+              console.log("ServiceWorker registration failed: ", error);
+            });
+        });
+      }
     </script>
   </body>
 </html>
