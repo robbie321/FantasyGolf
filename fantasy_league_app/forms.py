@@ -81,3 +81,9 @@ class SiteAdminRegistrationForm(FlaskForm):
         admin = SiteAdmin.query.filter_by(username=username.data).first()
         if admin:
             raise ValidationError('That username is already in use.')
+
+
+class BroadcastNotificationForm(FlaskForm):
+    title = StringField('Title', validators=[DataRequired(), Length(min=3, max=100)])
+    body = TextAreaField('Body', validators=[DataRequired(), Length(min=10, max=250)])
+    submit = SubmitField('Send Notification')

@@ -23,6 +23,61 @@ iframe {
   height: auto;
 }
 
+/* --- PWA Install Prompt for iOS --- */
+.ios-pwa-prompt {
+    display: none; /* Hidden by default */
+    position: fixed;
+    bottom: 70px; /* Sits just above the new bottom nav bar */
+    left: 10px;
+    right: 10px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    padding: 1rem;
+    z-index: 1500;
+}
+
+.prompt-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.prompt-icon {
+    width: 50px;
+    height: 50px;
+}
+
+.prompt-text strong {
+    font-size: 1rem;
+    color: #1a202c;
+}
+
+.prompt-text p {
+    font-size: 0.9rem;
+    color: #4a5568;
+    margin: 0.25rem 0 0 0;
+}
+
+.prompt-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    color: #a0aec0;
+    cursor: pointer;
+    margin-left: auto;
+}
+
+/* For users on iOS */
+@supports (-webkit-touch-callout: none) {
+    /* Show the prompt only if the app is NOT in standalone mode (i.e., running in browser) */
+    @media all and (display-mode: browser) {
+        .ios-pwa-prompt {
+            display: block;
+        }
+    }
+}
+
 .page-wrapper {
   padding: 2rem 0.75rem;
   box-sizing: border-box;

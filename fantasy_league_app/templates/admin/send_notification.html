@@ -1,0 +1,36 @@
+{% extends 'base.html' %} {% from "_form_macros.html" import render_field %} {%
+block content %}
+<div class="page-wrapper">
+  <div class="form-container" style="max-width: 800px">
+    <h1 class="form-title">Send Broadcast Notification</h1>
+    <p class="form-subtitle">
+      This message will be sent as a push notification to all users who have
+      subscribed.
+    </p>
+
+    <form
+      method="POST"
+      action="{{ url_for('admin.send_broadcast_notification') }}"
+      novalidate
+    >
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        {{ render_field(form.title, class="form-control",
+        placeholder="Notification Title") }}
+      </div>
+
+      <div class="form-group">
+        {{ render_field(form.body, class="form-control",
+        placeholder="Notification body message...", rows="5") }}
+      </div>
+
+      <div class="form-group">
+        <button type="submit" class="btn btn-primary btn-block">
+          Send Notification to All Users
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

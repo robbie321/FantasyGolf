@@ -4,6 +4,7 @@ from fantasy_league_app import db
 from fantasy_league_app.models import User, Club, SiteAdmin, Player, PlayerBucket, League, LeagueEntry
 import csv
 import io
+from .. import scheduler
 from datetime import datetime, timedelta
 from sqlalchemy import func
 import requests
@@ -12,10 +13,10 @@ from werkzeug.security import generate_password_hash # NEW: For hashing password
 from fantasy_league_app.league.routes import _create_new_league
 from ..utils import is_testing_mode_active, send_winner_notification_email
 import os
-from ..forms import LeagueForm
+from ..forms import LeagueForm, BroadcastNotificationForm
 from ..stripe_client import create_payout
 from . import admin_bp
-from ..tasks import finalize_finished_leagues
+from ..tasks import finalize_finished_leagues, broadcast_notification_task
 from ..utils import get_league_creation_status
 
 @admin_bp.route('/dashboard')
@@ -699,3 +700,25 @@ def finalize_league_admin(league_id):
 
 
 
+
+@admin_bp.route('/send-notification', methods=['GET', 'POST'])
+@login_required
+def send_broadcast_notification():
+    form = BroadcastNotificationForm()
+    if form.validate_on_submit():
+        title = form.title.data
+        body = form.body.data
+
+        # Trigger the background task to avoid a long-running request
+        app = current_app._get_current_object()
+        scheduler.add_job(
+            id=f'broadcast_{datetime.utcnow().timestamp()}',
+            func=broadcast_notification_task,
+            args=[app, title, body],
+            trigger='date' # Run immediately, once
+        )
+
+        flash('The broadcast notification is being sent to all users in the background.', 'success')
+        return redirect(url_for('admin.admin_dashboard'))
+
+    return render_template('admin/send_notification.html', form=form, title="Send Broadcast Notification")

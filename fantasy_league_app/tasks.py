@@ -11,7 +11,7 @@ from flask import current_app
 from .data_golf_client import DataGolfClient
 
 from collections import defaultdict # Add this import
-from .models import League, Player, PlayerBucket, LeagueEntry, PlayerScore, User
+from .models import League, Player, PlayerBucket, LeagueEntry, PlayerScore, User, PushSubscription
 
 from .stripe_client import process_payouts,  create_payout
 from .utils import send_winner_notification_email, send_push_notification
@@ -492,3 +492,19 @@ def finalize_finished_leagues(app):
 
         print("--- Weekly league finalization finished. ---")
 
+def broadcast_notification_task(app, title, body):
+    """
+    Background task to send a push notification to ALL subscribed users.
+    """
+    with app.app_context():
+        print(f"--- Starting broadcast task: '{title}' ---")
+        # Fetch all active users who might have subscriptions
+        all_users = User.query.filter_by(is_active=True).all()
+        user_ids = [user.id for user in all_users]
+
+        # Send a notification to each user
+        # The send_push_notification helper already handles finding all devices for a user
+        for user_id in user_ids:
+            send_push_notification(user_id, title, body)
+
+        print(f"--- Broadcast task finished. Notifications sent to {len(user_ids)} users. ---")
