@@ -347,7 +347,7 @@ def update_player_buckets(app):
 
             # --- Step 2: Create an efficient lookup map for odds ---
             # We assume odds_data is a list of dicts, each with 'dg_id' and 'odds_bet365'
-            odds_map = {player['dg_id']: player.get('odds_bet365') for player in odds_data}
+            odds_map = {player['dg_id']: player.get('bet365') for player in odds_data}
 
             # --- Step 3: Get or Create the Player Bucket ---
             bucket_name = f"{tour.upper()} Players - {field_data.get('event_name', datetime.utcnow().strftime('%Y-%m-%d'))}"
@@ -383,6 +383,8 @@ def update_player_buckets(app):
                 if odds_from_api and isinstance(odds_from_api, (int, float)):
                     # If the odds are over 85, cap them at 85.
                     if odds_from_api > 85:
+                        player.odds = 85
+                    elif odds_from_api < 1:
                         player.odds = 85
                     else:
                         player.odds = odds_from_api

@@ -234,37 +234,50 @@ def refresh_bucket_odds(bucket_id):
 
     bucket = PlayerBucket.query.get_or_404(bucket_id)
     client = DataGolfClient()
-    player_odds = {}
 
-    # 1. Use the client to fetch the odds data
+    # 1. Fetch the odds data from the client
     odds_list, error = client.get_betting_odds(bucket.tour)
 
-    # 2. Handle potential errors from the client
+
+    print(f'ODDS: {odds_list}')
+
     if error:
         flash(f'An error occurred while fetching odds from the API: {error}', 'danger')
         return redirect(url_for('admin.add_players_to_bucket', bucket_id=bucket_id))
 
-    # 3. Process the data returned by the client
-    for player_data in odds_list:
-        dg_id = player_data.get('dg_id')
-        bet365_odds = player_data.get('bet365')
-        if dg_id and bet365_odds is not None:
-            player_odds[dg_id] = float(bet365_odds)
-
-    if not player_odds:
+    if not odds_list:
         flash('Could not retrieve any odds from the API.', 'warning')
         return redirect(url_for('admin.add_players_to_bucket', bucket_id=bucket_id))
 
-    # 4. Update players in the database
+    # --- START: New Odds Capping Logic ---
+
+    # 2. Process the data and apply the odds cap
+    capped_odds_map = {}
+    for player_data in odds_list:
+        dg_id = player_data.get('dg_id')
+        # Ensure you are getting the correct odds key, e.g., 'odds_bet365'
+        odds_from_api = player_data.get('bet365')
+
+        if dg_id and odds_from_api and isinstance(odds_from_api, (int, float)):
+            # If the odds are over 80, cap them at 80.
+            if odds_from_api > 80:
+                capped_odds_map[dg_id] = 85.0
+            elif odds_from_api < 1:
+                capped_odds_map[dg_id] = 85.0
+            else:
+                capped_odds_map[dg_id] = float(odds_from_api)
+
+    # --- END: New Odds Capping Logic ---
+
+    # 3. Update players in the database using the capped odds
     updated_count = 0
     for player in bucket.players:
-        if player.dg_id and player.dg_id in player_odds:
-            player.odds = player_odds[player.dg_id]
+        if player.dg_id and player.dg_id in capped_odds_map:
+            player.odds = capped_odds_map[player.dg_id]
             updated_count += 1
 
     db.session.commit()
-    flash(f'Successfully updated odds for {updated_count} players in "{bucket.name}".', 'success')
-
+    flash(f'Successfully updated and capped odds for {updated_count} players in "{bucket.name}".', 'success')
     return redirect(url_for('admin.add_players_to_bucket', bucket_id=bucket_id))
 
 @admin_bp.route('/add_individual_player', methods=['GET', 'POST'])
