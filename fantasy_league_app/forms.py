@@ -1,7 +1,27 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField, TextAreaField, IntegerField, HiddenField, DateField, DecimalField
-from wtforms.validators import DataRequired, NumberRange, Email, EqualTo, ValidationError, Length
+from wtforms.validators import DataRequired, NumberRange, Email, EqualTo, ValidationError, Length, Optional
 from .models import User, SiteAdmin
+
+# Base form for both users and clubs
+class CreateLeagueBaseForm(FlaskForm):
+    name = StringField('League Name', validators=[DataRequired()])
+    entry_fee = IntegerField('Entry Fee (€)', validators=[DataRequired(), NumberRange(min=0)])
+    max_entries = IntegerField('Max Entries', validators=[DataRequired(), NumberRange(min=2)])
+    player_bucket_id = SelectField('Player Bucket', coerce=int, validators=[DataRequired()])
+    prize_pool_percentage = IntegerField('Creator Prize Share (%)', default=10, validators=[DataRequired(), NumberRange(min=0, max=50)])
+    no_favorites = BooleanField('No Favorites Rule')
+    tie_breaker_question = StringField('Tie Breaker Question', validators=[DataRequired()])
+    submit = SubmitField('Create League')
+
+# Specific form for regular users
+class CreateUserLeagueForm(CreateLeagueBaseForm):
+    pass # Inherits everything from the base form
+
+# Specific form for clubs, with the custom prize option
+class CreateClubLeagueForm(CreateLeagueBaseForm):
+    custom_prizes_enabled = BooleanField('Enable Custom Prizes (e.g., Vouchers)')
+    custom_prizes_text = TextAreaField('Custom Prize Details', validators=[Optional()])
 
 class LeagueForm(FlaskForm):
     """

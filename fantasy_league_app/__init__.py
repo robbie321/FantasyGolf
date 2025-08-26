@@ -113,7 +113,7 @@ def create_app(config_class=Config):
                 scheduler.add_job(id='reset_scores', func=reset_player_scores, args=[app], trigger='cron', day_of_week='wed', hour=23, minute=59)
 
             if not scheduler.get_job('update_buckets'):
-                scheduler.add_job(id='update_buckets', func=update_player_buckets, args=[app], trigger='cron', day_of_week='mon', hour=13, minute=42)
+                scheduler.add_job(id='update_buckets', func=update_player_buckets, args=[app], trigger='cron', day_of_week='tue', hour=12, minute=10)
 
             if not scheduler.get_job('finalize_leagues'):
                 scheduler.add_job(id='finalize_leagues', func=finalize_finished_leagues, args=[app], trigger='cron', day_of_week='mon', hour=10, minute=30)

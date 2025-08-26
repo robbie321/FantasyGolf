@@ -114,33 +114,81 @@
     </div>
     {% endif %}
   </div>
+
+  <div class="popup-overlay" id="stripe-popup-overlay">
+    <div class="popup-modal" id="stripe-popup-modal">
+      <svg
+        class="popup-icon"
+        xmlns="http://www.w3.org/2000/svg"
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+      <h2 class="popup-title">Account Verification Needed</h2>
+      <p class="popup-message">
+        Your Stripe account details need to be confirmed before you can join a
+        league. Please complete your profile to enable payouts.
+      </p>
+      <a
+        href="{{ url_for('main.user_dashboard') }}#my-profile"
+        class="btn btn-primary"
+        >Go to My Profile</a
+      >
+    </div>
+  </div>
 </div>
 
 <!-- NEW: JavaScript for live filtering -->
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const searchInput = document.getElementById("league-search-input");
-    const leagueCards = document.querySelectorAll(".league-card");
+    document.addEventListener("DOMContentLoaded", function () {
+      const searchInput = document.getElementById("league-search-input");
+      const leagueCards = document.querySelectorAll(".league-card");
 
-    searchInput.addEventListener("input", function () {
-      const searchTerm = searchInput.value.toLowerCase();
+      searchInput.addEventListener("input", function () {
+        const searchTerm = searchInput.value.toLowerCase();
 
-      leagueCards.forEach(function (card) {
-        const leagueNameElement = card.querySelector("h2.league-name");
+        leagueCards.forEach(function (card) {
+          const leagueNameElement = card.querySelector("h2.league-name");
 
-        if (leagueNameElement) {
-          const leagueName = leagueNameElement.textContent.toLowerCase();
+          if (leagueNameElement) {
+            const leagueName = leagueNameElement.textContent.toLowerCase();
 
-          // If the league name includes the search term, show the card
-          if (leagueName.includes(searchTerm)) {
-            card.style.display = "flex"; // Use flex to maintain layout
-          } else {
-            // Otherwise, hide it
-            card.style.display = "none";
+            // If the league name includes the search term, show the card
+            if (leagueName.includes(searchTerm)) {
+              card.style.display = "flex"; // Use flex to maintain layout
+            } else {
+              // Otherwise, hide it
+              card.style.display = "none";
+            }
           }
-        }
+        });
       });
-    });
-  });
+
+
+   {% with messages = get_flashed_messages(with_categories=true) %}{% endwith %}
+  {% if messages %}
+      {% for category, message in messages %}
+          {% if category in ['stripe_required', 'stripe_incomplete', 'stripe_error'] %}
+              document.addEventListener('DOMContentLoaded', () => {
+                  const overlay = document.getElementById('stripe-popup-overlay');
+                  const modal = document.getElementById('stripe-popup-modal');
+                  if (overlay && modal) {
+                      overlay.style.display = 'flex';
+                      modal.classList.add('bounce-in');
+                  }
+              });
+          {% endif %}
+      {% endfor %}
+  {% endif %}
+
+   });
 </script>
 {% endblock %}
