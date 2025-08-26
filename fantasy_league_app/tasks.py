@@ -382,15 +382,15 @@ def update_player_buckets(app):
 
                 if odds_from_api and isinstance(odds_from_api, (int, float)):
                     # If the odds are over 85, cap them at 85.
-                    if odds_from_api > 85:
-                        player.odds = 85
+                    if odds_from_api > 250:
+                        player.odds = 250
                     elif odds_from_api < 1:
-                        player.odds = 85
+                        player.odds = 250
                     else:
                         player.odds = odds_from_api
                 else:
                     # Set a high default for players without odds so they can still be picked
-                    player.odds = 100
+                    player.odds = 250
 
                 latest_bucket.players.append(player)
 

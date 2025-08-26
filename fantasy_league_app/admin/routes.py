@@ -260,10 +260,10 @@ def refresh_bucket_odds(bucket_id):
 
         if dg_id and odds_from_api and isinstance(odds_from_api, (int, float)):
             # If the odds are over 80, cap them at 80.
-            if odds_from_api > 80:
-                capped_odds_map[dg_id] = 85.0
+            if odds_from_api > 250:
+                capped_odds_map[dg_id] = 250.0
             elif odds_from_api < 1:
-                capped_odds_map[dg_id] = 85.0
+                capped_odds_map[dg_id] = 250.0
             else:
                 capped_odds_map[dg_id] = float(odds_from_api)
 

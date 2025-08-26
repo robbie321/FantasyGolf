@@ -73,7 +73,7 @@
       <div class="league-header">
         <h1>{{ league.name }}</h1>
         <p>League Code: <strong>{{ league.league_code }}</strong></p>
-        {% if not current_user_entry and not league.has_entry_deadline_passed %}
+        {% if not user_entry and not league.has_entry_deadline_passed %}
         <a
           href="{{ url_for('league.add_entry', league_id=league.id) }}"
           class="btn-join"
