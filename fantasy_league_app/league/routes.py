@@ -327,24 +327,24 @@ def add_entry(league_id):
 
     league = League.query.get_or_404(league_id)
 
-     # Check if the user has connected a Stripe account at all.
-    if getattr(current_user, 'stripe_account_id',None):
+    #  # Check if the user has connected a Stripe account at all.
+    if not current_user.stripe_account_id:
         flash('Connect your stripe details from the "My Profile" section', 'error')
         # Redirect back to the browse page where the popup will be shown
         return redirect(url_for('main.user_dashboard'))
 
-    try:
-        # Check the status of the connected account directly with the Stripe API
-        account = stripe.Account.retrieve(current_user.stripe_account_id)
-        # 'transfers_enabled' is the key field that confirms they can receive payouts.
-        if not account.details_submitted or not account.transfers_enabled:
-            flash('stripe_incomplete', 'error')
-            return redirect(url_for('main.user_dashboard'))
-    except Exception as e:
-        # If there's an error retrieving the account (e.g., it's invalid), block entry.
-        current_app.logger.error(f"Stripe API error for user {current_user.id}: {e}")
-        flash('stripe_error', 'error')
-        return redirect(url_for('main.user_dashboard'))
+    # try:
+    #     # Check the status of the connected account directly with the Stripe API
+    #     account = stripe.Account.retrieve(current_user.stripe_account_id)
+    #     # 'transfers_enabled' is the key field that confirms they can receive payouts.
+    #     if not account.details_submitted or not account.transfers_enabled:
+    #         flash('Your Stripe account is currently not able to receive transfers. Please edit your stripe details from the My Profile section in your dashboard.', 'error')
+    #         return redirect(url_for('main.user_dashboard'))
+    # except Exception as e:
+    #     # If there's an error retrieving the account (e.g., it's invalid), block entry.
+    #     current_app.logger.error(f"Stripe API error for user {current_user.id}: {e}")
+    #     flash('stripe_error', 'error')
+    #     return redirect(url_for('main.user_dashboard'))
 
     # --- Max Entries Rule Check (for GET request) ---
     if league.max_entries and len(league.entries) >= league.max_entries:
