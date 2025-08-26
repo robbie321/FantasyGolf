@@ -328,7 +328,7 @@ def add_entry(league_id):
     league = League.query.get_or_404(league_id)
 
      # Check if the user has connected a Stripe account at all.
-    if not current_user.stripe_account_id:
+    if getattr(current_user, 'stripe_account_id',None):
         flash('Connect your stripe details from the "My Profile" section', 'error')
         # Redirect back to the browse page where the popup will be shown
         return redirect(url_for('main.user_dashboard'))
