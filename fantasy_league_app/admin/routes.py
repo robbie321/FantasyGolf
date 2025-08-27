@@ -466,9 +466,9 @@ def edit_league(league_id):
         league.entry_fee = form.entry_fee.data
         league.max_entries = form.max_entries.data
         league.prize_pool_percentage = form.prize_pool_percentage.data
-        
+
         league.tour = form.tour.data
-        
+
         db.session.commit()
         flash(f"League '{league.name}' has been updated successfully.", 'success')
         return redirect(url_for('admin.manage_leagues'))
@@ -623,6 +623,31 @@ def reset_club_password(club_id):
 
     flash(f"Password for {club.club_name} has been reset. The temporary password is: {temp_password}", 'success')
     return redirect(url_for('admin.manage_users'))
+
+
+@admin_bp.route('/reset-player-scores')
+@login_required
+def reset_player_score():
+    """
+    This route handles the logic for resetting scores.
+    It's triggered by the button press on the admin dashboard.
+    It updates the current_score of all players to 0.
+    """
+    try:
+        # This is a bulk update, which is very efficient
+        updated_rows = Player.query.update({"current_score": 0})
+        db.session.commit()
+        print(f"Successfully reset scores for {updated_rows} players.")
+
+        # Send a success message to the user.
+        flash('All player scores have been successfully reset to 0.', 'success')
+    except Exception as e:
+        # If anything goes wrong, roll back the session and show an error.
+        db.session.rollback()
+        flash(f'An error occurred: {e}', 'danger')
+
+    # Redirect the admin back to the dashboard.
+    return redirect(url_for('admin.admin_dashboard'))
 
 
 @admin_bp.route('/leagues/finalize/<int:league_id>', methods=['POST'])
