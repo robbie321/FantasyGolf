@@ -2122,9 +2122,18 @@ iframe {
     display: none; /* Hide hamburger on larger screens */
   }
   .navbar-links {
+    position: static;
     display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+    height: auto;
+    transform: translateX(0);
+    transition: none;
+    background-color: transparent;
+    z-index: auto;
   }
-  .navbar-links-wrapper {
+  /* .navbar-links-wrapper {
       padding: 0;
       flex-direction: row;
       align-items: center;
@@ -2150,7 +2159,7 @@ iframe {
   }
   .dropdown-content a {
       text-align: left;
-  }
+  } */
 
   .hero-content h1 {
     font-size: 3.5rem;
