@@ -109,10 +109,11 @@ def all_players():
             'profile': profile_data # This will be None if no match is found
         })
 
+
     # Sort the list of dictionaries by the 'last_name', then 'first_name'
     sorted_players = sorted(combined_player_data, key=lambda p: (p.get('last_name', ''), p.get('first_name', '')))
 
-    return render_template('player/all_players.html', players=sorted_players, title="All Players")
+    return render_template('player/all_players.html', players=combined_player_data, title="All Players")
 
 
 
