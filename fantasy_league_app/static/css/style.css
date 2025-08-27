@@ -1475,8 +1475,7 @@ iframe {
   text-decoration: none;
   font-weight: 700;
   padding: 1rem 0;
-  text-align: left;
-  border-bottom: 1px solid #f0f0f0;
+  text-align: center;
 }
 
 .nav-link {
@@ -2126,7 +2125,7 @@ iframe {
     display: flex;
     flex-direction: row;
     align-items: center;
-    width: auto;
+    max-width: 500px;
     height: auto;
     transform: translateX(0);
     transition: none;
