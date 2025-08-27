@@ -215,7 +215,7 @@
         <p class="page-subtitle">Browse all players in the Fantasy Fairways database.</p>
         
         <div class="player-grid">
-            {% for data in  combined_player_data%}
+            {% for data in players_data %}
             <div class="player-card">
                 <img src="{{ url_for('static', filename='images/headshots/' + data.player.dg_id|string + '.png') }}" alt="Headshot of {{ data.player.full_name() }}" class="player-headshot" onerror="this.style.display='none'">
                 
