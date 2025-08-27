@@ -753,6 +753,43 @@ iframe {
   color: #006a4e;
 }
 
+.my-team-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem; /* Add space below the header */
+}
+
+.my-team-section .section-title {
+    margin-bottom: 0; /* Remove default margin from the title */
+}
+
+.btn-edit-team {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #f1f5f9;
+    color: #475569;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-edit-team:hover {
+    background-color: #e2e8f0;
+    color: #1e293b;
+    border-color: #cbd5e1;
+}
+
+.btn-edit-team svg {
+    width: 18px;
+    height: 18px;
+}
+
 
 /* --- PLAYER PICKER & TEAM DISPLAY --- */
   .picker-wrapper {
