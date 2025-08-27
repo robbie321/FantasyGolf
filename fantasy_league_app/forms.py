@@ -107,3 +107,19 @@ class BroadcastNotificationForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired(), Length(min=3, max=100)])
     body = TextAreaField('Body', validators=[DataRequired(), Length(min=10, max=250)])
     submit = SubmitField('Send Notification')
+
+
+class EditLeagueForm(FlaskForm):
+    name = StringField('League Name', validators=[DataRequired()])
+    entry_fee = IntegerField('Entry Fee (€)', validators=[DataRequired(), NumberRange(min=0)])
+    max_entries = IntegerField('Max Entries', validators=[DataRequired(), NumberRange(min=2)])
+    prize_pool_percentage = IntegerField('Creator Prize Share (%)', validators=[DataRequired(), NumberRange(min=0, max=50)])
+    
+    # --- START: New Tour Field ---
+    tour = SelectField('Tour', choices=[
+        ('pga', 'PGA Tour'),
+        ('euro', 'European Tour'),
+    ], validators=[DataRequired()])
+    # --- END: New Tour Field ---
+
+    submit = SubmitField('Update League')

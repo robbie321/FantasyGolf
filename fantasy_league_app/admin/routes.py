@@ -13,7 +13,7 @@ from werkzeug.security import generate_password_hash # NEW: For hashing password
 from fantasy_league_app.league.routes import _create_new_league
 from ..utils import is_testing_mode_active, send_winner_notification_email
 import os
-from ..forms import LeagueForm, BroadcastNotificationForm
+from ..forms import EditLeagueForm, LeagueForm, BroadcastNotificationForm, PlayerBucketForm
 from ..stripe_client import create_payout
 from . import admin_bp
 from ..tasks import finalize_finished_leagues, broadcast_notification_task
@@ -459,21 +459,21 @@ def edit_league(league_id):
         return redirect(url_for('main.index'))
 
     league = League.query.get_or_404(league_id)
+    form = EditLeagueForm(obj=league)
 
-    if request.method == 'POST':
-        # Update league details from the form
-        league.name = request.form.get('name')
-        start_date_str = request.form.get('start_date')
-        if start_date_str:
-            league.start_date = datetime.fromisoformat(start_date_str)
-            league.end_date = league.start_date + timedelta(days=4)
-
+    if form.validate_on_submit():
+        league.name = form.name.data
+        league.entry_fee = form.entry_fee.data
+        league.max_entries = form.max_entries.data
+        league.prize_pool_percentage = form.prize_pool_percentage.data
+        
+        league.tour = form.tour.data
+        
         db.session.commit()
-        flash(f'League "{league.name}" has been updated.', 'success')
-        return redirect(url_for('admin.edit_league', league_id=league.id))
+        flash(f"League '{league.name}' has been updated successfully.", 'success')
+        return redirect(url_for('admin.manage_leagues'))
 
-    entries = LeagueEntry.query.filter_by(league_id=league.id).all()
-    return render_template('admin/edit_league.html', league=league, entries=entries)
+    return render_template('admin/edit_league.html', form=form, league=league, title="Edit League")
 
 
 @admin_bp.route('/leagues/remove_entry/<int:entry_id>', methods=['POST'])
