@@ -94,11 +94,13 @@ def all_players():
         return {f"{p.get('first_name', '')} {p.get('last_name', '')}": p for p in profiles}
     # --- END DEBUGGING ---
 
-    print(profile_data)
+    
 
      # Fetch data from both sources
     local_players = Player.query.order_by(Player.surname).all()
     sportradar_profiles = get_sportradar_profiles_map()
+
+    print(sportradar_profiles)  # For debugging
 
     # Merge the two data sources
     combined_player_data = []
