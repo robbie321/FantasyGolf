@@ -18,7 +18,10 @@
       Back to Dashboard
     </a>
 
-    {% if not league.is_finalized and league.entry_deadline > now %}
+    
+
+    <div class="content-box">
+      {% if not league.is_finalized and league.entry_deadline > now %}
     <div class="countdown-container">
       <h2>ENRTY DEADLINE</h2>
       <div
@@ -68,8 +71,6 @@
       </p>
     </div>
     {% endif %}
-
-    <div class="content-box">
       <div class="league-header">
         <h1>{{ league.name }}</h1>
         <p>League Code: <strong>{{ league.league_code }}</strong></p>
