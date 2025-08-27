@@ -220,7 +220,7 @@
                 <img src="{{ url_for('static', filename='images/headshots/' + data.player.dg_id|string + '.png') }}" alt="Headshot of {{ data.player.full_name() }}" class="player-headshot" onerror="this.style.display='none'">
                 
                 <div class="player-info">
-                  <a href="{{ url_for('player.single_player_profile', player_id=data.player.id) }}">
+                  <a href="{{ url_for('player.single_player_profile', player_id=data.profile.id) }}">
                     <h2 class="player-name">{{ data.player.full_name() }}</h2>
                   </a>
                     
