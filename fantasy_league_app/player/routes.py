@@ -106,7 +106,7 @@ def all_players():
     combined_player_data = []
     for player in local_players:
         # Find the corresponding Sportradar profile by matching the full name
-        profile_data = sportradar_profiles.get(player.full_name())
+        profile_data = sportradar_profiles.get(player.name())
         
         combined_player_data.append({
             'player': player,
