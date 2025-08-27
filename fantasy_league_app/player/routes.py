@@ -83,18 +83,36 @@ def player_profile(dg_id):
 @player_bp.route('/all')
 @login_required
 def all_players():
-    """Displays a list of all player profiles fetched from the Sportradar API."""
-    client = SportradarClient()
-    player_profiles, error = client.get_player_profiles()
+    def get_sportradar_profiles_map():
+        # --- DEBUGGING ---
+        print("\n--- 1. Fetching Sportradar Player Profiles Map ---")
+        client = SportradarClient()
+        profiles, error = client.get_player_profiles()
+        if error or not profiles:
+            print(f"Error fetching player profiles: {error}")
+            return {}
+        return {f"{p.get('first_name', '')} {p.get('last_name', '')}": p for p in profiles}
+    # --- END DEBUGGING ---
 
-    if error:
-        flash(f"Could not retrieve player profiles from the API: {error}", "danger")
-        return render_template('player/all_players.html', players=[])
+     # Fetch data from both sources
+    local_players = Player.query.order_by(Player.surname).all()
+    sportradar_profiles = get_sportradar_profiles_map()
+
+    # Merge the two data sources
+    combined_player_data = []
+    for player in local_players:
+        # Find the corresponding Sportradar profile by matching the full name
+        profile_data = sportradar_profiles.get(player.full_name())
+        
+        combined_player_data.append({
+            'player': player,
+            'profile': profile_data # This will be None if no match is found
+        })
 
     # Sort the list of dictionaries by the 'last_name', then 'first_name'
-    sorted_players = sorted(player_profiles, key=lambda p: (p.get('last_name', ''), p.get('first_name', '')))
+    sorted_players = sorted(combined_player_data, key=lambda p: (p.get('last_name', ''), p.get('first_name', '')))
 
-    return render_template('player/all_players.html', players=sorted_players)
+    return render_template('player/all_players.html', players=sorted_players, title="All Players")
 
 
 
