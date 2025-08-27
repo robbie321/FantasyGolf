@@ -31,10 +31,10 @@
             {% if current_user.is_authenticated %}
                 <div class="nav-separator"></div>
                 <div class="navbar-dropdown">
-                    <button class="dropdown-button">
+                    <button class="dropdown-button" onclick="toggleDropdown()">
                         <img src="{{ url_for('static', filename='images/icons/default-avatar.svg') }}" alt="User Avatar" class="avatar">
                         <span>{{ current_user.full_name or current_user.username }}</span>
-                        <svg class="arrow" ...>...</svg>
+                        <span class="arrow"></span>
                     </button>
                     <div class="dropdown-content" id="myDropdown">
                         {% if current_user.is_site_admin %}
