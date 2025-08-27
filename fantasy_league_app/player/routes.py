@@ -106,7 +106,7 @@ def all_players():
     combined_player_data = []
     for player in local_players:
         # Find the corresponding Sportradar profile by matching the full name
-        profile_data = sportradar_profiles.get(player.name())
+        profile_data = sportradar_profiles.get(player.full_name())
         
         combined_player_data.append({
             'player': player,
@@ -117,7 +117,7 @@ def all_players():
     # Sort the list of dictionaries by the 'last_name', then 'first_name'
     sorted_players = sorted(combined_player_data, key=lambda p: (p.get('last_name', ''), p.get('first_name', '')))
 
-    return render_template('player/all_players.html', players=combined_player_data, title="All Players")
+    return render_template('player/all_players.html', players=sportradar_profiles, title="All Players")
 
 
 
