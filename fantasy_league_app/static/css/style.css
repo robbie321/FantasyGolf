@@ -1405,7 +1405,7 @@ iframe {
     font-size: 0.75rem;
 }
 
-.navbar {
+/* .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1416,6 +1416,25 @@ iframe {
   border-bottom: 1px solid #e0e0e0;
   position: relative;
   z-index: 1000;
+} */
+
+.navbar {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    height: 70px;
+    padding: 0 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 .navbar-brand {
   display: flex; /* Helps with vertical alignment of the logo */
@@ -1439,7 +1458,7 @@ iframe {
   z-index: 1002;
   transform: translateX(100%); /* Start off-screen */
   transition: transform 0.3s ease-in-out;
-  display: flex;
+  display: none;
   flex-direction: column;
 }
 
@@ -1458,6 +1477,27 @@ iframe {
   padding: 1rem 0;
   text-align: left;
   border-bottom: 1px solid #f0f0f0;
+}
+
+.nav-link {
+    font-weight: 600;
+    color: #4a5568;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+.nav-link:hover {
+    color: #006a4e;
+}
+
+.nav-separator {
+    height: 24px;
+    width: 1px;
+    background-color: #e2e8f0;
+}
+
+.nav-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
 }
 
 /* Overlay for mobile menu */
@@ -1593,17 +1633,14 @@ iframe {
 }
 .dropdown-button {
   background-color: transparent;
-  color: #006a4e;
-  padding: 1rem 0;
-  font-size: 1rem;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  justify-content: space-between;
-  border-bottom: 1px solid #f0f0f0;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #2d3748;
 }
 .dropdown-button:hover {
   background-color: rgba(0, 0, 0, 0.05);
@@ -1627,6 +1664,19 @@ iframe {
 }
 .dropdown-content a:hover {
   background-color: #ddd;
+}
+.dropdown-button .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+.dropdown-button .arrow {
+    width: 16px;
+    height: 16px;
+    color: #a0aec0;
+}
+.logout-link {
+    color: #e53e3e; /* Red for logout */
 }
 .show {
   display: flex;
@@ -2072,16 +2122,7 @@ iframe {
     display: none; /* Hide hamburger on larger screens */
   }
   .navbar-links {
-    position: static;
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    width: auto;
-    height: auto;
-    transform: translateX(0);
-    transition: none;
-    background-color: transparent;
-    z-index: auto;
   }
   .navbar-links-wrapper {
       padding: 0;

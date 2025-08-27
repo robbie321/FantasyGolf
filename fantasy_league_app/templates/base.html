@@ -18,7 +18,49 @@
   <body>
     <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
 
+
     <nav class="navbar">
+    <div class="navbar-container">
+        <a href="{{ url_for('main.index') }}" class="navbar-brand">
+            <img src="{{ url_for('static', filename='images/logo/logo.svg') }}" alt="Fantasy Fairways Logo" />
+        </a>
+
+        <div class="navbar-links" id="navbar-links">
+            <a href="{{ url_for('main.browse_leagues') }}" class="nav-link">Browse Leagues</a>
+            
+            {% if current_user.is_authenticated %}
+                <div class="nav-separator"></div>
+                <div class="navbar-dropdown">
+                    <button class="dropdown-button">
+                        <img src="{{ url_for('static', filename='images/icons/default-avatar.svg') }}" alt="User Avatar" class="avatar">
+                        <span>{{ current_user.full_name or current_user.username }}</span>
+                        <svg class="arrow" ...>...</svg>
+                    </button>
+                    <div class="dropdown-content" id="myDropdown">
+                        {% if current_user.is_site_admin %}
+                            <a href="{{ url_for('admin.admin_dashboard') }}">Admin Dashboard</a>
+                        {% elif current_user.is_club_admin %}
+                            <a href="{{ url_for('main.club_dashboard') }}">Club Dashboard</a>
+                        {% else %}
+                            <a href="{{ url_for('main.user_dashboard') }}">My Dashboard</a>
+                        {% endif %}
+                        <a href="{{ url_for('auth.logout') }}" class="logout-link">Logout</a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="nav-separator"></div>
+                <a href="{{ url_for('auth.login_choice') }}" class="nav-link">Login</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary nav-btn">Register</a>
+            {% endif %}
+        </div>
+        
+        <button class="navbar-toggle" id="navbar-toggle">
+            <span class="navbar-toggle-icon"></span>
+        </button>
+    </div>
+</nav>
+
+    <!-- <nav class="navbar">
       <a href="{{ url_for('main.index') }}" class="navbar-brand">
         <img
           src="{{ url_for('static', filename='images/logo/logo.svg') }}"
@@ -64,7 +106,7 @@
       >
         <span class="navbar-toggle-icon"></span>
       </button>
-    </nav>
+    </nav> -->
 
     <!-- {% with messages = get_flashed_messages(with_categories=true) %} {% if
     messages %}
