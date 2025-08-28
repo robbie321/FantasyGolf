@@ -55,7 +55,7 @@ def index():
 
 
 
-@main.route('/clubs')
+@main_bp.route('/clubs')
 def clubs_landing():
     """Route for the clubs landing page."""
     return render_template('main/clubs_landing.html', title="For Golf Clubs")
