@@ -1,0 +1,135 @@
+{% extends 'base.html' %} {% block content %}
+<div class="page-wrapper">
+  <div class="clubs-landing-container">
+    <section class="video-section">
+      <div class="video-container">
+        <iframe
+          src="https://www.youtube.com/embed/your_video_id_here"
+          frameborder="0"
+          allowfullscreen
+        ></iframe>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <a
+        href="{{ url_for('league.create_league') }}"
+        class="btn btn-primary btn-lg"
+        >Create Your League Now</a
+      >
+    </section>
+
+    <section class="downloads-section">
+      <h2>Marketing Kit</h2>
+      <p>
+        Download our digital assets to promote your league via email or social
+        media.
+      </p>
+      <div class="downloads-grid">
+        <div class="download-item">
+          <a
+            href="{{ url_for('static', filename='downloads/email_template.txt') }}"
+            download
+          >
+            <i class="fas fa-envelope"></i>
+            <span>Email Template</span>
+          </a>
+        </div>
+        <div class="download-item">
+          <a
+            href="{{ url_for('static', filename='downloads/social_media_graphics.zip') }}"
+            download
+          >
+            <i class="fas fa-image"></i>
+            <span>Social Media Graphics</span>
+          </a>
+        </div>
+        <div class="download-item">
+          <a
+            href="{{ url_for('static', filename='downloads/club_poster.pdf') }}"
+            download
+          >
+            <i class="fas fa-file-pdf"></i>
+            <span>Digital Poster/Flyer</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq-section">
+      <h2>Frequently Asked Questions</h2>
+      <div class="faq-accordion">
+        <div class="faq-item">
+          <button class="faq-question">How does the club get the money?</button>
+          <div class="faq-answer">
+            <p>
+              All entry fees are processed securely through our platform. Once
+              the league is finalized, we transfer the club's 80% share directly
+              to your nominated bank account.
+            </p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">
+            Is it really free for the club to sign up?
+          </button>
+          <div class="faq-answer">
+            <p>
+              Yes, it's completely free for a golf club to sign up, create a
+              league, and use our platform. We only take a small percentage of
+              the player's entry fee to cover operational costs.
+            </p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">What tournaments can we include?</button>
+          <div class="faq-answer">
+            <p>
+              You can create leagues for all the major golf tournaments,
+              including The Masters, PGA Championship, U.S. Open, The Open
+              Championship, Ryder Cup, and many more, including the Irish Open.
+            </p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">Who handles player support?</button>
+          <div class="faq-answer">
+            <p>
+              We do! Our dedicated support team is here to help your members
+              with any questions or issues they might have, leaving you to focus
+              on your club.
+            </p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">What are the prize options?</button>
+          <div class="faq-answer">
+            <p>
+              You have full control over the 80% of the prize pool that goes to
+              the club. You can offer cash prizes, pro shop vouchers, green
+              fees, or any other prize you see fit for your members.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const faqQuestions = document.querySelectorAll(".faq-question");
+    faqQuestions.forEach((question) => {
+      question.addEventListener("click", () => {
+        const answer = question.nextElementSibling;
+        question.classList.toggle("active");
+        if (answer.style.maxHeight) {
+          answer.style.maxHeight = null;
+        } else {
+          answer.style.maxHeight = answer.scrollHeight + "px";
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -54,6 +54,12 @@ def index():
     return render_template('main/index.html', stats=stats, top_players=top_players, top_leagues=top_leagues)
 
 
+
+@main.route('/clubs')
+def clubs_landing():
+    """Route for the clubs landing page."""
+    return render_template('main/clubs_landing.html', title="For Golf Clubs")
+
 # --- Route for Browsing Public Leagues ---
 @main_bp.route('/browse-leagues')
 @login_required
