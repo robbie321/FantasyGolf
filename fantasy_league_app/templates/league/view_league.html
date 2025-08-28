@@ -834,34 +834,40 @@
       // --- LOGIC 3: Live Tournament Leaderboard Popup ---
       const viewBtn = document.getElementById("view-live-leaderboard-btn");
       if (viewBtn) {
+        // Define all elements related to the popup
         const overlay = document.getElementById("live-leaderboard-overlay");
-        const closeBtn = document.getElementById("close-popup-btn"); // Corrected variable name
-        const leaderboardBody = document.getElementById(
-          "live-leaderboard-body"
+        const closeBtn = document.getElementById("popup-close-btn");
+        const leaderboardBody = document.querySelector(
+          "#live-leaderboard-body .live-leaderboard-table tbody"
         );
 
+        // Define the helper functions BEFORE they are used
+        const openPopup = () => {
+          if (overlay) overlay.classList.add("active");
+        };
         const closePopup = () => {
-          if (overlay) overlay.style.display = "none";
+          if (overlay) overlay.classList.remove("active");
         };
 
+        // Attach the main event listener
         viewBtn.addEventListener("click", async () => {
-          const tour = viewBtn.dataset.tour;
+          if (!leaderboardBody) return;
+
           leaderboardBody.innerHTML =
-            '<tr><td colspan="3" style="text-align:center;">Loading...</td></tr>';
-          openPopup();
+            '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
+          openPopup(); // Now this function is defined and can be called
 
           try {
+            const tour = viewBtn.dataset.tour;
             const response = await fetch(`/api/live-leaderboard/${tour}`);
-            if (!response.ok) {
-              throw new Error("Network response was not ok");
-            }
-            const players = await response.json();
+            if (!response.ok) throw new Error("Network response was not ok");
 
+            const players = await response.json();
             leaderboardBody.innerHTML = ""; // Clear loading message
 
             if (players.length === 0) {
               leaderboardBody.innerHTML =
-                '<tr><td colspan="3" style="text-align:center;">Live data not available for this tour.</td></tr>';
+                '<tr><td colspan="5" style="text-align:center;">Live data not available for this tour.</td></tr>';
               return;
             }
 
@@ -885,24 +891,25 @@
               const thruText = player.thru === 18 ? "F" : player.thru;
 
               const row = `
-                          <tr>
-                              <td class="pos">${player.current_pos}</td>
-                              <td class="player-name">${player.player_name}</td>
+                            <tr>
+                                <td class="pos">${player.current_pos}</td>
+                                <td class="player-name">${player.player_name}</td>
 
-                              <td style="text-align:center"> <span class="live-score ${scoreClass}">${player.current_score}</span></td>
-                              <td style="text-align:center; font-weight:bold">${thruText}</td>
-                              <td style="text-align:center; font-weight:bold; padding-right:8px">${rndScore}</td>
-                          </tr>
-                      `;
+                                <td style="text-align:center"> <span class="live-score ${scoreClass}">${player.current_score}</span></td>
+                                <td style="text-align:center; font-weight:bold">${thruText}</td>
+                                <td style="text-align:center; font-weight:bold; padding-right:8px">${rndScore}</td>
+                            </tr>
+                        `;
               leaderboardBody.insertAdjacentHTML("beforeend", row);
             });
           } catch (error) {
             console.error("Failed to fetch live leaderboard:", error);
             leaderboardBody.innerHTML =
-              '<tr><td colspan="3" style="text-align:center;">Could not load live data.</td></tr>';
+              '<tr><td colspan="5" style="text-align:center;">Could not load live data.</td></tr>';
           }
         });
 
+        // Attach listeners for closing the popup
         if (closeBtn) closeBtn.addEventListener("click", closePopup);
         if (overlay)
           overlay.addEventListener("click", (e) => {
