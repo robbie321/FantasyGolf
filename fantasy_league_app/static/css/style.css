@@ -352,7 +352,7 @@ iframe {
 }
 .leaderboard-table th,
 .leaderboard-table td {
-  padding: 1rem; /* Increased padding */
+  padding: 0.35rem; /* Increased padding */
   border-bottom: 1px solid #f1f5f9; /* Softer border */
   text-align: left;
   vertical-align: middle;
