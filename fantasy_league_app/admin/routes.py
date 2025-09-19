@@ -88,14 +88,9 @@ def toggle_testing_mode():
 @admin_bp.route('/manual-finalize-leagues', methods=['POST'])
 @admin_required
 def manual_finalize_leagues():
-    """
-    Allows the site admin to manually trigger the weekly league
-    finalization task for testing purposes.
-    """
-    # Call the task function directly, passing the current app instance
-    finalize_finished_leagues(current_app._get_current_object())
-
-    flash('Manual league finalization task has been run. Check the logs for details.', 'success')
+    """Triggers the background task to finalize all finished leagues."""
+    finalize_finished_leagues.delay() # Call the task asynchronously with no arguments
+    flash("League finalization process has been started. This may take a few moments.", "info")
     return redirect(url_for('admin.admin_dashboard'))
 
 # --- Routes for API Tournament Import ---
