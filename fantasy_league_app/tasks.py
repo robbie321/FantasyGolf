@@ -489,108 +489,199 @@ def update_player_buckets(app):
 
 
 @shared_task
-def finalize_finished_leagues(league_id):
+def finalize_finished_leagues():
     """
-    This task is triggered when a league's tournament is over. It calculates the
-    final scores, determines the winner(s) using tie-breaker logic, and sends an
-    email notification to the club that hosted the league.
+    Finds all leagues that have ended but are not yet finalized, calculates
+    winners for each, and sends email notifications.
     """
-    # --- 1. Get the League and its Entries ---
-    league = League.query.get(league_id)
-    if not league or not league.is_finalized:
-        print(f"League {league_id} not found or not ready for finalization.")
-        return
+    app = create_app()
+    with app.app_context():
+        now = datetime.utcnow()
 
-    entries = LeagueEntry.query.filter_by(league_id=league.id).all()
-    if not entries:
-        print(f"No entries found for League {league_id}. Nothing to do.")
-        return
+        # 1. Find all leagues that are ready to be finalized
+        leagues_to_finalize = League.query.filter(
+            League.end_date <= now,
+            League.is_finalized == False
+        ).all()
 
-    # --- 2. Calculate Final Scores ---
-    historical_scores = {score.player_id: score.score for score in PlayerScore.query.filter_by(league_id=league.id).all()}
+        if not leagues_to_finalize:
+            print("No leagues found to finalize at this time.")
+            return "No leagues to finalize."
 
-    for entry in entries:
-        score1 = historical_scores.get(entry.player1_id, 0)
-        score2 = historical_scores.get(entry.player2_id, 0)
-        score3 = historical_scores.get(entry.player3_id, 0)
-        entry.total_score = score1 + score2 + score3
+        finalized_count = 0
+        # 2. Loop through each league and process it
+        for league in leagues_to_finalize:
+            print(f"--- Finalizing league: {league.name} (ID: {league.id}) ---")
 
-    # --- 3. Determine the Winner(s) with Tie-Breaker Logic ---
+            entries = league.entries
+            if not entries:
+                print(f"No entries found for League {league.id}. Skipping.")
+                league.is_finalized = True # Mark as finalized to prevent reprocessing
+                db.session.add(league)
+                continue # Move to the next league
 
-    # In golf, the lowest score wins.
-    min_score = min(entry.total_score for entry in entries if entry.total_score is not None)
-    top_entries = [entry for entry in entries if entry.total_score == min_score]
+            # --- Calculate Final Scores ---
+            historical_scores = {score.player_id: score.score for score in PlayerScore.query.filter_by(league_id=league.id).all()}
+            for entry in entries:
+                score1 = historical_scores.get(entry.player1_id, 0)
+                score2 = historical_scores.get(entry.player2_id, 0)
+                score3 = historical_scores.get(entry.player3_id, 0)
+                entry.total_score = score1 + score2 + score3
 
-    winners = []
-    if len(top_entries) == 1:
-        # A single, clear winner
-        winners = [top_entries[0].user]
-    else:
-        # Multiple entries are tied, use the tie-breaker
-        actual_answer = league.tie_breaker_actual_answer
-        if actual_answer is not None:
-            # Find the entry with the smallest difference to the actual answer
-            min_diff = float('inf')
-            for e in top_entries:
-                if e.tie_breaker_answer is not None:
-                    diff = abs(e.tie_breaker_answer - actual_answer)
-                    if diff < min_diff:
-                        min_diff = diff
+            # --- Determine the Winner(s) with Tie-Breaker Logic ---
+            min_score = min(entry.total_score for entry in entries if entry.total_score is not None)
+            top_entries = [entry for entry in entries if entry.total_score == min_score]
 
-            # Find all entries that match this minimum difference
-            winners = [e.user for e in top_entries if e.tie_breaker_answer is not None and abs(e.tie_breaker_answer - actual_answer) == min_diff]
+            winners = []
+            if len(top_entries) == 1:
+                winners = [top_entries[0].user]
+            else:
+                actual_answer = league.tie_breaker_actual_answer
+                if actual_answer is not None:
+                    min_diff = min(abs(e.tie_breaker_answer - actual_answer) for e in top_entries if e.tie_breaker_answer is not None)
+                    winners = [e.user for e in top_entries if e.tie_breaker_answer is not None and abs(e.tie_breaker_answer - actual_answer) == min_diff]
+                    if not winners: # If no one submitted a tie-breaker answer, all are winners
+                        winners = [e.user for e in top_entries]
+                else: # If no actual answer was set, all tied entries are winners
+                    winners = [e.user for e in top_entries]
 
-            # If no one submitted a tie-breaker answer, all are winners
-            if not winners:
-                winners = [e.user for e in top_entries]
-        else:
-            # If no actual answer was set, all tied entries are winners
-            winners = [e.user for e in top_entries]
+            # --- Assign Winners and Finalize League ---
+            league.winners = winners
+            league.is_finalized = True
+            db.session.add(league)
+            finalized_count += 1
 
-    # Assign the list of winners to the league's winner relationship
-    league.winners = winners
-    db.session.commit()
+            # --- Notify the Club Owner ---
+            club_owner = league.club
+            if club_owner and club_owner.email and winners:
+                subject = f"Winner(s) Declared for Your League: {league.name}"
+                winner_details_html = "<ul>" + "".join(
+                    f"""<li>
+                        <strong>Name:</strong> {winner.full_name} <br>
+                        <strong>Email:</strong> {winner.email} <br>
+                        <strong>Score:</strong> {next((e.total_score for e in top_entries if e.user_id == winner.id), 'N/A')}
+                    </li>""" for winner in winners
+                ) + "</ul>"
+                html_body = f"""
+                <p>Hello {club_owner.club_name},</p>
+                <p>Your fantasy league, <strong>{league.name}</strong>, has concluded and the winner(s) have been determined.</p>
+                <h3>Winner Details:</h3>
+                {winner_details_html}
+                <p>You are now responsible for arranging the prize payout to the winner(s).</p>
+                """
+                send_email(subject=subject, recipients=[club_owner.email], html_body=html_body)
+                print(f"Successfully sent winner notification for League {league.id}.")
 
-    # --- 4. Notify the Club Owner ---
-    club_owner = league.club_host
-    if club_owner and club_owner.email and winners:
-        subject = f"Winner(s) Declared for Your League: {league.name}"
+        # 3. Commit all changes to the database at once
+        db.session.commit()
+        return f"Successfully finalized {finalized_count} league(s)."
 
-        # Format the winner details for the email
-        winner_details_html = "<ul>"
-        for winner_user in winners:
-            winner_entry = next((e for e in top_entries if e.user_id == winner_user.id), None)
-            winner_details_html += f"""
-                <li>
-                    <strong>Winner's Name:</strong> {winner_user.full_name} <br>
-                    <strong>Winning Score:</strong> {winner_entry.total_score if winner_entry else 'N/A'} <br>
-                    <strong>Winner's Email:</strong> {winner_user.email}
-                </li>
-            """
-        winner_details_html += "</ul>"
+# @shared_task
+# def finalize_finished_leagues():
+#     """
+#     This task is triggered when a league's tournament is over. It calculates the
+#     final scores, determines the winner(s) using tie-breaker logic, and sends an
+#     email notification to the club that hosted the league.
+#     """
+#     # --- 1. Get the League and its Entries ---
+#     leagues_to_finalize = League.query.filter(
+#             League.end_date <= now,
+#             League.is_finalized == False
+#         ).all()
+#     if not league or not league.is_finalized:
+#         print(f"League {league_id} not found or not ready for finalization.")
+#         return
 
-        html_body = f"""
-        <p>Hello {club_owner.club_name},</p>
-        <p>Your fantasy league, <strong>{league.name}</strong>, has now concluded and the winner(s) have been determined.</p>
-        <hr>
-        <h3>Winner Details:</h3>
-        {winner_details_html}
-        <hr>
-        <p>You are now responsible for arranging the prize payout to the winner(s) directly.</p>
-        <p>Thank you for using Fantasy Fairways.</p>
-        """
+#     entries = LeagueEntry.query.filter_by(league_id=league.id).all()
+#     if not entries:
+#         print(f"No entries found for League {league_id}. Nothing to do.")
+#         return
 
-        send_email(
-            subject=subject,
-            recipients=[club_owner.email],
-            html_body=html_body
-        )
+#     # --- 2. Calculate Final Scores ---
+#     historical_scores = {score.player_id: score.score for score in PlayerScore.query.filter_by(league_id=league.id).all()}
 
-        print(f"Successfully sent winner notification email to {club_owner.email} for League {league.id}.")
-    else:
-        print(f"Could not send notification for League {league.id}: Club owner, email, or winner not found.")
+#     for entry in entries:
+#         score1 = historical_scores.get(entry.player1_id, 0)
+#         score2 = historical_scores.get(entry.player2_id, 0)
+#         score3 = historical_scores.get(entry.player3_id, 0)
+#         entry.total_score = score1 + score2 + score3
 
-    return f"League {league.id} finalized. Winners determined. Notification sent to club."
+#     # --- 3. Determine the Winner(s) with Tie-Breaker Logic ---
+
+#     # In golf, the lowest score wins.
+#     min_score = min(entry.total_score for entry in entries if entry.total_score is not None)
+#     top_entries = [entry for entry in entries if entry.total_score == min_score]
+
+#     winners = []
+#     if len(top_entries) == 1:
+#         # A single, clear winner
+#         winners = [top_entries[0].user]
+#     else:
+#         # Multiple entries are tied, use the tie-breaker
+#         actual_answer = league.tie_breaker_actual_answer
+#         if actual_answer is not None:
+#             # Find the entry with the smallest difference to the actual answer
+#             min_diff = float('inf')
+#             for e in top_entries:
+#                 if e.tie_breaker_answer is not None:
+#                     diff = abs(e.tie_breaker_answer - actual_answer)
+#                     if diff < min_diff:
+#                         min_diff = diff
+
+#             # Find all entries that match this minimum difference
+#             winners = [e.user for e in top_entries if e.tie_breaker_answer is not None and abs(e.tie_breaker_answer - actual_answer) == min_diff]
+
+#             # If no one submitted a tie-breaker answer, all are winners
+#             if not winners:
+#                 winners = [e.user for e in top_entries]
+#         else:
+#             # If no actual answer was set, all tied entries are winners
+#             winners = [e.user for e in top_entries]
+
+#     # Assign the list of winners to the league's winner relationship
+#     league.winners = winners
+#     db.session.commit()
+
+#     # --- 4. Notify the Club Owner ---
+#     club_owner = league.club_host
+#     if club_owner and club_owner.email and winners:
+#         subject = f"Winner(s) Declared for Your League: {league.name}"
+
+#         # Format the winner details for the email
+#         winner_details_html = "<ul>"
+#         for winner_user in winners:
+#             winner_entry = next((e for e in top_entries if e.user_id == winner_user.id), None)
+#             winner_details_html += f"""
+#                 <li>
+#                     <strong>Winner's Name:</strong> {winner_user.full_name} <br>
+#                     <strong>Winning Score:</strong> {winner_entry.total_score if winner_entry else 'N/A'} <br>
+#                     <strong>Winner's Email:</strong> {winner_user.email}
+#                 </li>
+#             """
+#         winner_details_html += "</ul>"
+
+#         html_body = f"""
+#         <p>Hello {club_owner.club_name},</p>
+#         <p>Your fantasy league, <strong>{league.name}</strong>, has now concluded and the winner(s) have been determined.</p>
+#         <hr>
+#         <h3>Winner Details:</h3>
+#         {winner_details_html}
+#         <hr>
+#         <p>You are now responsible for arranging the prize payout to the winner(s) directly.</p>
+#         <p>Thank you for using Fantasy Fairways.</p>
+#         """
+
+#         send_email(
+#             subject=subject,
+#             recipients=[club_owner.email],
+#             html_body=html_body
+#         )
+
+#         print(f"Successfully sent winner notification email to {club_owner.email} for League {league.id}.")
+#     else:
+#         print(f"Could not send notification for League {league.id}: Club owner, email, or winner not found.")
+
+#     return f"League {league.id} finalized. Winners determined. Notification sent to club."
 
 @shared_task
 def broadcast_notification_task(app, title, body):
