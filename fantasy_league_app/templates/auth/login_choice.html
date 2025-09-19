@@ -1,195 +1,64 @@
 {% extends 'base.html' %} {% block content %}
-<style>
-  .page-wrapper {
-    width: 100%;
-    padding: 4rem 1rem;
-    background-color: #f7f7f7;
-    min-height: calc(100vh - 70px - 8rem);
-    box-sizing: border-box;
-  }
-  .login-container {
-    max-width: 900px;
-    margin: 0 auto;
-    background-color: #ffffff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    padding: 3rem;
-  }
-  .login-container h1 {
-    font-family: "Merriweather", serif;
-    text-align: center;
-    margin-top: 0;
-    margin-bottom: 3rem;
-    color: #333;
-  }
-  .login-options {
-    display: flex;
-    justify-content: space-between;
-    gap: 3rem;
-  }
-  .login-option {
-    flex: 1;
-  }
-  .login-option h2 {
-    font-family: "Merriweather", serif;
-    font-size: 1.5rem;
-    border-bottom: 2px solid #006a4e;
-    padding-bottom: 0.5rem;
-    margin-top: 0;
-    margin-bottom: 2rem;
-    color: #333;
-  }
-  .form-group {
-    margin-bottom: 1.5rem;
-  }
-  .form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: bold;
-    color: #555;
-  }
-  .form-group input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
-  }
-  .btn-submit {
-    width: 100%;
-    padding: 12px;
-    background-color: #006a4e;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1.1rem;
-    font-weight: bold;
-  }
-  .admin-login-footer {
-    text-align: center;
-    margin-top: 3rem;
-    padding-top: 2rem;
-    border-top: 1px solid #e0e0e0;
-  }
-  .admin-login-footer a {
-    color: #555;
-    text-decoration: none;
-  }
+<main id="login-page" class="auth-container">
+  <div class="auth-card">
+    <h1>Welcome Back</h1>
+    <p class="subtitle">Sign in to your account to continue</p>
 
-  .alert {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    border-radius: 5px;
-    color: #fff;
-    font-weight: bold;
-  }
-  /* NEW: Rule to center the text within the alert */
-  .alert span {
-    flex-grow: 1;
-    text-align: center;
-  }
-  .alert-danger {
-    background-color: #dc3545;
-  }
-  .alert-success {
-    background-color: #28a745;
-  }
-  .alert-info {
-    background-color: #17a2b8;
-  }
-  .alert .close-btn {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    font-weight: bold;
-    cursor: pointer;
-    padding: 0 0.5rem;
-    line-height: 1;
-  }
-
-  @media (max-width: 768px) {
-    .login-options {
-      flex-direction: column;
-      gap: 4rem;
-    }
-  }
-</style>
-
-<div class="page-wrapper">
-  <div class="login-container">
-    {% with messages = get_flashed_messages(with_categories=true) %} {% if
-    messages %} {% for category, message in messages %}
-    <div class="alert alert-{{ category }}">
-      <span>{{ message }}</span>
-      <button
-        class="close-btn"
-        onclick="this.parentElement.style.display='none';"
-      >
-        &times;
+    <div class="login-tabs">
+      <button class="login-tab-button active" data-tab-target="#user-form">
+        <i class="fa-solid fa-user"></i> User
+      </button>
+      <button class="login-tab-button" data-tab-target="#club-form">
+        <i class="fa-solid fa-table-cells-large"></i> Club
       </button>
     </div>
-    {% endfor %} {% endif %} {% endwith %}
 
-    <h1>Login</h1>
-    <div class="login-options">
-      <!-- User Login Form -->
-      <div class="login-option">
-        <h2>Player Login</h2>
-        <form action="{{ url_for('auth.login_user_account') }}" method="POST">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <div class="form-group">
-            <label for="user-email">Email</label>
-            <input type="email" id="user-email" name="email" required />
-          </div>
-          <div class="form-group">
-            <label for="user-password">Password</label>
-            <input
-              type="password"
-              id="user-password"
-              name="password"
-              required
-            />
-          </div>
-          <button type="submit" class="btn-submit">Login</button>
-        </form>
-      </div>
-
-      <!-- Club Login Form -->
-      <div class="login-option">
-        <h2>Club Login</h2>
-        <form action="{{ url_for('auth.login_club_account') }}" method="POST">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <div class="form-group">
-            <label for="club-email">Email</label>
-            <input type="email" id="club-email" name="email" required />
-          </div>
-          <div class="form-group">
-            <label for="club-password">Password</label>
-            <input
-              type="password"
-              id="club-password"
-              name="password"
-              required
-            />
-          </div>
-          <button type="submit" class="btn-submit">Login</button>
-        </form>
-
-        <div style="text-align: center; margin-top: 1rem">
-          <a href="{{ url_for('auth.reset_request') }}">Forgot Password?</a>
+    <div id="user-form" class="login-tab-content active">
+      <form method="POST" action="{{ url_for('auth.login_user_account') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        {% if league_code %}
+        <input type="hidden" name="league_code" value="{{ league_code }}" />
+        {% endif %}
+        <div class="input-group">
+          <label for="user-email">User Email</label>
+          <input type="email" id="user-email" name="email" required />
         </div>
-      </div>
+        <div class="input-group">
+          <label for="user-password">Password</label>
+          <input type="password" id="user-password" name="password" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Sign In</button>
+      </form>
     </div>
 
-    <div class="admin-login-footer">
-      <a href="{{ url_for('auth.login_site_admin') }}">Site Admin Login</a>
+    <div id="club-form" class="login-tab-content">
+      <form method="POST" action="{{ url_for('auth.login_club_account') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        {% if league_code %}
+        <input type="hidden" name="league_code" value="{{ league_code }}" />
+        {% endif %}
+        <div class="input-group">
+          <label for="club-email">Club Email</label>
+          <input type="email" id="club-email" name="email" required />
+        </div>
+        <div class="input-group">
+          <label for="club-password">Password</label>
+          <input type="password" id="club-password" name="password" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Sign In</button>
+      </form>
+    </div>
+
+    <div class="auth-links">
+      <a href="{{ url_for('auth.reset_request') }}">Forgot your password?</a>
+      <p>
+        Don't have an account?
+        <a href="{{ url_for('auth.register') }}">Register here</a>
+      </p>
+      <a href="{{ url_for('auth.login_site_admin') }}" class="site-admin-link"
+        ><i class="fa-solid fa-shield-halved"></i>Site Admin Login</a
+      >
     </div>
   </div>
-</div>
+</main>
 {% endblock %}

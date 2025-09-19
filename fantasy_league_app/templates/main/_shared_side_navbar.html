@@ -1,0 +1,66 @@
+<aside class="sidebar">
+  <a href="{{ url_for('main.user_dashboard') }}" class="sidebar-logo-link">
+    <img
+      src="{{ url_for('static', filename='images/logo/club_logo.png') }}"
+      alt="Fantasy Fairways Club Logo"
+      class="sidebar-logo"
+    />
+  </a>
+  <div class="sidebar-header">
+    <span class="username">{{ current_user.full_name }}</span>
+
+    {% if current_user.is_site_admin %}Site Admin {% elif
+    current_user.is_club_admin %}Club Admin {% else %}Professional - Level 1 {%
+    endif %}
+  </div>
+  <nav class="sidebar-nav">
+    <ul>
+      {% set base_url = url_for('main.club_dashboard') if
+      current_user.is_club_admin else url_for('main.user_dashboard') %}
+      <li class="active">
+        <a href="{{ base_url }}#dashboard-section"
+          ><i class="fa-solid fa-circle-user"></i> Dashboard</a
+        >
+      </li>
+      <li>
+        <a href="{{ base_url }}#profiles-section"
+          ><i class="fa-solid fa-address-card"></i> Player Profiles</a
+        >
+      </li>
+      <li>
+        <a href="{{ base_url }}#schedule-section"
+          ><i class="fa-solid fa-calendar-days"></i> Tour Schedules</a
+        >
+      </li>
+      <li>
+        <a href="{{ base_url }}#leaderboards-section"
+          ><i class="fa-solid fa-trophy"></i> Tour Leaderboards</a
+        >
+      </li>
+      {% if current_user.is_club_admin %}
+      <li>
+        <a href="{{ url_for('main.club_dashboard') }}#wallet-section"
+          ><i class="fa-solid fa-wallet"></i> Wallet</a
+        >
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="support-links">
+      <span>SUPPORT</span>
+      {% if current_user.is_club_admin %}
+
+      <a href="{{ url_for('main.clubs_landing') }}">How it works</a>
+      {% endif %}
+      <a href="{{ url_for('main.privacy_policy') }}">Privacy</a>
+      <a href="{{ url_for('main.terms_and_conditions') }}"
+        >Terms & Conditions</a
+      >
+      <a href="#settings-section">Settings</a>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="logout-link"
+      ><i class="fa-solid fa-right-from-bracket"></i> Logout</a
+    >
+  </div>
+</aside>

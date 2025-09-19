@@ -1,142 +1,158 @@
-/* fantasy_league_app/static/css/form_style.css */
+  body {
+    background: #6b9e86;
+    background: radial-gradient(
+      circle,
+      rgba(107, 158, 134, 1) 0%,
+      rgba(0, 106, 78, 1) 100%
+    );
+  }
+/* --- Modern Form Styling --- */
+form, fieldset {
 
+    gap: 0;
+}
+/* This wrapper provides consistent centering and padding for all form pages */
 .form-wrapper {
     max-width: 800px;
     margin: 2rem auto;
-    padding: 0 1rem;
 }
 
+/* Styles the main header of the form page (e.g., "Create Public League") */
 .form-header {
     text-align: left;
     margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .form-header h1 {
-    font-family: 'Merriweather', serif;
-    font-size: 2.5rem;
-    color: #333;
-    margin: 0 0 0.5rem 0;
+    font-size: 1.8rem;
+    color: var(--text-dark);
 }
 
 .form-header p {
-    color: #555;
-    font-size: 1.1rem;
+    color: var(--text-light);
+    font-size: 1rem;
 }
 
+/* This is the main white card that contains a section of the form */
 .form-section {
-    background-color: #ffffff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
+    background-color: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
     padding: 2rem;
     margin-bottom: 2rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    box-shadow: var(--box-shadow);
 }
 
+/* Styles the header within each form section */
 .form-section-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 1rem;
     margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #eee;
 }
 
-.form-section-header svg {
-    width: 24px;
-    height: 24px;
-    color: #006a4e;
+.form-section-header i {
+    font-size: 1.25rem;
+    color: var(--primary-green);
+    margin-top: 5px;
 }
 
 .form-section-header h2 {
     margin: 0;
-    font-size: 1.5rem;
-    font-family: 'Merriweather', serif;
+    font-size: 1.25rem;
 }
 
 .form-section-header p {
-    margin: 0;
-    color: #666;
+    margin: 0.25rem 0 0 0;
+    color: var(--text-light);
+    font-size: 0.9rem;
 }
 
+/* A flexible grid for laying out form fields */
 .form-grid {
     display: grid;
-    grid-template-columns: 1fr; /* Default to single column */
+    grid-template-columns: 1fr; /* Default to a single column on mobile */
     gap: 1.5rem;
 }
 
-/* Two-column layout for specific fields */
-.form-grid.two-col {
-    grid-template-columns: 1fr 1fr;
+/* On larger screens, this modifier creates a two-column layout */
+@media (min-width: 768px) {
+    .form-grid.two-col {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
+/* Styles for a single form field group (label + input) */
 .form-group {
-    margin-bottom: 0; /* Remove default bottom margin */
+    display: flex;
+    flex-direction: column;
 }
 
-/* Toggle Switch for BooleanField */
+/* Toggle Switch for Boolean Fields (like "No Favorites Rule") */
 .toggle-switch {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    background-color: #f8f9fa;
+    border-radius: var(--border-radius);
     padding: 1rem;
-    background-color: #f7f7f7;
-    border-radius: 8px;
+    border: 1px solid var(--border-color);
 }
 
 .toggle-switch .label-group {
     text-align: left;
+    margin-right: 1rem;
 }
 
 .toggle-switch .label-group label {
-    font-weight: bold;
-    color: #333;
+    font-weight: 600;
+    color: var(--text-dark);
     margin: 0;
 }
 
 .toggle-switch .label-group p {
     font-size: 0.9rem;
-    color: #666;
+    color: var(--text-light);
     margin: 0.25rem 0 0 0;
 }
 
-.toggle-switch input[type="checkbox"] {
-    height: 0;
-    width: 0;
-    visibility: hidden;
+/* Final action buttons at the bottom of the form */
+.form-actions {
+    display: flex;
+    justify-content: flex-end; /* Aligns buttons to the right */
+    margin: 1rem 0;
 }
 
-.toggle-switch .slider {
-    cursor: pointer;
-    width: 50px;
-    height: 28px;
-    background-color: #ccc;
-    border-radius: 28px;
-    position: relative;
-    transition: background-color 0.2s;
+/* --- Modern Input Field Styling --- */
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-dark);
 }
 
-.toggle-switch .slider:before {
-    content: "";
-    position: absolute;
-    height: 20px;
-    width: 20px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    border-radius: 50%;
-    transition: 0.2s;
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ced4da; /* A standard light grey border */
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
+    font-size: 1rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    background-color: var(--white);
+    margin-bottom: 1rem
 }
 
-.toggle-switch input:checked + .slider {
-    background-color: #006a4e;
-}
-
-.toggle-switch input:checked + .slider:before {
-    transform: translateX(22px);
-}
-
-@media (max-width: 576px) {
-    .form-grid.two-col {
-        grid-template-columns: 1fr; /* Stack on small screens */
-    }
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(0, 106, 78, 0.15); /* A subtle glow effect */
 }

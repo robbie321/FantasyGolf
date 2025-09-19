@@ -1,153 +1,142 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 import requests
 import os
 from sqlalchemy import func
 
-from . import db, mail, socketio, scheduler # Make sure mail is imported if you use it in other tasks
+from . import db, mail, socketio, create_app  # Make sure mail is imported if you use it in other tasks
 from flask_mail import Message
 from flask import current_app
 
 from .data_golf_client import DataGolfClient
 
 from collections import defaultdict # Add this import
-from .models import League, Player, PlayerBucket, LeagueEntry, PlayerScore, User, PushSubscription
-
+from .models import League, Player, PlayerBucket, LeagueEntry, PlayerScore, User, PushSubscription, db
+from celery import shared_task
 from .stripe_client import process_payouts,  create_payout
-from .utils import send_winner_notification_email, send_push_notification
+from .utils import send_winner_notification_email, send_push_notification, send_email
 
-def update_player_scores(app):
+@shared_task(bind=True)
+def update_player_scores(self, tour, end_time_iso):
     """
-    This is the ONLY scheduled task for live scores.
-    It runs on a schedule, uses the 'get_in_play_stats' API, and performs
-    a bulk update on the central Player table. It is fast and scalable.
-    It also calculates rank changes to send push notifications.
+    Fetches live scores for a tour, updates the database, calculates rank changes,
+    and reschedules itself to run again every 3 minutes until the end_time is reached.
     """
+    app = create_app()
     with app.app_context():
-        print(f"--- Running centralized player score update at {datetime.now()} ---")
+        print(f"--- Running score update for tour '{tour}' at {datetime.now()} ---")
 
-        tours = ['pga', 'euro', 'kft', 'alt']
-        data_golf_client = DataGolfClient()
-        updated_tours = []
+        # Convert the end_time string back to a timezone-aware datetime object
+        end_time = datetime.fromisoformat(end_time_iso).replace(tzinfo=timezone.utc)
 
-        for tour in tours:
-            try:
-                in_play_stats, error = data_golf_client.get_in_play_stats(tour)
+        try:
+            data_golf_client = DataGolfClient()
+            in_play_stats, error = data_golf_client.get_in_play_stats(tour)
 
-                if error or not in_play_stats or not isinstance(in_play_stats, list):
-                    continue
-
+            if not error and in_play_stats and isinstance(in_play_stats, list):
                 player_scores_from_api = {player['dg_id']: player for player in in_play_stats}
                 player_dg_ids = list(player_scores_from_api.keys())
 
-                # --- START: New Notification Logic ---
-
-                # 1. Find all active leagues for this tour
+                # --- START: Notification Logic ---
                 active_leagues_on_tour = League.query.filter(
                     League.tour == tour,
                     League.is_finalized == False,
                     League.start_date <= datetime.utcnow()
                 ).all()
 
-                # 2. Calculate and store the OLD ranks for each league
                 old_ranks_by_league = {}
                 for league in active_leagues_on_tour:
                     entries = league.entries
-                    # Calculate total scores based on current DB data
                     for entry in entries:
                         s1 = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
                         s2 = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
                         s3 = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
                         entry.temp_score = s1 + s2 + s3
-
                     entries.sort(key=lambda x: x.temp_score)
                     old_ranks_by_league[league.id] = {entry.user_id: rank + 1 for rank, entry in enumerate(entries)}
 
-                # --- END: Old Rank Calculation ---
-
-                # 3. Update the Player scores in the database (your existing logic)
+                # --- Update Player scores in the database ---
                 players_in_db = Player.query.filter(Player.dg_id.in_(player_dg_ids)).all()
                 players_to_update = []
                 for player in players_in_db:
                     score_data = player_scores_from_api.get(player.dg_id)
-                    new_score = score_data.get('current_score')
-                    if score_data and new_score is not None:
-                        players_to_update.append({
-                            'id': player.id,
-                            'current_score': new_score,
-                            'thru': score_data.get('thru')
-                        })
 
-                if not players_to_update:
-                    continue # Skip if there are no score changes
+                    if score_data:
+                        new_score = score_data.get('current_score')
+                        player_pos = score_data.get('current_pos', '').upper() # Get player position
+                        if  new_score is not None and player_pos in ['WD', 'CUT', 'DF']:
+                            new_score += 10 # Add 10-stroke penalty
+                            print(f"Applying +10 penalty to {player.full_name} for status: {player_pos}")
 
-                db.session.bulk_update_mappings(Player, players_to_update)
-                db.session.commit()
-                print(f"Successfully updated {len(players_to_update)} players for tour: '{tour}'")
-                if tour not in updated_tours:
-                    updated_tours.append(tour)
+                        if new_score is not None:
+                            players_to_update.append({
+                                'id': player.id,
+                                'current_score': new_score,
+                                'thru': score_data.get('thru'),
+                                'current_pos': player_pos
+                            })
 
-                # --- START: New Rank Comparison and Notification ---
+                if players_to_update:
+                    db.session.bulk_update_mappings(Player, players_to_update)
+                    db.session.commit()
+                    print(f"Successfully updated {len(players_to_update)} players for tour: '{tour}'")
+                    socketio.emit('scores_updated', {'updated_tours': [tour]})
 
-                # 4. Recalculate ranks with NEW scores and send notifications
-                for league in active_leagues_on_tour:
-                    entries = league.entries # Re-fetch or use existing entry objects
-                    old_ranks = old_ranks_by_league.get(league.id, {})
+                    # --- Recalculate ranks and send notifications ---
+                    for league in active_leagues_on_tour:
+                        entries = league.entries
+                        old_ranks = old_ranks_by_league.get(league.id, {})
+                        for entry in entries:
+                            s1 = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
+                            s2 = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
+                            s3 = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
+                            entry.temp_score = s1 + s2 + s3
+                        entries.sort(key=lambda x: x.temp_score)
 
-                    # Recalculate total scores with the new data
-                    for entry in entries:
-                        s1 = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
-                        s2 = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
-                        s3 = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
-                        entry.temp_score = s1 + s2 + s3
+                        for new_rank_idx, entry in enumerate(entries):
+                            new_rank = new_rank_idx + 1
+                            old_rank = old_ranks.get(entry.user_id)
+                            if old_rank is not None:
+                                if (old_rank - new_rank) >= 5:
+                                    send_push_notification(entry.user_id, "Big Mover! 🔥", f"You've jumped up to P{new_rank} in '{league.name}'!")
+                                if (new_rank - old_rank) >= 5:
+                                    send_push_notification(entry.user_id, "Uh Oh... 😬", f"You've dropped to P{new_rank} in '{league.name}'.")
+                                if new_rank == 1 and old_rank != 1:
+                                    send_push_notification(entry.user_id, "You're in the Lead! 🥇", f"You've moved into 1st place in '{league.name}'!")
+                                if old_rank == 1 and new_rank != 1:
+                                    send_push_notification(entry.user_id, "Leader Change!", f"You've been knocked out of 1st place in '{league.name}'.")
 
-                    entries.sort(key=lambda x: x.temp_score)
+        except Exception as e:
+            print(f"An unexpected error occurred during score update for tour '{tour}': {e}")
+            import traceback
+            traceback.print_exc()
+            db.session.rollback()
 
-                    for new_rank_idx, entry in enumerate(entries):
-                        new_rank = new_rank_idx + 1
-                        old_rank = old_ranks.get(entry.user_id)
+        # --- Self-Rescheduling Logic ---
+        now_utc = datetime.now(timezone.utc)
+        if now_utc < end_time:
+            print(f"End time ({end_time}) not reached. Rescheduling task for tour '{tour}' in 3 minutes.")
+            self.apply_async(args=[tour, end_time_iso], countdown=180) # 180 seconds = 3 minutes
+        else:
+            print(f"End time reached for tour '{tour}'. Stopping live score updates for the day.")
 
-                        if old_rank is not None:
-                            # NOTIFICATION 5: Big Jumps
-                            if (old_rank - new_rank) >= 5: # Moved UP
-                                send_push_notification(entry.user_id, "Big Mover! 🔥", f"You've jumped up to P{new_rank} in '{league.name}'!")
-                            if (new_rank - old_rank) >= 5: # Moved DOWN
-                                send_push_notification(entry.user_id, "Uh Oh... 😬", f"You've dropped to P{new_rank} in '{league.name}'.")
 
-                            # NOTIFICATION 6: First Place Changes
-                            if new_rank == 1 and old_rank != 1:
-                                send_push_notification(entry.user_id, "You're in the Lead! 🥇", f"You've moved into 1st place in '{league.name}'!")
-                            if old_rank == 1 and new_rank != 1:
-                                send_push_notification(entry.user_id, "Leader Change!", f"You've been knocked out of 1st place in '{league.name}'.")
-
-                # --- END: Notification Logic ---
-
-            except Exception as e:
-                print(f"An unexpected error occurred during score update for tour '{tour}': {e}")
-                import traceback
-                traceback.print_exc()
-                db.session.rollback()
-
-        if updated_tours:
-            socketio.emit('scores_updated', {'updated_tours': updated_tours})
-            print(f"Broadcast 'scores_updated' event for tours: {updated_tours}")
-
-def schedule_score_updates_for_the_week(app):
+# --- REPLACEMENT 2: The Final schedule_score_updates_for_the_week Task ---
+@shared_task
+def schedule_score_updates_for_the_week():
     """
-    JOB 1 - The Daily Scheduler.
-    Runs every day at 5 AM from Thu-Sun. It finds the current day's tee times
-    and schedules the updater job (update_player_scores) to run for that day.
+    Runs daily (Thu-Sun) at 5 AM. Finds today's tee times and kicks off
+    the first self-repeating update_player_scores task for each active tour.
     """
+    app = create_app()
     with app.app_context():
         print(f"--- Running DAILY scheduler setup at {datetime.now()} ---")
-        tours = ['pga', 'euro', 'kft', 'alt']
+        tours = ['pga', 'euro']
         data_golf_client = DataGolfClient()
 
         for tour in tours:
             print(f"Checking for tournament on tour: '{tour}'...")
-
             field_data, error = data_golf_client.get_tournament_field_updates(tour)
-
             if error or not field_data or not field_data.get('field'):
                 print(f"No field data for tour '{tour}'. Skipping.")
                 continue
@@ -157,7 +146,6 @@ def schedule_score_updates_for_the_week(app):
                 print(f"No current round data for tour '{tour}'. Skipping.")
                 continue
 
-            # --- Find Earliest & Latest Tee Times for the CURRENT Round ---
             tee_time_key = f"r{current_round}_teetime"
             earliest_tee_time = None
             latest_tee_time = None
@@ -165,38 +153,33 @@ def schedule_score_updates_for_the_week(app):
             for player in field_data['field']:
                 tee_time_str = player.get(tee_time_key)
                 if tee_time_str:
-                    tee_time = datetime.strptime(tee_time_str, '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
-                    if earliest_tee_time is None or tee_time < earliest_tee_time:
-                        earliest_tee_time = tee_time
-                    if latest_tee_time is None or tee_time > latest_tee_time:
-                        latest_tee_time = tee_time
+                    try:
+                        tee_time = datetime.strptime(tee_time_str, '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
+                        if earliest_tee_time is None or tee_time < earliest_tee_time:
+                            earliest_tee_time = tee_time
+                        if latest_tee_time is None or tee_time > latest_tee_time:
+                            latest_tee_time = tee_time
+                    except (ValueError, TypeError):
+                        continue # Ignore invalid tee time formats
 
             if earliest_tee_time and latest_tee_time:
-                # --- Calculate the precise window for today's updates ---
                 start_updates_at = earliest_tee_time + timedelta(minutes=20)
                 end_updates_at = latest_tee_time + timedelta(hours=5)
 
-                # Create a unique ID for each day's job
-                job_id = f"live_updater_{tour}_{datetime.now().strftime('%Y-%m-%d')}"
-
-                # Use 'add_job' with 'replace_existing=True' to handle rescheduling
-                scheduler.add_job(
-                    id=job_id,
-                    func=update_player_scores,
-                    args=[app],
-                    trigger='interval',
-                    minutes=1,
-                    start_date=start_updates_at,
-                    end_date=end_updates_at,
-                    replace_existing=True
-                )
-                print(f"SUCCESS: Scheduled/Rescheduled job '{job_id}' for tour '{tour}'.")
+                print(f"SUCCESS: Kicking off live updater for tour '{tour}'.")
                 print(f"  > Updates will run from {start_updates_at} to {end_updates_at}")
+
+                # Kick off the FIRST task in the chain. It will start at `start_updates_at`
+                # and will know to stop itself after `end_updates_at`.
+                update_player_scores.apply_async(
+                    args=[tour, end_updates_at.isoformat()],
+                    eta=start_updates_at
+                )
             else:
                 print(f"Could not determine tee times for tour '{tour}' for round {current_round}. No job scheduled.")
 
-
 # --- Task to reset all player scores weekly ---
+@shared_task
 def reset_player_scores(app):
     """
     Scheduled to run weekly to reset the 'current_score' for all players to 0.
@@ -222,6 +205,7 @@ def reset_player_scores(app):
             print(f"ERROR: Could not reset player scores: {e}")
             db.session.rollback()
 
+@shared_task
 def send_deadline_reminders(app):
     """
     Runs periodically to send reminders for leagues whose entry deadline is approaching.
@@ -257,68 +241,174 @@ def send_deadline_reminders(app):
 
 
 #redundant
-def settle_finished_leagues(app):
+# def settle_finished_leagues(app):
+#     """
+#     This job runs periodically to perform a final score update for leagues
+#     that have just ended.
+#     """
+#     with app.app_context():
+#         now = datetime.utcnow()
+#         # Look for leagues that ended in the last 15 minutes and are not yet finalized
+#         recently_finished = now - timedelta(minutes=15)
+
+#         leagues_to_settle = League.query.filter(
+#             League.end_date.between(recently_finished, now),
+#             League.is_finalized == False
+#         ).all()
+
+#         if not leagues_to_settle:
+#             print(f"--- No leagues to settle at {datetime.now()} ---")
+#             return
+
+#         print(f"--- Found {len(leagues_to_settle)} league(s) to settle. Performing final score update. ---")
+
+#         API_KEY = app.config['DATA_GOLF_API_KEY']
+#         # The pre-tournament endpoint also contains the final results after an event.
+#         url = f"https://feeds.datagolf.com/preds/pre-tournament?tour=pga&odds_format=decimal&key={API_KEY}"
+
+#         try:
+#             response = requests.get(url)
+#             response.raise_for_status()
+#             data = response.json()
+
+#             # We create a dictionary of player scores for quick lookup
+#             player_scores = {}
+#             for api_player in data.get('field', []):
+#                 player_name_parts = api_player.get('player_name', '').split(', ')
+#                 if len(player_name_parts) == 2:
+#                     surname, name = player_name_parts[0].strip(), player_name_parts[1].strip()
+#                     # Create a unique key for the dictionary
+#                     player_key = f"{name.lower()} {surname.lower()}"
+#                     player_scores[player_key] = api_player.get('to_par', 0)
+
+#             if not player_scores:
+#                 print("Could not fetch final player scores from API.")
+#                 return
+
+#             # Get all players from our database
+#             all_db_players = Player.query.all()
+#             updated_count = 0
+#             for player in all_db_players:
+#                 player_key = f"{player.name.lower()} {player.surname.lower()}"
+#                 if player_key in player_scores:
+#                     player.current_score = player_scores[player_key]
+#                     updated_count += 1
+
+#             db.session.commit()
+#             print(f"Final scores updated for {updated_count} players.")
+
+#         except requests.exceptions.RequestException as e:
+#             print(f"Error fetching final scores from API: {e}")
+
+@shared_task(bind=True)
+def collect_league_fees(self, league_id):
     """
-    This job runs periodically to perform a final score update for leagues
-    that have just ended.
+    Calculates and collects the application fees for all entries in a league
+    by creating a direct charge on the club's Stripe account.
     """
+    app = create_app()
     with app.app_context():
-        now = datetime.utcnow()
-        # Look for leagues that ended in the last 15 minutes and are not yet finalized
-        recently_finished = now - timedelta(minutes=15)
-
-        leagues_to_settle = League.query.filter(
-            League.end_date.between(recently_finished, now),
-            League.is_finalized == False
-        ).all()
-
-        if not leagues_to_settle:
-            print(f"--- No leagues to settle at {datetime.now()} ---")
-            return
-
-        print(f"--- Found {len(leagues_to_settle)} league(s) to settle. Performing final score update. ---")
-
-        API_KEY = app.config['DATA_GOLF_API_KEY']
-        # The pre-tournament endpoint also contains the final results after an event.
-        url = f"https://feeds.datagolf.com/preds/pre-tournament?tour=pga&odds_format=decimal&key={API_KEY}"
-
         try:
-            response = requests.get(url)
-            response.raise_for_status()
-            data = response.json()
-
-            # We create a dictionary of player scores for quick lookup
-            player_scores = {}
-            for api_player in data.get('field', []):
-                player_name_parts = api_player.get('player_name', '').split(', ')
-                if len(player_name_parts) == 2:
-                    surname, name = player_name_parts[0].strip(), player_name_parts[1].strip()
-                    # Create a unique key for the dictionary
-                    player_key = f"{name.lower()} {surname.lower()}"
-                    player_scores[player_key] = api_player.get('to_par', 0)
-
-            if not player_scores:
-                print("Could not fetch final player scores from API.")
+            league = League.query.get(league_id)
+            if not league:
+                logging.error(f"League with ID {league_id} not found.")
                 return
 
-            # Get all players from our database
-            all_db_players = Player.query.all()
-            updated_count = 0
-            for player in all_db_players:
-                player_key = f"{player.name.lower()} {player.surname.lower()}"
-                if player_key in player_scores:
-                    player.current_score = player_scores[player_key]
-                    updated_count += 1
+            club = league.club
+            if not club or not club.stripe_account_id:
+                logging.error(f"Club for league {league.id} not found or has no Stripe account.")
+                return
+
+            # Find entries where the fee hasn't been collected
+            entries_to_charge = LeagueEntry.query.filter_by(
+                league_id=league.id,
+                fee_collected=False
+            ).all()
+
+            if not entries_to_charge:
+                logging.info(f"No fees to collect for league {league.id}.")
+                return
+
+            num_entries = len(entries_to_charge)
+            application_fee_per_entry = 250  # €2.50 in cents
+            total_fee_to_collect = num_entries * application_fee_per_entry
+
+            # Create a direct charge on the club's account
+            # This pulls funds FROM the club's Stripe account TO the platform account
+            stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
+
+            # charge = stripe.Charge.create(
+            #     amount=total_fee_to_collect,
+            #     currency='eur',
+            #     description=f"Application fees for {num_entries} entries in '{league.name}'",
+            #     source=club.stripe_account_id,  # This is incorrect for direct charges, corrected below.
+            #     # For Connected Accounts, you charge the platform and transfer from the connected account
+            #     # The correct way is to create a transfer from the connected account.
+            # )
+
+            # Correction for charging connected accounts: Create a Transfer, not a Charge.
+            # This pulls funds from the connected account to your platform's balance.
+            transfer = stripe.Transfer.create(
+                amount=total_fee_to_collect,
+                currency='eur',
+                destination=current_app.config['STRIPE_PLATFORM_ACCOUNT_ID'], # You need to store your own account ID
+                transfer_group=f"league-{league.id}-fees",
+                # The source of the funds is implicitly the connected account's balance
+                stripe_account=club.stripe_account_id,
+            )
+
+
+            # Mark fees as collected
+            for entry in entries_to_charge:
+                entry.fee_collected = True
 
             db.session.commit()
-            print(f"Final scores updated for {updated_count} players.")
+            logging.info(f"Successfully collected €{total_fee_to_collect / 100:.2f} for {num_entries} entries in league {league.id}.")
 
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching final scores from API: {e}")
+        except stripe.error.StripeError as e:
+            logging.error(f"Stripe error while collecting fees for league {league.id}: {e}")
+            # Optionally, you can retry the task
+            # self.retry(exc=e, countdown=60)
+        except Exception as e:
+            logging.error(f"An unexpected error occurred while collecting fees for league {league.id}: {e}")
+            # self.retry(exc=e, countdown=60)
 
+
+@shared_task(bind=True)
+def check_and_queue_fee_collection(self):
+    """
+    Runs daily. Finds leagues that have started and for which fees have not
+    yet been processed, then queues the collection task for each.
+    """
+    app = create_app()
+    with app.app_context():
+        logging.info("Scheduler starting: Checking for leagues to process fees...")
+        today = date.today()
+
+        leagues_to_process = League.query.filter(
+            League.start_date <= today,
+            League.fees_processed == False
+        ).all()
+
+        if not leagues_to_process:
+            logging.info("No new leagues found for fee processing.")
+            return
+
+        for league in leagues_to_process:
+            logging.info(f"Queueing fee collection for league: {league.name} (ID: {league.id})")
+
+            # Mark as processed immediately to prevent duplicate processing
+            league.fees_processed = True
+            db.session.add(league)
+
+            # Dispatch the actual fee collection task to a worker
+            collect_league_fees.delay(league.id)
+
+        db.session.commit()
+        logging.info(f"Successfully queued fee collection for {len(leagues_to_process)} leagues.")
 
 # In fantasy_league_app/tasks.py
-
+@shared_task
 def update_player_buckets(app):
     """
     Scheduled task to create new player buckets for upcoming tournaments.
@@ -327,7 +417,7 @@ def update_player_buckets(app):
     """
     with app.app_context():
         print("--- Running scheduled job: update_player_buckets ---")
-        tours = ['pga', 'euro', 'kft', 'alt']
+        tours = ['pga', 'euro']
         data_golf_client = DataGolfClient()
 
         for tour in tours:
@@ -398,102 +488,111 @@ def update_player_buckets(app):
         print("--- Player bucket update finished successfully. ---")
 
 
-# --- Automated Weekly Task to Finalize Leagues ---
-def finalize_finished_leagues(app):
+@shared_task
+def finalize_finished_leagues(league_id):
     """
-    Finds finished leagues, fetches the tie-breaker score, determines winner(s),
-    and processes payouts.
+    This task is triggered when a league's tournament is over. It calculates the
+    final scores, determines the winner(s) using tie-breaker logic, and sends an
+    email notification to the club that hosted the league.
     """
-    with app.app_context():
-        print(f"--- Running weekly league finalization at {datetime.now()} ---")
-        client = DataGolfClient()
+    # --- 1. Get the League and its Entries ---
+    league = League.query.get(league_id)
+    if not league or not league.is_finalized:
+        print(f"League {league_id} not found or not ready for finalization.")
+        return
 
-        leagues_to_finalize = League.query.filter(
-            League.end_date < datetime.utcnow(),
-            League.is_finalized == False
-        ).all()
+    entries = LeagueEntry.query.filter_by(league_id=league.id).all()
+    if not entries:
+        print(f"No entries found for League {league_id}. Nothing to do.")
+        return
 
-        if not leagues_to_finalize:
-            print("No leagues to finalize this week.")
-            return
+    # --- 2. Calculate Final Scores ---
+    historical_scores = {score.player_id: score.score for score in PlayerScore.query.filter_by(league_id=league.id).all()}
 
-        for league in leagues_to_finalize:
-            entries = league.entries
-            if not entries:
-                print(f"Skipping league '{league.name}' (ID: {league.id}) as it has no entries.")
-                league.is_finalized = True
-                db.session.commit()
-                continue
+    for entry in entries:
+        score1 = historical_scores.get(entry.player1_id, 0)
+        score2 = historical_scores.get(entry.player2_id, 0)
+        score3 = historical_scores.get(entry.player3_id, 0)
+        entry.total_score = score1 + score2 + score3
 
-            # --- Calculate Winner(s) ---
-            for entry in entries:
-                p1_score = entry.player1.current_score if entry.player1 else 0
-                p2_score = entry.player2.current_score if entry.player2 else 0
-                p3_score = entry.player3.current_score if entry.player3 else 0
-                entry.total_score = p1_score + p2_score + p3_score
+    # --- 3. Determine the Winner(s) with Tie-Breaker Logic ---
 
-            min_score = min(entry.total_score for entry in entries)
-            top_entries = [entry for entry in entries if entry.total_score == min_score]
+    # In golf, the lowest score wins.
+    min_score = min(entry.total_score for entry in entries if entry.total_score is not None)
+    top_entries = [entry for entry in entries if entry.total_score == min_score]
 
-            winners = []
-            if len(top_entries) == 1:
-                winners = [top_entries[0].user]
-            else:
-                actual_answer = league.tie_breaker_actual_answer
-                if actual_answer is not None:
-                    min_diff = min(abs(e.tie_breaker_answer - actual_answer) for e in top_entries)
-                    winners = [e.user for e in top_entries if abs(e.tie_breaker_answer - actual_answer) == min_diff]
-                else:
-                    winners = [e.user for e in top_entries]
+    winners = []
+    if len(top_entries) == 1:
+        # A single, clear winner
+        winners = [top_entries[0].user]
+    else:
+        # Multiple entries are tied, use the tie-breaker
+        actual_answer = league.tie_breaker_actual_answer
+        if actual_answer is not None:
+            # Find the entry with the smallest difference to the actual answer
+            min_diff = float('inf')
+            for e in top_entries:
+                if e.tie_breaker_answer is not None:
+                    diff = abs(e.tie_breaker_answer - actual_answer)
+                    if diff < min_diff:
+                        min_diff = diff
 
-            league.winners = winners
+            # Find all entries that match this minimum difference
+            winners = [e.user for e in top_entries if e.tie_breaker_answer is not None and abs(e.tie_breaker_answer - actual_answer) == min_diff]
 
-            for winner in winners:
-                send_push_notification(
-                    winner.id,
-                    f"You Won '{league.name}'!",
-                    f"Congratulations! You finished in the top spot. Your winnings are on the way."
-                )
+            # If no one submitted a tie-breaker answer, all are winners
+            if not winners:
+                winners = [e.user for e in top_entries]
+        else:
+            # If no actual answer was set, all tied entries are winners
+            winners = [e.user for e in top_entries]
 
-            # --- Payout Logic ---
-            club_admin = User.query.get(league.club_id) if not league.is_public else None
-            total_prize, error = process_payouts(league, winners, club_admin)
+    # Assign the list of winners to the league's winner relationship
+    league.winners = winners
+    db.session.commit()
 
-            if error:
-                print(f"Stripe payout failed for league {league.id}: {error}")
-                continue
+    # --- 4. Notify the Club Owner ---
+    club_owner = league.club_host
+    if club_owner and club_owner.email and winners:
+        subject = f"Winner(s) Declared for Your League: {league.name}"
 
+        # Format the winner details for the email
+        winner_details_html = "<ul>"
+        for winner_user in winners:
+            winner_entry = next((e for e in top_entries if e.user_id == winner_user.id), None)
+            winner_details_html += f"""
+                <li>
+                    <strong>Winner's Name:</strong> {winner_user.full_name} <br>
+                    <strong>Winning Score:</strong> {winner_entry.total_score if winner_entry else 'N/A'} <br>
+                    <strong>Winner's Email:</strong> {winner_user.email}
+                </li>
+            """
+        winner_details_html += "</ul>"
 
-            # NOTIFICATION 4: Send "Payment Sent" message
-            for winner in winners:
-                send_push_notification(
-                    winner.id,
-                    "Payment Sent!",
-                    f"Your winnings for the '{league.name}' league have been sent to your connected account."
-                )
-            # --- Archive Scores & Finalize ---
-            all_players_in_league = set()
-            for entry in entries:
-                all_players_in_league.add(entry.player1)
-                all_players_in_league.add(entry.player2)
-                all_players_in_league.add(entry.player3)
+        html_body = f"""
+        <p>Hello {club_owner.club_name},</p>
+        <p>Your fantasy league, <strong>{league.name}</strong>, has now concluded and the winner(s) have been determined.</p>
+        <hr>
+        <h3>Winner Details:</h3>
+        {winner_details_html}
+        <hr>
+        <p>You are now responsible for arranging the prize payout to the winner(s) directly.</p>
+        <p>Thank you for using Fantasy Fairways.</p>
+        """
 
-            for player in all_players_in_league:
-                if player:
-                    historical_score = PlayerScore(
-                        player_id=player.id,
-                        league_id=league.id,
-                        score=player.current_score
-                    )
-                    db.session.add(historical_score)
+        send_email(
+            subject=subject,
+            recipients=[club_owner.email],
+            html_body=html_body
+        )
 
-            league.is_finalized = True
-            db.session.commit()
-            send_winner_notification_email(league)
-            print(f"Successfully finalized league '{league.name}' (ID: {league.id}). Winners: {[w.full_name for w in winners]}")
+        print(f"Successfully sent winner notification email to {club_owner.email} for League {league.id}.")
+    else:
+        print(f"Could not send notification for League {league.id}: Club owner, email, or winner not found.")
 
-        print("--- Weekly league finalization finished. ---")
+    return f"League {league.id} finalized. Winners determined. Notification sent to club."
 
+@shared_task
 def broadcast_notification_task(app, title, body):
     """
     Background task to send a push notification to ALL subscribed users.

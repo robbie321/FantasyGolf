@@ -1,198 +1,361 @@
 {% extends 'base.html' %} {% block content %}
-<div class="page-wrapper">
-  <div class="clubs-landing-container">
-    <section class="video-section">
-      <div class="video-container">
-        <iframe
-          src="https://www.youtube.com/embed/your_video_id_here"
-          frameborder="0"
-          allowfullscreen
-        ></iframe>
+<style>
+  body {
+    background: #6b9e86;
+    background: radial-gradient(
+      circle,
+      rgba(107, 158, 134, 1) 0%,
+      rgba(0, 106, 78, 1) 100%
+    );
+  }
+  .page-container {
+    max-width: 800px;
+    margin: auto;
+    padding: 2rem;
+    background-color: #f9f9f9; /* Lighter background for the page */
+    border-radius: 8px;
+    color: #333;
+    line-height: 1.6;
+  }
+  /* --- FAQ Accordion Styling --- */
+  .faq-container {
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .faq-item {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .faq-question {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 1.5rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .faq-question span {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--dark-text);
+  }
+
+  .faq-question i {
+    transition: transform 0.3s ease;
+  }
+
+  .faq-question.active i {
+    transform: rotate(180deg);
+  }
+
+  .faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+  }
+
+  .faq-answer p {
+    padding: 0 0 1.5rem 0;
+    color: var(--text-light);
+    line-height: 1.6;
+  }
+
+  .marketing-kit-grid {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  @media (max-width: 768px) {
+    .marketing-kit-grid {
+      flex-direction: column;
+    }
+  }
+</style>
+<main class="dashboard-content">
+  <div class="page-container">
+    <header class="page-header">
+      <h1>How It Works for Clubs</h1>
+      <p class="subtitle">
+        Everything you need to know about running successful golf tournaments on
+        Fantasy Fairways.
+      </p>
+    </header>
+
+    <!-- Renamed to use the existing player-profiles-grid style -->
+    <section class="player-profiles-grid">
+      <div class="player-profile-card">
+        <i
+          class="fa-solid fa-trophy"
+          style="
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-green);
+          "
+        ></i>
+        <h4>Create Leagues</h4>
+        <p class="player-meta">
+          Set up tournaments with custom rules and entry fees.
+        </p>
+      </div>
+      <div class="player-profile-card">
+        <i
+          class="fa-solid fa-users"
+          style="
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-green);
+          "
+        ></i>
+        <h4>Players Join</h4>
+        <p class="player-meta">
+          Members create teams and pay entry fees to participate.
+        </p>
+      </div>
+      <div class="player-profile-card">
+        <i
+          class="fa-solid fa-chart-simple"
+          style="
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-green);
+          "
+        ></i>
+        <h4>Track Results</h4>
+        <p class="player-meta">
+          Real-time scoring and automatic leaderboard updates.
+        </p>
+      </div>
+      <div class="player-profile-card">
+        <i
+          class="fa-solid fa-sack-dollar"
+          style="
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-green);
+          "
+        ></i>
+        <h4>Earn Revenue</h4>
+        <p class="player-meta">
+          Keep a percentage of entry fees as tournament revenue.
+        </p>
       </div>
     </section>
 
-    <section class="cta-section">
+    <div
+      class="form-card text-center"
+      style="margin-top: 2rem; margin-bottom: 2rem"
+    >
       <a
         href="{{ url_for('league.create_league') }}"
-        class="btn btn-primary btn-lg"
+        class="btn btn-primary"
+        style="padding: 1rem 2.5rem; font-size: 1.1rem"
         >Create Your League Now</a
       >
-    </section>
+    </div>
 
-    <section class="downloads-section">
-      <h2>Marketing Kit</h2>
-      <p>
+    <div class="form-card">
+      <h3>Marketing Kit</h3>
+      <p class="subtitle">
         Download our digital assets to promote your league via email or social
         media.
       </p>
-      <div class="downloads-grid">
-        <div class="download-item">
-          <a
-            href="{{ url_for('static', filename='downloads/email_template.txt') }}"
-            download
-          >
-            <i class="fas fa-envelope"></i>
-            <span>Email Template</span>
-          </a>
-        </div>
-        <div class="download-item">
-          <a
-            href="{{ url_for('static', filename='downloads/social_media_graphics.zip') }}"
-            download
-          >
-            <i class="fas fa-image"></i>
-            <span>Social Media Graphics</span>
-          </a>
-        </div>
-        <div class="download-item">
-          <a
-            href="{{ url_for('static', filename='downloads/club_poster.pdf') }}"
-            download
-          >
-            <i class="fas fa-file-pdf"></i>
-            <span>Digital Poster/Flyer</span>
-          </a>
-        </div>
+      <div class="marketing-kit-grid">
+        <a
+          href="{{ url_for('static', filename='downloads/email_template.txt') }}"
+          download
+          class="marketing-item"
+        >
+          <i class="fa-regular fa-envelope"></i>
+          <span>Email Template</span>
+          <i class="fa-solid fa-download"></i>
+        </a>
+        <a
+          href="{{ url_for('static', filename='downloads/social_media_graphics.zip') }}"
+          download
+        >
+          <i class="fas fa-image"></i>
+          <span>Social Media Graphics</span>
+        </a>
+        <a
+          href="{{ url_for('static', filename='downloads/club_poster.pdf') }}"
+          download
+        >
+          <i class="fas fa-file-pdf"></i>
+          <span>Digital Poster/Flyer</span>
+        </a>
+        <!-- Add links to your other marketing assets here -->
       </div>
-    </section>
+    </div>
 
-    <!-- 4. Revenue Potential Section -->
-    <section class="revenue-section">
-      <h2>How Much Could Your Club Raise?</h2>
+    <div class="form-card" style="margin-top: 1.5rem">
+      <h3>
+        <i class="fa-solid fa-chart-line"></i> How Much Could Your Club Raise?
+      </h3>
       <p>
         Your club's fundraising potential is directly in your hands. Our model
-        is simple: your club keeps 70% of all entry fees.
+        is simple: your club sets the entry fee and keeps 100% of it. We just
+        charge a small, flat platform fee of €2.50 per participant to keep the
+        service running.
       </p>
-      <p>See the potential profit from a single league:</p>
-      <div class="revenue-formula">
-        <span>[Number of Members Joined]</span> &times;
-        <span>[Entry Fee €]</span> = <span>Total Pot</span><br />
-        <span>Total Pot</span> &times; <span>70%</span> =
-        <strong>YOUR CLUB'S PROFIT</strong>
+      <div
+        class="formula"
+        style="
+          background-color: #e0f2f1;
+          color: #004d40;
+          border-radius: var(--border-radius);
+          padding: 1rem;
+          text-align: center;
+          margin: 1rem 0;
+          font-weight: 500;
+        "
+      >
+        <p>([Number of Members Joined] x [Entry Fee €]) = Total Pot</p>
+        <p>
+          Total Pot - ([Number of Members Joined] x €2.50) =
+          <strong>YOUR CLUB'S PROFIT</strong>
+        </p>
       </div>
+      <h4>Example Scenarios:</h4>
+      <div class="leaderboard-table-container">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Members Joined</th>
+              <th>Entry Fee</th>
+              <th>Total Pot</th>
+              <th class="text-right">Your Club's Profit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>50</td>
+              <td>€10</td>
+              <td>€500</td>
+              <td
+                class="text-right"
+                style="font-weight: 700; color: var(--primary-green)"
+              >
+                €375.00
+              </td>
+            </tr>
+            <tr>
+              <td>100</td>
+              <td>€10</td>
+              <td>€1,000</td>
+              <td
+                class="text-right"
+                style="font-weight: 700; color: var(--primary-green)"
+              >
+                €750.00
+              </td>
+            </tr>
+            <tr>
+              <td>75</td>
+              <td>€20</td>
+              <td>€1,500</td>
+              <td
+                class="text-right"
+                style="font-weight: 700; color: var(--primary-green)"
+              >
+                €1,312.50
+              </td>
+            </tr>
+            <tr>
+              <td>150</td>
+              <td>€20</td>
+              <td>€3,000</td>
+              <td
+                class="text-right"
+                style="font-weight: 700; color: var(--primary-green)"
+              >
+                €2,625.00
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-      <h3>Example Scenarios:</h3>
-      <table class="revenue-table">
-        <thead>
-          <tr>
-            <th>Members Joined</th>
-            <th>Entry Fee</th>
-            <th>Total Pot</th>
-            <th>Your Club's Profit</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>50</td>
-            <td>€10</td>
-            <td>€500</td>
-            <td><strong>€350</strong></td>
-          </tr>
-          <tr>
-            <td>100</td>
-            <td>€10</td>
-            <td>€1,000</td>
-            <td><strong>€700</strong></td>
-          </tr>
-          <tr>
-            <td>75</td>
-            <td>€20</td>
-            <td>€1,500</td>
-            <td><strong>€1,050</strong></td>
-          </tr>
-          <tr>
-            <td>150</td>
-            <td>€20</td>
-            <td>€3,000</td>
-            <td><strong>€2,100</strong></td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h3>Use the funds for anything your club needs:</h3>
-      <ul class="uses-list">
-        <li>Bigger prizes for the winners</li>
-        <li>Junior golf programmes</li>
-        <li>Clubhouse improvements</li>
-        <li>A new course mower</li>
-      </ul>
-      <p><strong>It's your money. You decide.</strong></p>
-    </section>
-
-    <section class="faq-section">
-      <h2>Frequently Asked Questions</h2>
-      <div class="faq-accordion">
-        <div class="faq-item">
-          <button class="faq-question">How does the club get the money?</button>
-          <div class="faq-answer">
-            <p>
-              All entry fees are processed securely through our platform. Once
-              the league is finalized, we transfer the club's 80% share directly
-              to your nominated bank account.
-            </p>
-          </div>
-        </div>
+    <div class="form-card" style="margin-top: 2rem">
+      <h3>Frequently Asked Questions</h3>
+      <div class="faq-container">
         <div class="faq-item">
           <button class="faq-question">
-            Is it really free for the club to sign up?
+            <span>How are player scores updated?</span>
+            <i class="fa-solid fa-chevron-down"></i>
           </button>
           <div class="faq-answer">
             <p>
-              Yes, it's completely free for a golf club to sign up, create a
-              league, and use our platform. We only take a small percentage of
-              the player's entry fee to cover operational costs.
+              Player scores are updated in real-time through our live data
+              provider. As soon as a player completes a hole in the real-world
+              tournament, their score is automatically updated in all relevant
+              leagues on Fantasy Fairways.
             </p>
           </div>
         </div>
+
         <div class="faq-item">
-          <button class="faq-question">What tournaments can we include?</button>
+          <button class="faq-question">
+            <span>What happens in the event of a tie?</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
           <div class="faq-answer">
             <p>
-              You can create leagues for all the major golf tournaments,
-              including The Masters, PGA Championship, U.S. Open, The Open
-              Championship, Ryder Cup, and many more, including the Irish Open.
+              You can set a custom tie-breaker question when creating your
+              league (e.g., "What will be the winner's final score?"). The
+              participant whose answer is closest to the actual result will win
+              the tie-breaker. If no tie-breaker is set, the prize pot is split
+              among the tied winners.
             </p>
           </div>
         </div>
+
         <div class="faq-item">
-          <button class="faq-question">Who handles player support?</button>
+          <button class="faq-question">
+            <span>Are the payments secure?</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
           <div class="faq-answer">
             <p>
-              We do! Our dedicated support team is here to help your members
-              with any questions or issues they might have, leaving you to focus
-              on your club.
-            </p>
-          </div>
-        </div>
-        <div class="faq-item">
-          <button class="faq-question">What are the prize options?</button>
-          <div class="faq-answer">
-            <p>
-              You have full control over the 80% of the prize pool that goes to
-              the club. You can offer cash prizes, pro shop vouchers, green
-              fees, or any other prize you see fit for your members.
+              Yes. All payments are processed by Stripe, a global leader in
+              online payment processing. We do not handle or store any of your
+              members' sensitive financial information on our servers, ensuring
+              enterprise-grade security for every transaction.
             </p>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   </div>
-</div>
-
+</main>
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const faqQuestions = document.querySelectorAll(".faq-question");
-    faqQuestions.forEach((question) => {
-      question.addEventListener("click", () => {
-        const answer = question.nextElementSibling;
-        question.classList.toggle("active");
-        if (answer.style.maxHeight) {
-          answer.style.maxHeight = null;
-        } else {
-          answer.style.maxHeight = answer.scrollHeight + "px";
-        }
-      });
+  // --- FAQ Accordion Logic ---
+  const faqItems = document.querySelectorAll(".faq-item");
+  if (faqItems.length > 0) {
+    faqItems.forEach((item) => {
+      const question = item.querySelector(".faq-question");
+      const answer = item.querySelector(".faq-answer");
+
+      if (question && answer) {
+        question.addEventListener("click", () => {
+          question.classList.toggle("active");
+          if (question.classList.contains("active")) {
+            // Set max-height to the content's actual height to expand
+            answer.style.maxHeight = answer.scrollHeight + "px";
+          } else {
+            // Collapse the answer
+            answer.style.maxHeight = "0px";
+          }
+        });
+      }
     });
-  });
+  }
 </script>
 {% endblock %}

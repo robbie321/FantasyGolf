@@ -1,5 +1,5 @@
 ﻿{% extends 'base.html' %} {% block content %}
-<div class="picker-wrapper">
+<div class="picker-wrapper-join">
   <div class="picker-header">
     <h2>Create Your Team</h2>
     <p>You are joining: <strong>{{ league.name }}</strong></p>
@@ -193,8 +193,8 @@
               if (!selectedIds.includes(player.id)) {
                   tableHtml += `
                       <tr>
-                          <td><strong>${player.name} ${player.surname}</strong></td>
-                          <td>${player.odds}</td>
+                          <td>${player.name} ${player.surname}</td>
+                          <td><strong>${player.odds}</strong></td>
                           <td>
                               <button type="button" class="add-player-btn" data-player-id="${player.id}">+</button>
                           </td>

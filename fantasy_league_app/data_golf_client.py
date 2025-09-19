@@ -96,7 +96,7 @@ class DataGolfClient:
             return [], error
         return data.get('odds', []), None
 
-    def get_tournament_schedule(self, tour='pga'):
+    def get_tournament_schedule(self, tour):
         """Fetches the upcoming tournament schedule for a tour."""
         endpoint = f"get-schedule?tour={tour}&file_format=json"
         data, error = self._make_request(endpoint)

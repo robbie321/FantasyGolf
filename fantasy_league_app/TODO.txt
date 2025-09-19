@@ -2,7 +2,44 @@ Start App:
 flask --app fantasy_league_app:create_app run
 source venv/Scripts/activate
 
+
+python -m venv venv
+
 Tasks []
+
+###############
+####GENERAL####
+###############
+[] verify email address before user allowed to join leagues
+[] check over finialised leagues payouts
+[] check that all scheduled tasks are running
+[] add player profiles
+
+
+
+##############
+#### USER ####
+##############
+[✅] show vaild data on the 3 boxes on the user dashboard
+[] if player is overpar change total score background to green and add + before total score
+[✅] when a player misses the cut, add +10 to their score
+[✅] fix "View leage details" dropdown on the view leage page
+[✅] show join league button at the top right on desktop
+[] load top 30 players. show a button to load 30 more
+[] fix winner banner. its not showing on completed leagues
+
+
+
+##############
+#### CLUB ####
+##############
+[✅] add create a leage button to dashboard
+[✅] show vaild data on the 3 boxes on the club dashboard
+[✅] fix adding wallet on club navbar
+[✅] on the create league page, show date and first tee time of the selected player pool
+[] complete design of club league view
+
+
 
 [complete] Test the create bucket feature again. Find the correct API url for gathering tournament data .i.e players
 [complete] Ability for site admin to updates users/clubs emails and passwords
@@ -13,13 +50,5 @@ complete] league admins need to set a percentage of the total entry pot instead 
 [complete]hide league standing until club lauches the league -> countdown timer to tournament commencment.
 [complete] check payouts as I think a payout is paying out the full balance of s tripe account
 [complete] do mobile first css for admin page
-[] allow users to create mini leagues
-[] verify email address before user allowed to join leagues
-[] check over finialised leagues payouts
 
-
-
-
-export STRIPE_PUBLIC_KEY="pk_test_51Rt4YFAAtiw6IkD3q6QEunjHZZIlhDBfKvpefcbEHafQqqKV0En2Eu5QJaxomlGgk4CYA8Jk9nBH9hQu3Amsstf800E0bzTL1S"
-export STRIPE_SECRET_KEY="sk_test_51Rt4YFAAtiw6IkD3N2CNruve7zbaafKruqfMuJNeudIYNoL0eljrySxsoN9J2TGRDcYRCQFsRrz94roJF9hiaxXy00NwhqsECS"
 

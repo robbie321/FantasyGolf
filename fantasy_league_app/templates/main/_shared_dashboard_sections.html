@@ -1,0 +1,93 @@
+<!-- Player Profiles Section -->
+<section id="profiles-section" class="page-section hidden">
+  <header class="dashboard-header">
+    <div>
+      <h1>Player Profiles</h1>
+      <p class="subtitle">
+        Browse all players in the Fantasy Fairways database
+      </p>
+    </div>
+  </header>
+  <div class="search-bar">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" placeholder="Search players by name or country..." />
+  </div>
+  <!-- <div class="player-profiles-grid"> -->
+  <!-- Player cards would be dynamically loaded here -->
+
+  <!-- More cards... -->
+  <!-- </div> -->
+</section>
+
+<!-- Tour Schedule Section -->
+<section id="schedule-section" class="page-section hidden">
+  <header class="dashboard-header">
+    <div>
+      <h1>Tournament Schedule</h1>
+      <p class="subtitle">
+        View upcoming tournaments and events across all tours
+      </p>
+    </div>
+  </header>
+
+  <!-- Tour Selection Tabs -->
+  <div class="tabs schedule-tour-tabs">
+    <button class="tab-button active" data-tour="pga">PGA Tour</button>
+    <button class="tab-button" data-tour="euro">DP World Tour</button>
+  </div>
+
+  <div id="schedule-list-container" class="schedule-list">
+    <!-- Schedule items will be dynamically loaded here by script.js -->
+  </div>
+</section>
+
+<!-- Tour Leaderboards Section -->
+<section id="leaderboards-section" class="page-section hidden">
+  <header class="dashboard-header">
+    <div>
+      <h1>Tour Leaderboards</h1>
+      <p class="subtitle">Live tournament standings and player rankings</p>
+    </div>
+  </header>
+  <!-- Tour Selection Tabs -->
+  <div class="tabs leaderboard-tour-tabs">
+    <button class="tab-button active" data-tour="pga">PGA Tour</button>
+    <button class="tab-button" data-tour="euro">DP World Tour</button>
+  </div>
+
+  <div class="form-card leaderboard-card">
+    <div class="leaderboard-header">
+      <h4 id="leaderboard-title">Current Tournament Leaderboard</h4>
+      <div>
+        <span class="tag tag-live">LIVE</span>
+      </div>
+    </div>
+    <div class="leaderboard-table-container">
+      <table class="leaderboard-table wide">
+        <thead>
+          <tr>
+            <th>POS</th>
+            <th style="text-align: left">NAME</th>
+            <th>TOTAL</th>
+            <th>THRU</th>
+            <th>RND</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Leaderboard rows will be dynamically loaded here by script.js -->
+          <tr class="highlighted">
+            <td>1</td>
+            <td><span class="flag"></span> FLEETWOOD</td>
+            <td class="score-under">-18</td>
+            <td>F</td>
+            <td class="score-under">-2</td>
+            <td>-</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="leaderboard-footer">
+      <span>Last updated 2 minutes ago</span>
+    </div>
+  </div>
+</section>

@@ -16,6 +16,10 @@ WTForms==3.2.1
 gunicorn
 psycopg2-binary
 redis
+Celery
 Flask-Caching
 pywebpush
+stripe
+email_validator
+
 

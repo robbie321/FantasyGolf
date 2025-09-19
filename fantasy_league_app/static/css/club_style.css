@@ -1,0 +1,189 @@
+/* ~~~~~~~~~~~~~~~~~~ */
+/* CLUB DASHBOARD     */
+/* ~~~~~~~~~~~~~~~~~~ */
+.info-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.info-card {
+    background-color: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.info-card .icon-bg {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+}
+.info-card .icon-bg i {
+    font-size: 1.5rem;
+}
+
+.info-card .info-text .label {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    display: block;
+}
+.info-card .info-text .value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.chart-container {
+    background-color: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.chart-header h4 {
+    margin: 0;
+}
+
+/* ~~~~~~~~~~~~~~~~~~ */
+/* HOW IT WORKS PAGE  */
+/* ~~~~~~~~~~~~~~~~~~ */
+
+.page-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.icon-features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.icon-feature-card {
+    background-color: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 2rem 1.5rem;
+    text-align: center;
+}
+.icon-feature-card i {
+    font-size: 2rem;
+    color: var(--primary-green);
+    margin-bottom: 1rem;
+}
+.icon-feature-card h4 { font-size: 1.2rem; }
+.icon-feature-card p { color: var(--text-light); }
+
+.card-section {
+    background-color: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-section.text-center { text-align: center; }
+
+.btn-large {
+    padding: 1rem 2.5rem;
+    font-size: 1.1rem;
+}
+
+.marketing-kit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.marketing-item {
+    background-color: var(--background-light);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-decoration: none;
+    color: var(--text-dark);
+    font-weight: 600;
+    transition: box-shadow 0.3s, border-color 0.3s;
+}
+.marketing-item:hover {
+    border-color: var(--secondary-green);
+    box-shadow: var(--box-shadow);
+}
+.marketing-item span {
+    flex-grow: 1;
+}
+.marketing-item .fa-download {
+    color: var(--text-light);
+}
+
+.fundraising-section .formula {
+    background-color: #e0f2f1;
+    color: #004d40;
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    text-align: center;
+    margin: 1rem 0 2rem 0;
+    font-weight: 500;
+}
+.fundraising-section h4 { margin-bottom: 1rem; }
+
+.table-container {
+    overflow-x: auto;
+}
+.scenarios-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+.scenarios-table th, .scenarios-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.scenarios-table thead {
+    background-color: var(--primary-green);
+    color: var(--white);
+}
+.scenarios-table .profit {
+    font-weight: 700;
+    color: var(--primary-green);
+}
+
+.fund-usage {
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    text-align: center;
+}
+
+@media (min-width: 1024px) {
+    .charts-grid {
+        grid-template-columns: 2fr 1fr;
+    }
+}

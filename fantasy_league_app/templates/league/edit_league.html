@@ -1,0 +1,29 @@
+{% extends "base.html" %} {% from "_form_macros.html" import render_field %} {%
+block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="form-box">
+        <h2 class="form-title">Edit {{ league.name }}</h2>
+        <p>You can only edit leagues before their start date.</p>
+        <hr />
+        <form
+          method="POST"
+          action="{{ url_for('league.edit_league', league_id=league.id) }}"
+          novalidate
+        >
+          {{ form.hidden_tag() }} {{ render_field(form.name,
+          class="form-control") }} {{ render_field(form.entry_fee,
+          class="form-control") }} {{ render_field(form.prize_details,
+          class="form-control") }} {{ render_field(form.rules,
+          class="form-control", rows=5) }}
+
+          <div class="form-group">
+            {{ form.submit(class="btn btn-primary btn-block") }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

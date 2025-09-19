@@ -1,0 +1,112 @@
+{% extends 'base.html' %} {% block head %}
+<!-- Link to the form-specific stylesheet -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/LeaguesView/league_view.css') }}"
+/>
+{% endblock %} {% block content %}
+<main class="dashboard-content">
+  <div
+    class="league-container"
+    style="background-color: var(--background-light)"
+  >
+    <a href="{{ url_for('main.club_dashboard') }}" class="back-link">
+      <i class="fa-solid fa-arrow-left"></i> Back to Club Dashboard
+    </a>
+
+    <div class="container">
+      <div
+        class="league-header-card {% if league.is_finalized %}finalized{% endif %}"
+      >
+        <div class="header-main-info">
+          <div class="header-icon">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+          <div class="header-details">
+            <div>
+              <h1 class="">{{ league.name }}</h1>
+              <p class="dashboard-subheading">
+                Hosted by {{ league.club.club_name if league.club else 'Fantasy
+                Fairways' }}
+              </p>
+            </div>
+            {% if league.is_finalized %}
+            <span class="tag tag-past">Completed</span>
+            {% else %}
+            <span class="tag tag-live">Live</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="header-buttons">
+          <!-- Step 1: The new button is now here -->
+          <button id="open-details-modal-btn" class="btn-header btn-outline">
+            League Details
+          </button>
+          {% if now >= league.start_date and not league.is_finalized %}
+          <button
+            class="btn btn-primary"
+            id="view-live-leaderboard-btn"
+            data-tour="{{ league.tour }}"
+          >
+            Live leaderboard
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% if league.is_finalized and league.winner %}
+    <div class="winner-banner">
+      <h2><i class="fa-solid fa-crown"></i> League Winner!</h2>
+      <p>{{ league.winner.full_name }}</p>
+    </div>
+    {% endif %} {% if not league.is_finalized and not
+    league.has_entry_deadline_passed %}
+    <div class="form-card text-center" style="margin-bottom: 2rem">
+      <p>
+        This league is upcoming. The leaderboard will become active once the
+        tournament starts.
+      </p>
+    </div>
+    {% else %}
+    <div class="leaderboard-table-container">
+      <div class="leaderboard-header">
+        <h4>
+          {% if league.is_finalized %} Final Leaderboard {% else %} Live
+          Leaderboard {% endif %}
+        </h4>
+      </div>
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th>POS</th>
+            <th>Participant Name</th>
+            <th class="text-right">Final Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in leaderboard %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ entry.user.full_name }}</td>
+            <td class="text-right">{{ entry.total_score }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="text-center" style="padding: 2rem">
+              No entries have been made for this league yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</main>
+
+<!-- Live Leaderboard Popup (same as user view) -->
+<div class="popup-overlay" id="live-leaderboard-overlay">
+  <!-- ... Your existing live leaderboard popup HTML ... -->
+</div>
+{% endblock %}

@@ -1,7 +1,7 @@
 # --- File: fantasy_league_app/main/routes.py (UPDATED - Fix NameError: db is not defined) ---
 from flask import render_template, url_for, redirect, flash, current_app, request, send_from_directory
 from flask_login import login_required, current_user
-from fantasy_league_app.models import League, LeagueEntry, User
+from fantasy_league_app.models import League, LeagueEntry, User, Club
 from . import main_bp
 from fantasy_league_app import db, stripe_client
 from fantasy_league_app.utils import password_reset_required
@@ -10,48 +10,40 @@ from datetime import datetime, timedelta
 import requests
 from ..data_golf_client import DataGolfClient
 from ..models import User, League, LeagueEntry, PlayerScore
+from ..auth.decorators import user_required
+import stripe
 
 @main_bp.route('/offline.html')
 def offline():
     return render_template('offline.html')
 
+@main_bp.route('/terms')
+def terms_and_conditions():
+    """Renders the terms and conditions page."""
+    return render_template('main/terms_and_conditions.html', title="Terms & Conditions")
+
+@main_bp.route('/privacy')
+def privacy_policy():
+    """Renders the privacy policy page."""
+    return render_template('main/privacy_policy.html', title="Privacy Policy")
+
+
 @main_bp.route('/')
+@main_bp.route('/index')
 def index():
-# --- Calculate Homepage Stats ---
-    active_players = db.session.query(func.count(distinct(LeagueEntry.user_id))).scalar()
-    live_leagues = League.query.filter(League.is_finalized == False).count()
-    total_prizes = db.session.query(func.sum(League.prize_amount)).filter(League.payout_status == 'paid').scalar() or 0
+    """
+    Renders the landing page for logged-out users, or redirects
+    logged-in users to their appropriate dashboard.
+    """
+    # If the user is logged in, send them to their dashboard
+    if current_user.is_authenticated:
+        if current_user.is_club_admin:
+            return redirect(url_for('main.club_dashboard'))
+        else:
+            return redirect(url_for('main.user_dashboard'))
 
-    # Calculate this week's prize pool
-    today = datetime.utcnow().date()
-    start_of_week = today - timedelta(days=today.weekday())
-    end_of_week = start_of_week + timedelta(days=6)
-    this_week_prize_pool = db.session.query(func.sum(League.entry_fee * db.session.query(func.count(LeagueEntry.id)).filter(LeagueEntry.league_id == League.id).as_scalar())) \
-        .filter(League.start_date >= start_of_week, League.start_date <= end_of_week).scalar() or 0
-
-    stats = {
-        'active_players': active_players,
-        'live_leagues': live_leagues,
-        'total_prizes': f"€{total_prizes:,.2f}",
-        'this_week_prize_pool': f"€{this_week_prize_pool:,.2f}"
-    }
-    # --- END of Stats Calculation ---
-
-    client = DataGolfClient()
-    top_players, error = client.get_player_rankings()
-    if error:
-        flash(f"Could not load world rankings: {error}", "warning")
-        top_players = [] # Ensure top_players is a list even on error
-
-    top_players = top_players[:10]
-
-    top_leagues = League.query.filter_by(is_public=True)\
-        .outerjoin(League.entries)\
-        .group_by(League.id)\
-        .order_by(func.count(LeagueEntry.id).desc())\
-        .limit(10).all()
-
-    return render_template('main/index.html', stats=stats, top_players=top_players, top_leagues=top_leagues)
+    # Otherwise, show the main landing page
+    return render_template('main/index.html', title="Welcome")
 
 
 
@@ -62,7 +54,7 @@ def clubs_landing():
 
 # --- Route for Browsing Public Leagues ---
 @main_bp.route('/browse-leagues')
-@login_required
+@user_required
 def browse_leagues():
     search_query = request.args.get('search', '')
 
@@ -108,11 +100,25 @@ def browse_leagues():
 #     return render_template('main/user_dashboard.html', user_leagues=user_leagues, today=datetime.utcnow())
 
 @main_bp.route('/user_dashboard')
-@login_required
+@user_required
 @password_reset_required
 def user_dashboard():
     now = datetime.utcnow()
     user_entries = LeagueEntry.query.filter_by(user_id=current_user.id).all()
+
+     # --- Enhanced Statistics Calculation ---
+    leagues_played = len(user_entries)
+    leagues_won = League.query.filter_by(winner_id=current_user.id, is_finalized=True).count()
+    # total_winnings = user.total_winnings or 0.0
+
+    # Calculate win percentage
+    win_percentage = (leagues_won / leagues_played * 100) if leagues_played > 0 else 0
+
+    stats = {
+        'leagues_played': leagues_played,
+        'leagues_won': leagues_won,
+        'win_percentage': f"{win_percentage:.1f}%"
+    }
 
     # --- Categorize Leagues ---
     live_leagues = []
@@ -150,25 +156,36 @@ def user_dashboard():
         user_entry_data = next((item for item in final_leaderboard if item['entry_id'] == entry.id), None)
 
         if user_entry_data:
-            league_data = {
-                'league': league,
-                'total_score': user_entry_data['total_score'],
-                'current_rank': user_entry_data['rank'],
-                'total_entries': len(final_leaderboard)
-            }
+            # 1. Convert the base league object into a dictionary
+            league_data = league.to_dict()
+            # 2. Update the dictionary with your user-specific and calculated data
+            league_data.update({
+                'rank': user_entry_data['rank'],
+                'entries': len(final_leaderboard)
+            })
+            # league_data = {
+            #     'league': league,
+            #     'total_score': user_entry_data['total_score'],
+            #     'current_rank': user_entry_data['rank'],
+            #     'total_entries': len(final_leaderboard)
+            # }
 
             # --- Sort into categories ---
             if league.is_finalized:
+                league_data['status'] = 'Past'
                 past_leagues.append(league_data)
             elif now >= league.start_date:
+                league_data['status'] = 'Live'
                 live_leagues.append(league_data)
             else:
+                league_data['status'] = 'Upcoming'
                 upcoming_leagues.append(league_data)
 
     return render_template('main/user_dashboard.html',
                            live_leagues=live_leagues,
                            upcoming_leagues=upcoming_leagues,
                            past_leagues=past_leagues,
+                           stats=stats,
                            now=datetime.utcnow())
 
 # def user_dashboard():
@@ -230,58 +247,55 @@ def user_dashboard():
 #     return render_template('main/user_dashboard.html', leagues_data=leagues_data, today=datetime.utcnow())
 
 @main_bp.route('/club_dashboard')
-@login_required
+@user_required
 @password_reset_required
 def club_dashboard():
     if not getattr(current_user, 'is_club_admin', False):
         flash('You do not have permission to access the club dashboard.', 'warning')
         return redirect(url_for('main.user_dashboard'))
 
-    # Fetch leagues created by this club
-    # current_user is a Club object here, so current_user.id is the club_id
-    created_leagues = League.query.filter_by(club_id=current_user.id).all()
-
     club = current_user
-    club_revenue = 0
 
-    # ---  Calculate Club Revenue ---
-    # Get a list of all league IDs created by the current club
-    total_revenue = 0
-    total_prizes_paid = 0
+    # 1. Get the original League OBJECTS from the database
+    leagues = League.query.filter_by(club_id=club.id).order_by(League.start_date.desc()).all()
 
-    if league_ids := [league.id for league in created_leagues]:
-        # Calculate the total revenue from all entries in this club's leagues
-        total_revenue_generated = db.session.query(func.sum(League.entry_fee)) \
-            .select_from(LeagueEntry).join(League) \
-            .filter(League.id.in_(league_ids)).scalar() or 0
+    # 2. Calculate revenue using the list of OBJECTS
+    club_revenue = 0.0
+    total_participants = 0
+    for league in leagues:
+        num_entries = len(league.entries)
+        club_revenue += league.entry_fee - 2.50
+        total_participants += num_entries
 
-        # Calculate the total prize money for leagues that have been paid out
-        total_prizes_paid = db.session.query(func.sum(League.prize_amount)) \
-            .filter(League.id.in_(league_ids), League.payout_status == 'paid').scalar() or 0
+    now = datetime.utcnow()
+    # Calculate the number of active leagues
+    active_leagues_count = sum(1 for league in leagues if not league.is_finalized and league.end_date > now)
 
-        # The club's final revenue is their share of the total pot minus the prizes they've paid
-        club_revenue = (total_revenue_generated * 0.70) - total_prizes_paid
-    # --- END revenue logic ---
+    # Calculate the total number of entries across all leagues
+    total_entries_count = sum(len(league.entries) for league in leagues)
 
-    # I might categorize these later (Upcoming, Live, Completed)
-    # For now, just list them.
-    club_leagues = []
-    for league in created_leagues:
-        club_leagues.append({
-            'name': league.name,
-            'code': league.league_code,
-            'entry_fee': league.entry_fee,
-            'id': league.id
-            # Add more details as needed, e.g., number of entries, status
-        })
+    # 3. Prepare JSON-safe data for the JavaScript section using the OBJECTS
+    club_data_for_js = club.to_dict()
+    club_leagues_for_js = [league.to_dict() for league in leagues]
 
-    return render_template('main/club_dashboard.html', club=club, club_leagues=club_leagues, club_revenue=club_revenue)
+    # 4. Pass everything to the template
+    return render_template(
+        'main/club_dashboard.html',
+        club=club,
+        club_leagues=leagues,      # Pass the list of OBJECTS to the main template
+        club_revenue=club_revenue,
+        club_data_for_js=club_data_for_js,
+        club_leagues_for_js=club_leagues_for_js, # Pass the list of DICTIONARIES to the script block
+        active_leagues_count=active_leagues_count,
+        total_entries_count=total_entries_count,
+        now=now
+    )
 
 
 
 # --- NEW: Route for User Profiles ---
 @main_bp.route('/profile/<int:user_id>')
-@login_required
+@user_required
 def view_profile(user_id):
     user = User.query.get_or_404(user_id)
 
@@ -341,42 +355,93 @@ def view_profile(user_id):
 # --- Stripe Connect Onboarding Routes ---
 
 @main_bp.route('/onboard-stripe', methods=['POST'])
-@login_required
+@user_required
 def onboard_stripe():
     """
     Handles the request to create or update a user's Stripe account.
     """
-    try:
-        # Step 1: Create a Stripe account if the user doesn't have one
-        if not current_user.stripe_account_id:
-            account = stripe_client.create_express_account(current_user.email)
-            if account:
-                current_user.stripe_account_id = account.id
-                db.session.commit()
-            else:
-                flash('Could not create a Stripe account. Please try again later.', 'danger')
-                return redirect(url_for('main.user_dashboard'))
-
-        # Step 2: Create the account link to redirect the user
-        account_link = stripe_client.create_account_link(
-            account_id=current_user.stripe_account_id,
-            refresh_url=url_for('main.user_dashboard', _external=True) + '#stripe-section',
-            return_url=url_for('main.user_dashboard', _external=True) + '#stripe-section'
-        )
-
-        if account_link:
-            return redirect(account_link.url)
-        else:
-            flash('Could not connect to Stripe at this time. Please try again.', 'danger')
-            return redirect(url_for('main.user_dashboard'))
-
-    except Exception as e:
-        current_app.logger.error(f"Stripe onboarding error for user {current_user.id}: {e}")
-        flash('An unexpected error occurred. Please contact support.', 'danger')
+    if not isinstance(current_user, Club):
+        flash("Only clubs can connect a Stripe account.", "danger")
         return redirect(url_for('main.user_dashboard'))
 
+    club = current_user
+    try:
+        # Set the API key from your app's configuration
+        stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
+
+        # This is for debugging - it will print the key to your console.
+        # Remove this line after you confirm it's working.
+        print(f"DEBUG: Using Stripe Secret Key: {stripe.api_key}")
+    except KeyError:
+        flash("Stripe API keys are not configured on the server.", "danger")
+        return redirect(url_for('main.club_dashboard'))
+
+    if not club.stripe_account_id:
+        # Create a new Stripe account for the club if one doesn't exist
+        try:
+            account = stripe.Account.create(
+                type='express',
+                country='IE',  # Or your country code
+                email=club.email,
+                capabilities={
+                    'card_payments': {'requested': True},
+                    'transfers': {'requested': True},
+                },
+            )
+            club.stripe_account_id = account.id
+            db.session.commit()
+        except Exception as e:
+            flash(f"Could not create Stripe account: {e}", "danger")
+            return redirect(url_for('main.club_dashboard'))
+
+    # Create an account link for onboarding
+    try:
+        account_link = stripe.AccountLink.create(
+            account=club.stripe_account_id,
+            refresh_url=url_for('main.club_dashboard', _external=True),
+            return_url=url_for('main.club_dashboard', _external=True),
+
+            # --- ADD THIS REQUIRED PARAMETER ---
+            type='account_onboarding',
+
+        )
+        return redirect(account_link.url)
+    except Exception as e:
+        # This is the block that is currently being triggered
+        flash(f"Stripe Error: {e}", "danger")
+        print(f"Stripe AccountLink Error: {e}")
+        return redirect(url_for('main.club_dashboard'))
+    # try:
+    #     # Step 1: Create a Stripe account if the user doesn't have one
+    #     if not current_user.stripe_account_id:
+    #         account = stripe_client.create_express_account(current_user.email)
+    #         if account:
+    #             current_user.stripe_account_id = account.id
+    #             db.session.commit()
+    #         else:
+    #             flash('Could not create a Stripe account. Please try again later.', 'danger')
+    #             return redirect(url_for('main.club_dashboard'))
+
+    #     # Step 2: Create the account link to redirect the user
+    #     account_link = stripe_client.create_account_link(
+    #         account_id=current_user.stripe_account_id,
+    #         refresh_url=url_for('main.club_dashboard', _external=True) + '#stripe-section',
+    #         return_url=url_for('main.club_dashboard', _external=True) + '#stripe-section'
+    #     )
+
+    #     if account_link:
+    #         return redirect(account_link.url)
+    #     else:
+    #         flash('Could not connect to Stripe at this time. Please try again.', 'danger')
+    #         return redirect(url_for('main.club_dashboard'))
+
+    # except Exception as e:
+    #     current_app.logger.error(f"Stripe onboarding error for user {current_user.id}: {e}")
+    #     flash('An unexpected error occurred. Please contact support.', 'danger')
+    #     return redirect(url_for('main.club_dashboard'))
+
 @main_bp.route('/stripe/connect/return')
-@login_required
+@user_required
 def stripe_connect_return():
     """Handle the user's return from the Stripe onboarding process."""
     flash("Payout account setup is complete!", "success")
@@ -385,7 +450,7 @@ def stripe_connect_return():
     return redirect(url_for('main.user_dashboard'))
 
 @main_bp.route('/stripe/connect/refresh')
-@login_required
+@user_required
 def stripe_connect_refresh():
     """Handle cases where the Stripe Account Link expires."""
     if not current_user.stripe_account_id:

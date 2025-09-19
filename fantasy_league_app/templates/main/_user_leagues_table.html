@@ -1,0 +1,46 @@
+<div class="table-wrapper">
+  <table class="leagues-table-figma">
+    <thead>
+      <tr>
+        <th>League Name</th>
+        <th>Prize Pool</th>
+        {% if table_type == 'live' %}
+        <th>Rank</th>
+        {% elif table_type == 'completed' %}
+        <th>Winnings</th>
+        {% else %}
+        <th>Starts</th>
+        {% endif %}
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for league_entry in leagues %}
+      <tr>
+        <td class="league-name">{{ league_entry.league.name }}</td>
+        <td>€{{ league_entry.league.prize_pool }}</td>
+        {% if table_type == 'live' %}
+        <td>{{ league_entry.current_rank or 'N/A' }}</td>
+        {% elif table_type == 'completed' %}
+        <td>€{{ league_entry.winnings or '0.00' }}</td>
+        {% else %}
+        <td>{{ league_entry.league.start_date.strftime('%d %b') }}</td>
+        {% endif %}
+        <td>
+          <a
+            href="{{ url_for('league.view_league', league_id=league_entry.league.id) }}"
+            class="btn btn-secondary btn-sm"
+            >View</a
+          >
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4" class="no-leagues">
+          You have no {{ table_type }} leagues.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

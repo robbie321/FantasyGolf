@@ -1,0 +1,257 @@
+{% extends "base.html" %} {% block content %}
+<style>
+  body {
+    background: #6b9e86;
+    background: radial-gradient(
+      circle,
+      rgba(107, 158, 134, 1) 0%,
+      rgba(0, 106, 78, 1) 100%
+    );
+  }
+  .terms-container {
+    max-width: 800px;
+    margin: auto;
+    padding: 2rem;
+    background-color: #f9f9f9; /* Lighter background for the page */
+    border-radius: 8px;
+    color: #333;
+    line-height: 1.6;
+  }
+  .terms-container h1 {
+    font-size: 2.2rem;
+    color: var(--dark-grey);
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  .terms-container .intro-text {
+    text-align: center;
+    color: #666;
+    margin-bottom: 2.5rem;
+  }
+  .terms-container h2 {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5rem;
+  }
+  .terms-container .term-card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  .terms-container .term-icon {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    padding-top: 5px;
+  }
+  .terms-container .term-content strong {
+    display: block;
+    font-size: 1.1rem;
+    color: var(--dark-grey);
+    margin-bottom: 0.25rem;
+  }
+  .terms-container .term-content p {
+    margin: 0;
+    color: #555;
+  }
+  .terms-container a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .terms-container a:hover {
+    text-decoration: underline;
+  }
+  .terms-container .last-updated {
+    text-align: center;
+    font-style: italic;
+    color: #777;
+    margin-top: 3rem;
+    font-size: 0.9rem;
+  }
+
+  @media (min-width: 768px) {
+    .terms-container {
+      margin: 2rem auto;
+    }
+  }
+</style>
+
+<div class="terms-container">
+  <h1>Terms & Conditions</h1>
+  <p class="intro-text">
+    Welcome to Fantasy Fairways. By using our platform, you agree to the terms
+    below.
+    <br />
+    If you have any questions, please <a href="#">contact us</a>.
+  </p>
+
+  <h2>1. Definitions</h2>
+  <div class="term-card">
+    <i class="fa-solid fa-book-bookmark term-icon"></i>
+    <div class="term-content">
+      <p>
+        <strong>Fantasy Fairways:</strong> That's us, the operator of this
+        fantasy golf platform.
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-user-shield term-icon"></i>
+    <div class="term-content">
+      <p>
+        <strong>Club Admin / User:</strong> An individual or club who creates
+        and manages fantasy golf leagues ("Leagues").
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-user-group term-icon"></i>
+    <div class="term-content">
+      <p>
+        <strong>Participant:</strong> An individual who joins a User’s League.
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-trophy term-icon"></i>
+    <div class="term-content">
+      <p>
+        <strong>League:</strong> A single fantasy golf event created by a User.
+      </p>
+    </div>
+  </div>
+
+  <h2>2. Your Responsibilities</h2>
+  <div class="term-card">
+    <i class="fa-solid fa-gavel term-icon"></i>
+    <div class="term-content">
+      <strong>Legal Compliance</strong>
+      <p>
+        You are solely responsible for ensuring your Leagues comply with all
+        local laws and licensing requirements in your area.
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-lock term-icon"></i>
+    <div class="term-content">
+      <strong>Data Protection</strong>
+      <p>
+        You must handle Participant data in compliance with all applicable
+        privacy laws. Our <a href="#">Privacy Policy</a> governs how we handle
+        data on our platform.
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-circle-exclamation term-icon"></i>
+    <div class="term-content">
+      <strong>Content and Conduct</strong>
+      <p>
+        You agree not to upload or promote any illegal, harmful, or infringing
+        content. We reserve the right to remove any content that violates these
+        terms.
+      </p>
+    </div>
+  </div>
+
+  <h2>3. Payments & Fees</h2>
+  <div class="term-card">
+    <i class="fa-brands fa-stripe-s term-icon"></i>
+    <div class="term-content">
+      <strong>Participant Payments</strong>
+      <p>
+        Entry fees are paid directly to Users through Stripe. We use their
+        secure platform to process all payments.
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-file-invoice-dollar term-icon"></i>
+    <div class="term-content">
+      <strong>License Fee</strong>
+      <p>
+        Where applicable, a small license fee is charged per-League to cover
+        platform access, hosting, and support.
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-hand-holding-dollar term-icon"></i>
+    <div class="term-content">
+      <strong>Refunds & Disputes</strong>
+      <p>
+        Users are responsible for setting their own refund policies. As the
+        platform provider, we do not mediate payment disputes between Users and
+        Participants.
+      </p>
+    </div>
+  </div>
+
+  <h2>4. Intellectual Property</h2>
+  <div class="term-card">
+    <i class="fa-solid fa-lightbulb term-icon"></i>
+    <div class="term-content">
+      <strong>Our Platform</strong>
+      <p>
+        All software, code, designs, and branding associated with Fantasy
+        Fairways are our exclusive property.
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-table-list term-icon"></i>
+    <div class="term-content">
+      <strong>Your Content</strong>
+      <p>
+        You retain full ownership of the content and data that is specific to
+        your own Leagues.
+      </p>
+    </div>
+  </div>
+
+  <h2>5. Legal Disclaimers</h2>
+  <div class="term-card">
+    <i class="fa-solid fa-shield-halved term-icon"></i>
+    <div class="term-content">
+      <strong>No Warranty</strong>
+      <p>
+        The Fantasy Fairways platform is provided on an "as-is" basis. We don't
+        make any warranties, express or implied.
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-scale-balanced term-icon"></i>
+    <div class="term-content">
+      <strong>Limitation of Liability</strong>
+      <p>
+        Our total liability for any claim will not exceed the License Fees you
+        paid for the specific League in question.
+      </p>
+    </div>
+  </div>
+
+  <h2>6. Governing Law</h2>
+  <div class="term-card">
+    <i class="fa-solid fa-landmark term-icon"></i>
+    <div class="term-content">
+      <strong>Jurisdiction</strong>
+      <p>
+        These terms are governed by the laws of Ireland. We encourage resolving
+        any disputes through mediation before pursuing legal action.
+      </p>
+    </div>
+  </div>
+
+  <p class="last-updated">Last updated: September 3, 2025</p>
+</div>
+{% endblock %}

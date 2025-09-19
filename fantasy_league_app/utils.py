@@ -187,3 +187,15 @@ def send_push_notification(user_id, title, body, icon=None):
     db.session.commit()
 
 
+
+def send_email(subject, recipients, html_body):
+    """
+    A utility function to send emails from the application.
+    """
+    try:
+        msg = Message(subject, recipients=recipients, html=html_body)
+        mail.send(msg)
+        current_app.logger.info(f"Email sent successfully to {recipients}")
+    except Exception as e:
+        current_app.logger.error(f"Failed to send email to {recipients}: {e}")
+

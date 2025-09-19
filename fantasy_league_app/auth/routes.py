@@ -5,10 +5,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 import re
 from fantasy_league_app import db, mail
-from fantasy_league_app.models import User, Club, SiteAdmin, LeagueEntry
+from fantasy_league_app.models import User, Club, League, SiteAdmin, LeagueEntry
 from . import auth_bp, validators
-from .decorators import redirect_if_authenticated
-from ..forms import (RegistrationForm, LoginForm,
+from .decorators import redirect_if_authenticated, admin_required, user_required
+from ..forms import (RegistrationForm, UserLoginForm, ClubLoginForm,
                      SiteAdminRegistrationForm)
 
 # Helper function to create the serializer
@@ -59,62 +59,60 @@ from flask_login import login_user as flask_login_user
 @auth_bp.route('/register', methods=['GET', 'POST'])
 @redirect_if_authenticated
 def register():
-    if request.method == 'POST':
-        errors = validators.validate_user_registration(request.form)
-        if errors:
-            for error in errors:
-                flash(error, 'danger')
-            return render_template('auth/register.html', form=request.form)
+    if current_user.is_authenticated:
+        return redirect(url_for('main.user_dashboard'))
 
-        full_name = request.form['full_name'].strip()
-        email = request.form['email'].strip()
-        password = request.form['password']
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        # Create a new user instance but don't set the password directly
+        user = User(
+            full_name=form.full_name.data,
+            email=form.email.data
+        )
+        # Use the set_password method to create the secure hash
+        user.set_password(form.password.data)
 
-        hashed_password = generate_password_hash(password)
-        new_user = User(full_name=full_name, email=email, password_hash=hashed_password)
+        db.session.add(user)
+        db.session.commit()
 
-        try:
-            db.session.add(new_user)
-            db.session.commit()
-            flash('Registration successful! Please log in.', 'success')
-            return redirect(url_for('auth.login_choice'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Registration failed: {e}', 'danger')
+        flash('Your account has been created! You are now able to log in.', 'success')
+        return redirect(url_for('auth.login_choice'))
 
-    return render_template('auth/register.html')
+    return render_template('auth/register.html', title='Register', form=form)
 
 @auth_bp.route('/register_club', methods=['GET', 'POST'])
 @redirect_if_authenticated
 def register_club():
 
-    if request.method == 'POST':
-        errors = validators.validate_club_registration(request.form)
-        if errors:
-            for error in errors:
-                flash(error, 'danger')
-            return render_template('auth/register_club.html', form=request.form)
+    if current_user.is_authenticated:
+        return redirect(url_for('main.club_dashboard'))
 
-        hashed_password = generate_password_hash(request.form['password'])
-        new_club = Club(
-            club_name=request.form['club_name'].strip(),
-            contact_person=request.form['contact_person'].strip(),
-            email=request.form['email'].strip(),
-            phone_number=request.form['phone_number'].strip(),
-            website=request.form['website'].strip(),
-            address=request.form['address'].strip(),
-            password_hash=hashed_password
+    # NOTE: You should create a specific ClubRegistrationForm in forms.py
+    # For this example, I'll assume it has 'club_name', 'email', and 'password' fields.
+    form = ClubRegistrationForm() # Replace with your actual club registration form
+
+    if form.validate_on_submit():
+        # Create a new club instance
+        club = Club(
+            club_name=form.club_name.data,
+            email=form.email.data,
+            contact_person=form.contact_person.data,
+            phone_number=form.phone_number.data,
+            website=form.website.data,
+            address=form.address.data
+            # Add other fields like contact_person, etc.
         )
-        try:
-            db.session.add(new_club)
-            db.session.commit()
-            flash('Club registration successful! Please log in.', 'success')
-            return redirect(url_for('auth.login_choice'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Club registration failed: {e}', 'danger')
+        # Use the set_password method to create the secure hash
+        club.set_password(form.password.data)
 
-    return render_template('auth/register_club.html')
+        db.session.add(club)
+        db.session.commit()
+
+        flash('Your club account has been created and is pending approval.', 'success')
+        return redirect(url_for('auth.login_choice'))
+
+    return render_template('auth/register_club.html', title='Club Registration', form=form)
+
 
 @auth_bp.route('/register-site-admin', methods=['GET', 'POST'])
 def register_site_admin():
@@ -151,7 +149,8 @@ def login_choice():
             return redirect(url_for('main.club_dashboard'))
         else:
             return redirect(url_for('main.user_dashboard'))
-    return render_template('auth/login_choice.html')
+    league_code = request.args.get('code')
+    return render_template('auth/login_choice.html', title='Login', league_code=league_code)
 
 
 @auth_bp.route('/login/user', methods=['POST'])
@@ -159,36 +158,66 @@ def login_user_account():
     if current_user.is_authenticated:
         return redirect(url_for('main.user_dashboard'))
 
-    email = request.form['email'].strip()
-    password = request.form['password']
+    # Use the form to validate the request
+    form = UserLoginForm()
 
-    user, error = _authenticate_and_login(User, 'email', email, password)
+    # This block will only run if the form is submitted and valid
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and user.check_password(form.password.data):
+            login_user(user, remember=form.remember_me.data)
+            print(f"DEBUG: Logged in user. Object is: {user}, Type is: {type(user)}")
 
-    if error:
-        flash(error, 'danger')
-        return redirect(url_for('auth.login_choice'))
+            # Check if the user was trying to join a league
+            league_code = form.league_code.data
+            if league_code:
+                league = League.query.filter_by(league_code=league_code).first()
+                if league:
+                    flash('Login successful! You can now join the league.', 'success')
+                    return redirect(url_for('league.add_entry', league_id=league.id))
 
-    flash('Logged in successfully as user!', 'success')
-    next_page = request.args.get('next')
-    return redirect(next_page or url_for('main.user_dashboard'))
+            flash('Logged in successfully!', 'success')
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('main.user_dashboard'))
+        else:
+            flash('Login unsuccessful. Please check your email and password.', 'danger')
+
+    # If the form is not valid or login fails, redirect back to the choice page
+    return redirect(url_for('auth.login_choice'))
 
 @auth_bp.route('/login/club', methods=['POST'])
 def login_club_account():
+    """Handles the club login form submission."""
     if current_user.is_authenticated:
         return redirect(url_for('main.club_dashboard'))
 
-    email = request.form['email'].strip()
-    password = request.form['password']
+    # Use the ClubLoginForm to process and validate the incoming data
+    form = ClubLoginForm()
 
-    club, error = _authenticate_and_login(Club, 'email', email, password)
+    # validate_on_submit() checks if it's a POST request and if the data is valid
+    if form.validate_on_submit():
+        # Find the club by the email provided in the form
+        club = Club.query.filter_by(email=form.email.data).first()
 
-    if error:
-        flash(error, 'danger')
-        return redirect(url_for('auth.login_choice'))
+        # Check if the club exists and the password is correct
+        if club and club.check_password(form.password.data):
+            login_user(club, remember=form.remember_me.data)
+            print(f"DEBUG: Logged in club. Object is: {club}, Type is: {type(club)}")
 
-    flash('Logged in successfully as club admin!', 'success')
-    next_page = request.args.get('next')
-    return redirect(next_page or url_for('main.club_dashboard'))
+            # A league_code might be present if they clicked "Join" on the
+            # landing page, but clubs can't join leagues. We can safely ignore it.
+
+            flash('Logged in successfully as Club!', 'success')
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('main.club_dashboard'))
+        else:
+            flash('Login unsuccessful. Please check your email and password.', 'danger')
+            # Redirect back to the login page with the form visible
+            return redirect(url_for('auth.login_choice'))
+
+    # If form validation fails, redirect back to the login page
+    # Flask-WTF will automatically flash error messages for failed validations
+    return redirect(url_for('auth.login_choice'))
 
 
 

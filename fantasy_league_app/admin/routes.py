@@ -4,7 +4,6 @@ from fantasy_league_app import db
 from fantasy_league_app.models import User, Club, SiteAdmin, Player, PlayerBucket, League, LeagueEntry
 import csv
 import io
-from .. import scheduler
 from datetime import datetime, timedelta
 from sqlalchemy import func
 import requests
@@ -13,19 +12,16 @@ from werkzeug.security import generate_password_hash # NEW: For hashing password
 from fantasy_league_app.league.routes import _create_new_league
 from ..utils import is_testing_mode_active, send_winner_notification_email
 import os
+from ..auth.decorators import admin_required
 from ..forms import EditLeagueForm, LeagueForm, BroadcastNotificationForm, PlayerBucketForm
 from ..stripe_client import create_payout
 from . import admin_bp
-from ..tasks import finalize_finished_leagues, broadcast_notification_task
+from ..tasks import finalize_finished_leagues, broadcast_notification_task, collect_league_fees
 from ..utils import get_league_creation_status
 
 @admin_bp.route('/dashboard')
-@login_required
+@admin_required
 def admin_dashboard():
-    if not getattr(current_user, 'is_site_admin', False):
-        flash('You do not have permission to access this page.', 'danger')
-        return redirect(url_for('main.index'))
-
     # --- Analytics Calculations ---
     total_users = User.query.count()
     total_clubs = Club.query.count()
@@ -71,11 +67,8 @@ def admin_dashboard():
 # testing mode
 
 @admin_bp.route('/toggle-testing-mode', methods=['POST'])
-@login_required
+@admin_required
 def toggle_testing_mode():
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
-
     flag_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', current_app.config['TESTING_MODE_FLAG'])
 
     if is_testing_mode_active():
@@ -93,16 +86,12 @@ def toggle_testing_mode():
 
 # ---  Route to manually trigger the finalization task for testing ---
 @admin_bp.route('/manual-finalize-leagues', methods=['POST'])
-@login_required
+@admin_required
 def manual_finalize_leagues():
     """
     Allows the site admin to manually trigger the weekly league
     finalization task for testing purposes.
     """
-    if not getattr(current_user, 'is_site_admin', False):
-        flash('You do not have permission to perform this action.', 'danger')
-        return redirect(url_for('main.index'))
-
     # Call the task function directly, passing the current app instance
     finalize_finished_leagues(current_app._get_current_object())
 
@@ -113,12 +102,9 @@ def manual_finalize_leagues():
 
 
 @admin_bp.route('/import-tournaments', methods=['GET'])
-@login_required
+@admin_required
 def import_tournaments():
     """Fetches and displays a list of current and upcoming tournaments from the API."""
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
-
     client = DataGolfClient()
     # Call the new client to get the schedule
     all_tournaments, error = client.get_tournament_schedule()
@@ -141,11 +127,8 @@ def import_tournaments():
 
 
 @admin_bp.route('/import-tournament', methods=['POST'])
-@login_required
+@admin_required
 def import_tournament_action():
-    """Imports players for a selected tournament, creates a bucket, and adds players."""
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
 
     event_id = request.form.get('event_id')
     event_name = request.form.get('event_name')
@@ -227,7 +210,7 @@ def import_tournament_action():
 from ..data_golf_client import DataGolfClient # Make sure this import is at the top
 
 @admin_bp.route('/player_buckets/<int:bucket_id>/refresh_odds', methods=['POST'])
-@login_required
+@admin_required
 def refresh_bucket_odds(bucket_id):
     if not getattr(current_user, 'is_site_admin', False):
         return redirect(url_for('main.index'))
@@ -281,9 +264,8 @@ def refresh_bucket_odds(bucket_id):
     return redirect(url_for('admin.add_players_to_bucket', bucket_id=bucket_id))
 
 @admin_bp.route('/add_individual_player', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def add_individual_player():
-    if not getattr(current_user, 'is_site_admin', False): return redirect(url_for('main.index'))
     if request.method == 'POST':
         name = request.form['name']
         surname = request.form['surname']
@@ -296,9 +278,8 @@ def add_individual_player():
     return render_template('admin/add_individual_player.html')
 
 @admin_bp.route('/upload_players_csv', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def upload_players_csv():
-    if not getattr(current_user, 'is_site_admin', False): return redirect(url_for('main.index'))
     if request.method == 'POST':
         if 'csv_file' not in request.files:
             flash('No file part', 'danger')
@@ -321,16 +302,14 @@ def upload_players_csv():
     return render_template('admin/upload_players_csv.html')
 
 @admin_bp.route('/player_buckets', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def manage_player_buckets():
-    if not getattr(current_user, 'is_site_admin', False): return redirect(url_for('main.index'))
     buckets = PlayerBucket.query.all()
     return render_template('admin/manage_player_buckets.html', buckets=buckets)
 
 @admin_bp.route('/create_player_bucket', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def create_player_bucket():
-    if not getattr(current_user, 'is_site_admin', False): return redirect(url_for('main.index'))
     form = PlayerBucketForm()
     if form.validate_on_submit():
         new_bucket = PlayerBucket(
@@ -347,10 +326,8 @@ def create_player_bucket():
 
 # ---  Route for Deleting a Player Bucket ---
 @admin_bp.route('/delete_player_bucket/<int:bucket_id>', methods=['POST'])
-@login_required
+@admin_required
 def delete_player_bucket(bucket_id):
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
 
     bucket_to_delete = PlayerBucket.query.get_or_404(bucket_id)
 
@@ -376,11 +353,8 @@ def delete_player_bucket(bucket_id):
     return redirect(url_for('admin.manage_player_buckets'))
 
 @admin_bp.route('/player_buckets/<int:bucket_id>', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def add_players_to_bucket(bucket_id):
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
-
     bucket = PlayerBucket.query.get_or_404(bucket_id)
 
     if request.method == 'POST':
@@ -425,10 +399,8 @@ def add_players_to_bucket(bucket_id):
     )
 
 @admin_bp.route('/player_buckets/<int:bucket_id>/remove/<int:player_id>', methods=['POST'])
-@login_required
+@admin_required
 def remove_player_from_bucket(bucket_id, player_id):
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
 
     bucket = PlayerBucket.query.get_or_404(bucket_id)
     player = Player.query.get_or_404(player_id)
@@ -443,21 +415,15 @@ def remove_player_from_bucket(bucket_id, player_id):
     return redirect(url_for('admin.add_players_to_bucket', bucket_id=bucket.id))
 
 @admin_bp.route('/leagues')
-@login_required
+@admin_required
 def manage_leagues():
-    if not getattr(current_user, 'is_site_admin', False):
-        flash('You do not have permission to access this page.', 'danger')
-        return redirect(url_for('main.index'))
     all_leagues = League.query.options(db.joinedload(League.club_host)).order_by(League.id.desc()).all()
     return render_template('admin/manage_leagues.html', leagues=all_leagues)
 
 
 @admin_bp.route('/leagues/edit/<int:league_id>', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def edit_league(league_id):
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
-
     league = League.query.get_or_404(league_id)
     form = EditLeagueForm(obj=league)
 
@@ -477,10 +443,8 @@ def edit_league(league_id):
 
 
 @admin_bp.route('/leagues/remove_entry/<int:entry_id>', methods=['POST'])
-@login_required
+@admin_required
 def remove_league_entry(entry_id):
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
 
     entry = LeagueEntry.query.get_or_404(entry_id)
     league_id = entry.league_id
@@ -492,28 +456,22 @@ def remove_league_entry(entry_id):
     return redirect(url_for('admin.edit_league', league_id=league_id))
 
 @admin_bp.route('/leagues/<int:league_id>')
-@login_required
+@admin_required
 def manage_league_details(league_id):
-    if not getattr(current_user, 'is_site_admin', False):
-        flash('You do not have permission to access this page.', 'danger')
-        return redirect(url_for('main.index'))
     league = League.query.get_or_404(league_id)
     return f"<h1>Managing {league.name}</h1><p>Detailed league management tools coming soon!</p>"
 
 
 # ---  Site Admin's Create Public League Route ---
 @admin_bp.route('/create-public-league', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def create_public_league():
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
 
     status = get_league_creation_status()
     if not status["is_creation_enabled"]:
         flash(status["message"], "warning")
         return redirect(url_for('admin.admin_dashboard'))
 
-    form = LeagueForm()
     form = LeagueForm()
     # Filter player buckets based on available tours
     form.player_bucket_id.choices = [
@@ -534,6 +492,7 @@ def create_public_league():
             no_favorites_rule=form.no_favorites_rule.data,
             tour=form.tour.data,
             is_public=True,
+            creator_id=current_user.id,
             allow_past_creation=True
         )
 
@@ -549,11 +508,8 @@ def create_public_league():
 # --- User and Club Management Routes ---
 
 @admin_bp.route('/manage-users')
-@login_required
+@admin_required
 def manage_users():
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
-
     # Fetch all users and clubs
     all_users = User.query.order_by(User.full_name).all()
     all_clubs = Club.query.order_by(Club.club_name).all()
@@ -561,10 +517,8 @@ def manage_users():
     return render_template('admin/manage_users.html', users=all_users, clubs=all_clubs)
 
 @admin_bp.route('/toggle-user-status/<int:user_id>', methods=['POST'])
-@login_required
+@admin_required
 def toggle_user_status(user_id):
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
 
     user = User.query.get_or_404(user_id)
     user.is_active = not user.is_active
@@ -575,10 +529,8 @@ def toggle_user_status(user_id):
     return redirect(url_for('admin.manage_users'))
 
 @admin_bp.route('/toggle-club-status/<int:club_id>', methods=['POST'])
-@login_required
+@admin_required
 def toggle_club_status(club_id):
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
 
     club = Club.query.get_or_404(club_id)
     club.is_active = not club.is_active
@@ -590,11 +542,8 @@ def toggle_club_status(club_id):
 
 
 @admin_bp.route('/reset-user-password/<int:user_id>', methods=['POST'])
-@login_required
+@admin_required
 def reset_user_password(user_id):
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
-
     user = User.query.get_or_404(user_id)
 
     # Generate a secure, 10-character temporary password
@@ -608,11 +557,8 @@ def reset_user_password(user_id):
     return redirect(url_for('admin.manage_users'))
 
 @admin_bp.route('/reset-club-password/<int:club_id>', methods=['POST'])
-@login_required
+@admin_required
 def reset_club_password(club_id):
-    if not getattr(current_user, 'is_site_admin', False):
-        return redirect(url_for('main.index'))
-
     club = Club.query.get_or_404(club_id)
 
     temp_password = secrets.token_urlsafe(10)
@@ -626,7 +572,7 @@ def reset_club_password(club_id):
 
 
 @admin_bp.route('/reset-player-scores')
-@login_required
+@admin_required
 def reset_player_score():
     """
     This route handles the logic for resetting scores.
@@ -651,11 +597,8 @@ def reset_player_score():
 
 
 @admin_bp.route('/leagues/finalize/<int:league_id>', methods=['POST'])
-@login_required
+@admin_required
 def finalize_league_admin(league_id):
-    if not getattr(current_user, 'is_site_admin', False):
-        flash('You do not have permission to perform this action.', 'danger')
-        return redirect(url_for('main.index'))
 
     league = League.query.get_or_404(league_id)
 
@@ -740,7 +683,7 @@ def finalize_league_admin(league_id):
 
 
 @admin_bp.route('/send-notification', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def send_broadcast_notification():
     form = BroadcastNotificationForm()
     if form.validate_on_submit():

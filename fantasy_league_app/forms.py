@@ -31,8 +31,7 @@ class LeagueForm(FlaskForm):
     name = StringField('League Name', validators=[DataRequired()])
     tour = SelectField('Select Tour', choices=[
         ('pga', 'PGA Tour'),
-        ('euro', 'DP World Tour'),
-        ('liv', 'LIV Golf')
+        ('euro', 'DP World Tour')
     ], validators=[DataRequired()])
     # start_date = DateField('Tournament Start Date', format='%Y-%m-%d', validators=[DataRequired()])
     player_bucket_id = SelectField('Player Pool', coerce=int, validators=[DataRequired()])
@@ -50,28 +49,40 @@ class LeagueForm(FlaskForm):
     no_favorites_rule = BooleanField("Enforce 'No Favorites' Rule")
     submit = SubmitField('Create League')
 
+class EditLeagueForm(FlaskForm):
+    """Form for club admins to edit an upcoming league."""
+    name = StringField('League Name', validators=[DataRequired(), Length(min=2, max=100)])
+    entry_fee = DecimalField('Entry Fee (€)', validators=[DataRequired(), NumberRange(min=0)])
+    prize_details = StringField('Prize Details', validators=[Length(max=200)])
+    rules = TextAreaField('Custom Rules')
+    submit = SubmitField('Save Changes')
 
 class PlayerBucketForm(FlaskForm):
     name = StringField('Bucket Name', validators=[DataRequired(), Length(min=3, max=150)])
     description = TextAreaField('Description', validators=[Length(max=300)])
 
-    # --- ADD THIS NEW FIELD ---
     tour = SelectField('Tour', choices=[
         ('pga', 'PGA Tour'),
         ('euro', 'DP World Tour'),
-        ('alt', 'LIV Golf'),
-        ('kft', 'Korn Ferry Tour')
     ], validators=[DataRequired()])
-    # --- END OF ADDITION ---
 
     submit = SubmitField('Create Bucket')
 
-class LoginForm(FlaskForm):
+class UserLoginForm(FlaskForm):
     """Form for users to log in."""
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     remember_me = BooleanField('Remember Me')
-    submit = SubmitField('Login')
+    league_code = StringField('League Code') # Hidden field to carry the code
+    submit = SubmitField('Sign In')
+
+class ClubLoginForm(FlaskForm):
+    """Form for users to log in."""
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    remember_me = BooleanField('Remember Me')
+    league_code = StringField('League Code') # Hidden field to carry the code
+    submit = SubmitField('Sign In')
 
 
 class RegistrationForm(FlaskForm):
@@ -83,6 +94,26 @@ class RegistrationForm(FlaskForm):
         'Confirm Password',
         validators=[DataRequired(), EqualTo('password', message='Passwords must match.')]
     )
+    submit = SubmitField('Sign Up')
+
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if user:
+            raise ValidationError('That email is already in use. Please choose a different one.')
+
+class ClubRegistrationForm(FlaskForm):
+    """Form for new clubs to register."""
+    club_name = StringField('Club Name', validators=[DataRequired(), Length(min=2, max=100)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=8)])
+    confirm_password = PasswordField(
+        'Confirm Password',
+        validators=[DataRequired(), EqualTo('password', message='Passwords must match.')]
+    )
+    contact_person=StringField('Contact Person', validators=[DataRequired(), Length(min=5, max=100)]),
+    phone_number= IntegerField('Phone number', validators=[DataRequired(), NumberRange(min=10, max=10)]),
+    website= TextAreaField('Website (Optional)')
+    address= TextAreaField('Club Address'),
     submit = SubmitField('Sign Up')
 
     def validate_email(self, email):
@@ -114,7 +145,7 @@ class EditLeagueForm(FlaskForm):
     entry_fee = IntegerField('Entry Fee (€)', validators=[DataRequired(), NumberRange(min=0)])
     max_entries = IntegerField('Max Entries', validators=[DataRequired(), NumberRange(min=2)])
     prize_pool_percentage = IntegerField('Creator Prize Share (%)', validators=[DataRequired(), NumberRange(min=0, max=50)])
-    
+
     # --- START: New Tour Field ---
     tour = SelectField('Tour', choices=[
         ('pga', 'PGA Tour'),

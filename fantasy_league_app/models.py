@@ -1,6 +1,7 @@
 # --- File: fantasy_league_app/models.py (UPDATED - Add Tie-Breaker Question to League and Answer to LeagueEntry) ---
 from datetime import datetime, timedelta
 from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 from fantasy_league_app import db
 import random
 
@@ -30,8 +31,20 @@ class User(db.Model, UserMixin):
     total_winnings = db.Column(db.Float, default=0.0)
     stripe_account_id = db.Column(db.String(255), nullable=True)
 
+    created_leagues = db.relationship('League', back_populates='creator', foreign_keys='League.creator_id')
+    # created_public_leagues = db.relationship('League', back_populates='site_admin', foreign_keys='League.site_admin_id')
+
     def get_id(self):
-        return f"{self.id}-user"
+        return f"user-{self.id}"
+
+
+    def set_password(self, password):
+        """Creates a hashed password."""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        """Checks if the provided password matches the hash."""
+        return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
         return f'<User {self.email}>'
@@ -51,12 +64,28 @@ class Club(db.Model, UserMixin):
     password_reset_required = db.Column(db.Boolean, nullable=False, default=False)
     stripe_account_id = db.Column(db.String(255), nullable=True)
 
+    def set_password(self, password):
+        """Creates a hashed password."""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        """Checks if the provided password matches the hash."""
+        return check_password_hash(self.password_hash, password)
+
     @property
     def is_club_admin(self):
         return True
 
     def get_id(self):
-        return f"{self.id}-club"
+        return f"club-{self.id}"
+
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'club_name': self.club_name,
+            'email': self.email
+        }
 
     def __repr__(self):
         return f'<Club {self.club_name}>'
@@ -68,7 +97,7 @@ class SiteAdmin(db.Model, UserMixin):
     password_hash = db.Column(db.String(255), nullable=False)
 
     def get_id(self):
-        return f"{self.id}-site_admin"
+        return f"admin-{self.id}"
 
     @property
     def is_site_admin(self):
@@ -153,6 +182,7 @@ class League(db.Model):
     tie_breaker_question = db.Column(db.String(255), nullable=False, default="Enter a question")
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
+    winner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
     is_finalized = db.Column(db.Boolean, default=False, nullable=False)
     tie_breaker_actual_answer = db.Column(db.Integer, nullable=True)
@@ -160,10 +190,10 @@ class League(db.Model):
 
     is_public = db.Column(db.Boolean, default=False, nullable=False)
     # Make the existing user_id nullable
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
 
     # Add a new nullable site_admin_id foreign key
-    site_admin_id = db.Column(db.Integer, db.ForeignKey('site_admins.id'), nullable=True)
     club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True) # Now nullable
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) # New column for user-created leagues
     player_bucket_id = db.Column(db.Integer, db.ForeignKey('player_buckets.id'), nullable=True)
@@ -183,10 +213,12 @@ class League(db.Model):
     odds_limit = db.Column(db.Integer, nullable=True)   # Max combined odds, nullable for no limit
     no_favorites_rule = db.Column(db.Boolean, default=False, nullable=False) # Number of top players to exclude (0 = no rule)
 
+    fees_processed = db.Column(db.Boolean, default=False, nullable=False)
+
     #reltionships
     winner = db.relationship('User', foreign_keys=[winner_id])
-    creator = db.relationship('User', foreign_keys=[user_id])
     winners = db.relationship('User', secondary=league_winners_association, backref='won_leagues')
+    creator = db.relationship('User', back_populates='created_leagues', foreign_keys=[creator_id])
 
     @property
     def creator_name(self):
@@ -215,6 +247,29 @@ class League(db.Model):
         """Checks if the current time is past the league's end_date."""
         return datetime.utcnow() >= self.end_date
 
+    def to_dict(self):
+        # Determine the league's current status
+        now = datetime.utcnow()
+        status = "Upcoming"
+        if self.is_finalized:
+            status = "Past"
+        elif self.start_date and now > self.start_date:
+            status = "Live"
+
+        return {
+            'id': self.id,
+            'name': self.name,
+            'league_code': self.league_code,
+            'entries': len(self.entries),
+            'status': status,
+            'tour' : self.tour,
+            # 'ends' : self.end_date,
+            'prizePool' : self.prize_amount,
+            'entryFee' : self.entry_fee
+            # This is a cleaner set of data for the club dashboard's JS
+        }
+
+
     def __repr__(self):
         return f'<League {self.name}>'
 
@@ -236,6 +291,8 @@ class LeagueEntry(db.Model):
     player1_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
     player2_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
     player3_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
+
+    fee_collected = db.Column(db.Boolean, default=False, nullable=False)
 
     # current_rank = db.Column(db.Integer, nullable=True)
 

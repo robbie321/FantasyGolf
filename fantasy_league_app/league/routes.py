@@ -1,10 +1,11 @@
 from flask_mail import Message
-from flask import render_template, redirect, url_for, flash, request, session, current_app
+from flask import render_template, redirect, url_for, flash, request, session, current_app, jsonify
 from flask_login import login_required, current_user
 from fantasy_league_app import db, mail
 from ..models import User, Club, SiteAdmin, League, LeagueEntry, Player, PlayerBucket, PlayerScore
 from ..utils import is_testing_mode_active, send_entry_confirmation_email, send_winner_notification_email
 from . import league_bp
+import json
 import random
 import string
 import stripe
@@ -12,8 +13,9 @@ from datetime import datetime, timedelta
 from ..data_golf_client import DataGolfClient
 from ..stripe_client import process_payouts
 import secrets
-from ..forms import LeagueForm, CreateUserLeagueForm
+from ..forms import LeagueForm, CreateUserLeagueForm, EditLeagueForm
 from ..utils import get_league_creation_status
+from ..auth.decorators import admin_required, user_required
 
 
 
@@ -38,7 +40,7 @@ from ..data_golf_client import DataGolfClient
 
 def _create_new_league(name, player_bucket_id, entry_fee_str,
                          prize_amount_str, max_entries, odds_limit, rules,
-                         prize_details, no_favorites_rule, tour, is_public,
+                         prize_details, no_favorites_rule, tour, is_public, creator_id,
                          club_id=None, allow_past_creation=False):
     """
     A helper function to handle the creation of any type of league.
@@ -103,19 +105,19 @@ def _create_new_league(name, player_bucket_id, entry_fee_str,
     tie_breaker_player_id = tie_breaker_player.dg_id
 
 
-    user_id = None
-    site_admin_id = None
-    club_id = None
+    # user_id = None
+    # site_admin_id = None
+    # club_id = None
 
-    # Check the type of the logged-in user
-    if isinstance(current_user, User):
-        user_id = current_user.id
-    elif isinstance(current_user, SiteAdmin):
-        site_admin_id = current_user.id
-    elif isinstance(current_user, Club):
-        club_id = current_user.id
-    else:
-        return None, "Invalid user type for league creation."
+    # # Check the type of the logged-in user
+    # if isinstance(current_user, User):
+    #     user_id = current_user.id
+    # elif isinstance(current_user, SiteAdmin):
+    #     site_admin_id = current_user.id
+    # elif isinstance(current_user, Club):
+    #     club_id = current_user.id
+    # else:
+    #     return None, "Invalid user type for league creation."
 
 # 1. Generate a unique league code BEFORE creating the league object.
     while True:
@@ -143,6 +145,7 @@ def _create_new_league(name, player_bucket_id, entry_fee_str,
         tie_breaker_question=tie_breaker_question,
         is_public=is_public,
         club_id=club_id,
+        creator_id=creator_id,
         user_id=user_id
     )
     db.session.add(new_league)
@@ -203,17 +206,24 @@ def create_league():
         flash('You do not have permission to create a league.', 'warning')
         return redirect(url_for('main.user_dashboard'))
 
-    status = get_league_creation_status()
-    if not status["is_creation_enabled"]:
-        flash(status["message"], "warning")
-        return redirect(url_for('main.club_dashboard'))
+    # status = get_league_creation_status()
+    # if not status["is_creation_enabled"]:
+    #     flash(status["message"], "warning")
+    #     return redirect(url_for('main.club_dashboard'))
 
     form = LeagueForm()
-    form.player_bucket_id.choices = [
-        (b.id, b.name) for b in PlayerBucket.query.filter(PlayerBucket.tour.in_(status["available_tours"])).order_by('name').all()
-    ]
+    # form.player_bucket_id.choices = [
+    #     (b.id, b.name) for b in PlayerBucket.query.filter(PlayerBucket.tour.in_(status["available_tours"])).order_by('name').all()
+    # ]
+
+    available_buckets = PlayerBucket.query.order_by(PlayerBucket.name).all()
+    # Create a list of (value, label) tuples for the dropdown choices
+    form.player_bucket_id.choices = [(0, 'Select a Player Pool')] + [(bucket.id, bucket.name) for bucket in available_buckets]
 
     if form.validate_on_submit():
+        if form.player_bucket_id.data == 0:
+            flash('Please select a valid player pool.', 'danger')
+            return render_template('league/create_league.html', form=form)
         new_league, error = _create_new_league(
             name=form.name.data,
             player_bucket_id=form.player_bucket_id.data,
@@ -226,8 +236,10 @@ def create_league():
             no_favorites_rule=form.no_favorites_rule.data,
             tour=form.tour.data,
             is_public=False, # Club leagues are not public
+            creator_id=current_user.id,
             club_id=current_user.id # Pass the club_id
         )
+        pass
 
         if error:
             flash(error, 'danger')
@@ -236,6 +248,95 @@ def create_league():
             return redirect(url_for('main.club_dashboard'))
 
     return render_template('league/create_league.html', form=form)
+
+@league_bp.route('/edit-league/<int:league_id>', methods=['GET', 'POST'])
+@user_required
+def edit_league(league_id):
+    """
+    Allows a club admin to edit the details of an upcoming league they created.
+    """
+    league = League.query.get_or_404(league_id)
+    now = datetime.utcnow()
+
+    # Security Checks
+    if not isinstance(current_user, Club) or league.club_id != current_user.id:
+        flash("You do not have permission to edit this league.", "danger")
+        return redirect(url_for('main.club_dashboard'))
+
+    if league.start_date <= now:
+        flash("You can only edit leagues that have not started yet.", "warning")
+        return redirect(url_for('main.club_dashboard'))
+
+    form = EditLeagueForm(obj=league) # Pre-populate form with league data
+
+    if form.validate_on_submit():
+        # Update the league object with form data
+        league.name = form.name.data
+        league.entry_fee = form.entry_fee.data
+        league.prize_details = form.prize_details.data
+        league.rules = form.rules.data
+        db.session.commit()
+        flash(f"'{league.name}' has been updated successfully!", "success")
+        return redirect(url_for('main.club_dashboard'))
+
+    return render_template('league/edit_league.html', form=form, league=league, title="Edit League")
+
+@league_bp.route('/cancel-league/<int:league_id>', methods=['POST'])
+@user_required
+def cancel_league(league_id):
+    league = League.query.get_or_404(league_id)
+    now = datetime.utcnow()
+
+    # Security Checks
+    if not isinstance(current_user, Club) or league.club_id != current_user.id:
+        flash("You do not have permission to cancel this league.", "danger")
+        return redirect(url_for('main.club_dashboard'))
+
+    if league.start_date <= now:
+        flash("You can only cancel leagues that have not started yet.", "warning")
+        return redirect(url_for('main.club_dashboard'))
+
+    try:
+        stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
+        refund_count = 0
+
+        # Find all paid entries and issue refunds
+        for entry in league.entries:
+            if entry.payment_intent_id:
+                stripe.Refund.create(
+                    payment_intent=entry.payment_intent_id,
+                    # Refund on the connected account
+                    stripe_account=current_user.stripe_account_id
+                )
+                refund_count += 1
+
+        # After refunds, delete the league and its entries
+        # The cascade delete should handle entries automatically
+        db.session.delete(league)
+        db.session.commit()
+
+        flash(f"'{league.name}' has been successfully canceled. {refund_count} refund(s) processed.", "success")
+
+    except stripe.error.StripeError as e:
+        flash(f"A Stripe error occurred: {e}. League was not canceled.", "danger")
+    except Exception as e:
+        flash(f"An unexpected error occurred: {e}. League was not canceled.", "danger")
+
+    return redirect(url_for('main.club_dashboard'))
+
+@league_bp.route('/get-tour-for-bucket/<int:bucket_id>')
+@login_required
+def get_tour_for_bucket(bucket_id):
+    """
+    API endpoint to fetch the tour associated with a specific PlayerBucket.
+    """
+    bucket = PlayerBucket.query.get(bucket_id)
+    if bucket:
+        # Return the tour as a JSON object
+        return jsonify({'tour': bucket.tour})
+
+    # Return an error if the bucket is not found
+    return jsonify({'error': 'Player bucket not found'}), 404
 
 
 @league_bp.route('/create-user-league', methods=['GET', 'POST'])
@@ -272,6 +373,7 @@ def create_user_league():
             odds_limit=request.form.get('odds_limit'),
             no_favorites_rule=request.form.get('no_favorites_rule'),
             is_public=False,
+            creator_id=current_user.id,
             club_id=current_user
         )
         if error:
@@ -287,29 +389,64 @@ def create_user_league():
 @league_bp.route('/join', methods=['POST'])
 @login_required
 def join_league():
-    league_code = request.form.get('league_code').strip()
+    # 1. Get the incoming data as JSON
+    data = request.get_json()
+
+    # 2. Check if the data or the code is missing
+    if not data or 'league_code' not in data:
+        return jsonify({'error': 'Missing league code.'}), 400
+
+    league_code = data.get('league_code', '').strip()
 
     if not league_code:
-        flash('League code cannot be empty.', 'danger')
-        return redirect(url_for('main.user_dashboard'))
+        return jsonify({'error': 'League code cannot be empty.'}), 400
 
+    # 3. Find the league
     league = League.query.filter_by(league_code=league_code).first()
 
     if not league:
-        flash('Invalid league code. Please check the code and try again.', 'danger')
-        return redirect(url_for('main.user_dashboard'))
+        # Return a JSON error if the league is not found
+        return jsonify({'error': 'Invalid league code. Please check the code and try again.'}), 404
 
+    # 4. Check if the user is already in the league
     existing_entry = LeagueEntry.query.filter_by(
         user_id=current_user.id,
         league_id=league.id
     ).first()
 
     if existing_entry:
-        flash('You have already joined this league.', 'info')
-        return redirect(url_for('main.user_dashboard'))
+        # Return a JSON error for a conflict
+        return jsonify({'error': 'You have already joined this league.'}), 409
 
-    flash(f'Successfully found league: {league.name}. Please create your entry.', 'success')
-    return redirect(url_for('league.add_entry', league_id=league.id))
+    # 5. Return a successful JSON response
+    # The final redirect will be handled by the JavaScript
+    return jsonify({
+        'message': f'Successfully found league: {league.name}. Please create your entry.',
+        'redirect_url': url_for('league.add_entry', league_id=league.id)
+    }), 200
+    # league_code = request.form.get('league-code').strip()
+
+    # if not league_code:
+    #     flash('League code cannot be empty.', 'danger')
+    #     return redirect(url_for('main.user_dashboard'))
+
+    # league = League.query.filter_by(league_code=league_code).first()
+
+    # if not league:
+    #     flash('Invalid league code. Please check the code and try again.', 'danger')
+    #     return redirect(url_for('main.user_dashboard'))
+
+    # existing_entry = LeagueEntry.query.filter_by(
+    #     user_id=current_user.id,
+    #     league_id=league.id
+    # ).first()
+
+    # if existing_entry:
+    #     flash('You have already joined this league.', 'info')
+    #     return redirect(url_for('main.user_dashboard'))
+
+    # flash(f'Successfully found league: {league.name}. Please create your entry.', 'success')
+    # return redirect(url_for('league.add_entry', league_id=league.id))
 
 # ---  add_entry ROUTE ---
 @league_bp.route('/add_entry/<int:league_id>', methods=['GET', 'POST'])
@@ -328,10 +465,9 @@ def add_entry(league_id):
     league = League.query.get_or_404(league_id)
 
     #  # Check if the user has connected a Stripe account at all.
-    if not current_user.stripe_account_id:
-        flash('Connect your stripe details from the "My Profile" section', 'error')
-        # Redirect back to the browse page where the popup will be shown
-        return redirect(url_for('main.user_dashboard'))
+    # if not club.stripe_account_id:
+    #     flash('Connect your stripe details from the "My Profile" section', 'error')
+    #     return redirect(url_for('main.user_dashboard'))
 
     # try:
     #     # Check the status of the connected account directly with the Stripe API
@@ -363,6 +499,14 @@ def add_entry(league_id):
     if not league.player_bucket:
         flash('This league does not have any players associated with it yet.', 'danger')
         return redirect(url_for('main.user_dashboard'))
+
+    # The application fee in cents (€2.50 = 250 cents)
+    application_fee = 250
+
+    # The entry fee in cents
+    entry_fee_cents = int(league.entry_fee * 100)
+
+    club = Club.query.get_or_404(league.club_id)
 
 
     # --- "No Favorites" Rule Logic ---
@@ -415,11 +559,33 @@ def add_entry(league_id):
                 'player3_id': player3_id, 'tie_breaker_answer': tie_breaker_answer, 'total_odds': total_odds
             }
             try:
+                # checkout_session = stripe.checkout.Session.create(
+                #     line_items=[{'price_data': {'currency': 'eur', 'product_data': {'name': f"Entry for {league.name}"}, 'unit_amount': entry_fee_cents}, 'quantity': 1}],
+                #     mode='payment',
+                #     success_url=url_for('league.success', _external=True),
+                #     cancel_url=url_for('league.cancel', _external=True),
+                #     payment_intent_data={
+                #         'application_fee_amount': application_fee,
+                #         'transfer_data': {
+                #             'destination': club.stripe_account_id,
+                #         },
+                #     },
+                # )
+
                 checkout_session = stripe.checkout.Session.create(
-                    line_items=[{'price_data': {'currency': 'eur', 'product_data': {'name': f"Entry for {league.name}"}, 'unit_amount': int(league.entry_fee * 100)}, 'quantity': 1}],
+                    line_items=[{
+                        'price_data': {
+                            'currency': 'eur',
+                            'product_data': {'name': f"Entry for {league.name}"},
+                            'unit_amount': entry_fee_cents
+                        },
+                        'quantity': 1
+                    }],
                     mode='payment',
                     success_url=url_for('league.success', _external=True),
                     cancel_url=url_for('league.cancel', _external=True),
+                    stripe_account=club.stripe_account_id
+
                 )
                 return redirect(checkout_session.url, code=303)
             except Exception as e:
@@ -600,9 +766,12 @@ def cancel():
     session.pop('pending_entry', None)
     return render_template('league/cancel.html')
 
-@league_bp.route('/<int:league_id>')
+@league_bp.route('/view/<int:league_id>')
 @login_required
 def view_league(league_id):
+    """
+    API endpoint that returns all data needed for the league view as JSON.
+    """
     league = League.query.get_or_404(league_id)
     entries = LeagueEntry.query.filter_by(league_id=league.id).all()
 
@@ -697,6 +866,46 @@ def view_league(league_id):
 
 #     return render_template('league/view_league.html', league=league, entries=sorted_entries, scores=display_scores, user_entry=current_user_entry,
 #     now=datetime.utcnow())
+
+
+#club league view
+@league_bp.route('/club-view/<int:league_id>')
+@login_required
+def club_league_view(league_id):
+    """
+    Renders the club admin's view of one of their created leagues.
+    """
+
+    league = League.query.get_or_404(league_id)
+
+    # Security check: ensure the club admin owns this league
+    if not isinstance(current_user, Club) or league.club_id != current_user.id:
+        flash("You can only view leagues created by your club.", "danger")
+        return redirect(url_for('main.club_dashboard'))
+
+    # Calculate leaderboard scores
+    entries = LeagueEntry.query.filter_by(league_id=league.id).all()
+    if league.is_finalized:
+        historical_scores = {hs.player_id: hs.score for hs in PlayerScore.query.filter_by(league_id=league.id).all()}
+        for entry in entries:
+            entry.total_score = historical_scores.get(entry.player1_id, 0) + \
+                                historical_scores.get(entry.player2_id, 0) + \
+                                historical_scores.get(entry.player3_id, 0)
+    else:
+        for entry in entries:
+            entry.total_score = (entry.player1.current_score or 0) + \
+                                (entry.player2.current_score or 0) + \
+                                (entry.player3.current_score or 0)
+
+    leaderboard = sorted(entries, key=lambda e: e.total_score)
+
+    return render_template(
+        'league/club_league_view.html',
+        title=f"View {league.name}",
+        league=league,
+        leaderboard=leaderboard,
+        now=datetime.utcnow()
+    )
 
 
 # --- Route for Admins to Trigger a Payout ---

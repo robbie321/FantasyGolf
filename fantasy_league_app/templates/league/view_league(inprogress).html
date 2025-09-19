@@ -1,232 +1,101 @@
 {% extends 'base.html' %} {% block content %}
-<link
-  rel="stylesheet"
-  href="{{ url_for('static', filename='css/dashboards.css') }}"
-/>
 
-<div class="page-wrapper">
-  <div class="league-details-container">
-    <a
-      href="{{ url_for('main.club_dashboard') if current_user.is_club_admin else url_for('main.user_dashboard') }}"
-      class="back-to-dashboard"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        height="20px"
-        viewBox="0 -960 960 960"
-        width="20px"
-        fill="currentColor"
-      >
-        <path d="M360-240 120-480l240-240 56 56-184 184 184 184-56 56Z"></path>
-      </svg>
-      Back to Dashboard
-    </a>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leaderboard - Fantasy Golf</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main id="leaderboard-page" class="page-container">
+      <a href="#" class="back-link"><i class="fa-solid fa-arrow-left"></i></a>
+      <div class="page-header">
+        <h1>OMEGA European Masters <span class="tag tag-live">Live</span></h1>
+        <p class="subtitle">Your total score: 258.0</p>
+      </div>
 
-    {% if not league.is_finalized and league.entry_deadline > now %}
-    <div class="countdown-container">
-      <h2>ENRTY DEADLINE</h2>
-      <div
-        id="countdown"
-        class="countdown-timer"
-        data-deadline="{{ league.entry_deadline.isoformat() }}"
-      >
-        <div class="timer-box">
-          <span id="days" class="time">00</span><span class="label">Days</span>
+      <section class="my-team-section">
+        <h3>My Team</h3>
+        <div class="team-display-grid">
+          <div class="player-card">
+            <div class="player-image-placeholder">
+              <i class="fa-regular fa-image"></i>
+            </div>
+            <p>Matt Fitzpatrick</p>
+            <span class="player-badge">9</span>
+          </div>
+          <div class="player-card">
+            <div class="player-image-placeholder">
+              <i class="fa-regular fa-image"></i>
+            </div>
+            <p>Wyndham Clark</p>
+            <span class="player-badge">23</span>
+          </div>
+          <div class="player-card">
+            <div class="player-image-placeholder">
+              <i class="fa-regular fa-image"></i>
+            </div>
+            <p>Clement Sordet</p>
+            <span class="player-badge high-score">226</span>
+          </div>
         </div>
-        <div class="timer-box">
-          <span id="hours" class="time">00</span
-          ><span class="label">Hours</span>
+      </section>
+
+      <details class="leaderboard-details">
+        <summary>
+          View league details <i class="fa-solid fa-chevron-down"></i>
+        </summary>
+        <div class="details-content">
+          <p>More league details would go here...</p>
         </div>
-        <div class="timer-box">
-          <span id="minutes" class="time">00</span
-          ><span class="label">Minutes</span>
-        </div>
-        <div class="timer-box">
-          <span id="seconds" class="time">00</span
-          ><span class="label">Seconds</span>
-        </div>
-      </div>
-    </div>
-    {% endif %} {% if league.is_finalized and league.winners %}
-    <div class="winner-banner">
-      <h2>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          height="32px"
-          viewBox="0 -960 960 960"
-          width="32px"
-          fill="currentColor"
-        >
-          <path
-            d="M220-180h520v-240l-60-60 60-60v-240H220v240l60 60-60 60v240Zm60-80v-184l-36-36 36-36v-184h400v184l36 36-36 36v184H280Zm200-260q25 0 42.5-17.5T540-580q0-25-17.5-42.5T480-640q-25 0-42.5 17.5T420-580q0 25 17.5 42.5T480-520Zm0-80q-8 0-14-6t-6-14q0-8 6-14t14-6q8 0 14 6t6 14q0 8-6 14t-14 6ZM220-80v-80h520v80H220Zm0-600v-80h520v80H220Zm260 260Z"
-          ></path>
-        </svg>
-        League Winner!
-      </h2>
-      <p>
-        <a
-          href="{{ url_for('main.view_profile', user_id=league.winners[0].id) }}"
-        >
-          {{ league.winners[0].full_name }}
-        </a>
-      </p>
-    </div>
-    {% endif %}
+      </details>
 
-    <div class="dashboard-header">
-      <div class="header-text">
-        <h1>{{ league.name }}</h1>
-        <p>Created by {{ league.creator_name }}</p>
-      </div>
-      <div class="header-actions">
-        {% if not user_entry and not league.has_entry_deadline_passed %}
-        <a
-          href="{{ url_for('league.add_entry', league_id=league.id) }}"
-          class="btn btn-primary"
-          >Join League</a
-        >
-        {% endif %}
-      </div>
-    </div>
-
-    <div class="league-info-grid">
-      <div class="stat-card">
-        <span class="label">Prize Pool</span>
-        <span class="value">€{{ "%.2f"|format(league.prize_amount) }}</span>
-      </div>
-      <div class="stat-card">
-        <span class="label">Entries</span>
-        <span class="value"
-          >{{ league.entries|length }} / {{ league.max_entries }}</span
-        >
-      </div>
-      <div class="stat-card">
-        <span class="label">Starts</span>
-        <span class="value">{{ league.start_date.strftime('%d %b %Y') }}</span>
-      </div>
-      <div class="stat-card">
-        <span class="label">Tour</span>
-        <span class="value tour-tag-large">{{ league.tour.upper() }}</span>
-      </div>
-    </div>
-
-    {% if user_entry %}
-    <div class="picker-wrapper my-team-section">
-      <h2 class="section-title">My Team</h2>
-      <div class="player-picks-container">
-        {% for i in [1, 2, 3] %} {% set player = getattr(user_entry.entry,
-        'player' ~ i) %}
-        <div class="player-slot">
-          {% if player %}
-          <img
-            src="{{ url_for('static', filename='images/headshots/' + player.dg_id|string + '.png') }}"
-            alt="Headshot of {{ player.full_name() }}"
-            class="player-headshot-icon"
-          />
-          <a
-            href="#"
-            class="player-name-link"
-            data-player-id="{{ player.dg_id }}"
-          >
-            {{ player.full_name() }}
-          </a>
-          {% endif %}
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-
-    <div class="leaderboard-section">
-      <div class="leaderboard-header">
-        <h2 class="section-title">
-          {% if league.is_finalized %}Final Results{% else %}Live Leaderboard{%
-          endif %}
-        </h2>
-        {% if not league.is_finalized %}
-        <button
-          class="btn"
-          id="view-live-leaderboard-btn"
-          data-tour="{{ league.tour }}"
-        >
-          View Tournament Stats
-        </button>
-        {% endif %}
-      </div>
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th class="rank">Rank</th>
-            <th>Entry Name</th>
-            <th class="score">Total Score</th>
-          </tr>
-        </thead>
-        <tbody id="leaderboard-body">
-          {% for item in leaderboard %}
-          <tr
-            class="leaderboard-main-row {% if item.entry.user_id == current_user.id %}my-entry{% endif %}"
-            data-target="#details-{{ loop.index }}"
-          >
-            <td class="rank">{{ item.rank }}</td>
-            <td>{{ item.user_name }}</td>
-            <td class="score">
-              {{ item.total_score }}
-              <span class="toggle-arrow">▼</span>
-            </td>
-          </tr>
-          <tr class="leaderboard-details-row" id="details-{{ loop.index }}">
-            <td colspan="3">
-              <div class="details-wrapper">
-                <div class="player-details-grid"></div>
-              </div>
-            </td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="3" class="no-entries-text">
-              No entries in this league yet.
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="popup-overlay" id="live-leaderboard-overlay">
-    <div class="popup-container">
-      <div class="popup-header">
-        <h3>Live Tournament Leaderboard</h3>
-        <button class="popup-close" id="popup-close-btn">&times;</button>
-      </div>
-      <div class="popup-body" id="live-leaderboard-body">
-        <table class="live-leaderboard-table">
+      <div class="leaderboard-table-container">
+        <table class="leaderboard-table">
           <thead>
             <tr>
-              <th class="pos">Pos</th>
-              <th class="player-name">Player</th>
-              <th style="text-align: center">Total</th>
-              <th style="text-align: center">Thru</th>
-              <th style="text-align: center">Rnd</th>
+              <th>RANK</th>
+              <th>ENTRY NAME</th>
+              <th class="text-right">TOTAL SCORE</th>
             </tr>
           </thead>
-          <tbody></tbody>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Rob Malone</td>
+              <td class="text-right score-under">-7</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Sam M</td>
+              <td class="text-right score-under">-3</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Reuben Holden</td>
+              <td class="text-right score-under">-2</td>
+            </tr>
+          </tbody>
         </table>
       </div>
-    </div>
-  </div>
 
-  <div class="profile-slide-in" id="player-profile-panel">
-    <div class="profile-panel-header">
-      <h3>Player Profile</h3>
-      <button class="panel-close-btn" id="panel-close-btn">&times;</button>
-    </div>
-    <div class="profile-panel-body" id="profile-panel-body"></div>
-  </div>
-  <div class="slide-in-overlay" id="slide-in-overlay"></div>
+      <button class="btn btn-primary">View live leaderboard</button>
+    </main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
-  <script>
+  </body>
+    <script src="script.js"></script>
+
+  <!-- <script>
     // A SINGLE LISTENER FOR THE ENTIRE PAGE
     document.addEventListener("DOMContentLoaded", function () {
       console.log("DOM fully loaded. Starting script.");
@@ -304,45 +173,7 @@
       panelCloseBtn.addEventListener("click", closeProfilePanel);
       slideInOverlay.addEventListener("click", closeProfilePanel);
 
-      // --- Countdown Timer Logic ---
-      const countdownElement = document.getElementById("countdown");
-      if (countdownElement) {
-        const deadline = new Date(
-          countdownElement.dataset.deadline + "Z"
-        ).getTime();
-        const timer = setInterval(function () {
-          const now = new Date().getTime();
-          const distance = deadline - now;
-          if (distance < 0) {
-            clearInterval(timer);
-            countdownElement.innerHTML =
-              "<h3>The entry deadline has passed.</h3>";
-            return;
-          }
-          const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-          const hours = Math.floor(
-            (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-          );
-          const minutes = Math.floor(
-            (distance % (1000 * 60 * 60)) / (1000 * 60)
-          );
-          const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-          document.getElementById("days").innerText = String(days).padStart(
-            2,
-            "0"
-          );
-          document.getElementById("hours").innerText = String(hours).padStart(
-            2,
-            "0"
-          );
-          document.getElementById("minutes").innerText = String(
-            minutes
-          ).padStart(2, "0");
-          document.getElementById("seconds").innerText = String(
-            seconds
-          ).padStart(2, "0");
-        }, 1000);
-      }
+
 
       // --- Player Stats Modal Logic ---
       const modal = document.getElementById("playerStatsModal");
@@ -416,7 +247,7 @@
       const overlay = document.getElementById("live-leaderboard-overlay");
       const modelCloseBtn = document.getElementById("popup-close-btn");
       const leaderboardBody = document.querySelector(
-        "#live-leaderboard-table tbody"
+        "#live-leaderboard-body tbody"
       );
 
       const openPopup = () => overlay.classList.add("active");
@@ -544,18 +375,326 @@
         }
       });
 
+      // --- Collapsible Leaderboard Logic ---
+      console.log("Setting up collapsible leaderboard..."); // Log #1
+      const mainRows = document.querySelectorAll(".leaderboard-main-row");
+
+      // Log #2: Check if any rows were found
+      console.log(
+        `Found ${mainRows.length} leaderboard rows to make clickable.`
+      );
+
+      mainRows.forEach((row) => {
+        row.addEventListener("click", () => {
+          // Log #3: Check if a click is registered
+          console.log("A leaderboard row was clicked!");
+
+          const targetId = row.dataset.target;
+          // Log #4: Check if the data-target attribute is being read correctly
+          console.log(`Target ID from data-target is: ${targetId}`);
+
+          const detailsRow = document.querySelector(targetId);
+          // Log #5: Check if the details row was found in the document
+          console.log(
+            "Found the corresponding details row element:",
+            detailsRow
+          );
+
+          if (detailsRow) {
+            // Log #6: Confirm that the class toggle is about to happen
+            console.log("Toggling the 'is-open' class.");
+            row.classList.toggle("is-open");
+            detailsRow.classList.toggle("is-open");
+          } else {
+            console.error(
+              "CRITICAL: Could not find the details row with selector:",
+              targetId
+            );
+          }
+        });
+      });
+    });
+  </script> -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      console.log("DOM fully loaded. Starting all scripts.");
+
+      // --- LOGIC 1: Countdown Timer ---
+      const countdownElement = document.getElementById("countdown");
+      if (countdownElement) {
+        const deadline = new Date(
+          countdownElement.dataset.deadline + "Z"
+        ).getTime();
+        const timer = setInterval(function () {
+          const now = new Date().getTime();
+          const distance = deadline - now;
+          if (distance < 0) {
+            clearInterval(timer);
+            countdownElement.innerHTML =
+              "<h3>The entry deadline has passed.</h3>";
+            return;
+          }
+          const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+          const hours = Math.floor(
+            (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+          );
+          const minutes = Math.floor(
+            (distance % (1000 * 60 * 60)) / (1000 * 60)
+          );
+          const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+          document.getElementById("days").innerText = String(days).padStart(
+            2,
+            "0"
+          );
+          document.getElementById("hours").innerText = String(hours).padStart(
+            2,
+            "0"
+          );
+          document.getElementById("minutes").innerText = String(
+            minutes
+          ).padStart(2, "0");
+          document.getElementById("seconds").innerText = String(
+            seconds
+          ).padStart(2, "0");
+        }, 1000);
+      }
+
+      // --- LOGIC 2: Player Profile Slide-In Panel ---
+      const profilePanel = document.getElementById("player-profile-panel");
+      if (profilePanel) {
+        const panelBody = document.getElementById("profile-panel-body");
+        const panelCloseBtn = document.getElementById("panel-close-btn");
+        const slideInOverlay = document.getElementById("slide-in-overlay");
+
+        const openProfilePanel = () => {
+          profilePanel.classList.add("is-open");
+          slideInOverlay.classList.add("is-open");
+          document.body.style.overflow = "hidden";
+        };
+        const closeProfilePanel = () => {
+          profilePanel.classList.remove("is-open");
+          slideInOverlay.classList.remove("is-open");
+          document.body.style.overflow = "";
+        };
+
+        document.querySelectorAll(".player-name-link").forEach((link) => {
+          link.addEventListener("click", async (e) => {
+            e.preventDefault();
+            const playerId = link.dataset.playerId;
+
+            // Show panel with a loading state
+            panelBody.innerHTML = "<p>Loading player data...</p>";
+            openProfilePanel();
+
+            try {
+              const response = await fetch(
+                `/player/api/sportradar_profile_by_name/${playerId}`
+              );
+              if (!response.ok) {
+                throw new Error("Player data not found.");
+              }
+              const data = await response.json();
+
+              // Populate the panel with the fetched data
+              panelBody.innerHTML = `
+        <div class="profile-card">
+          <img src="${data.headshot_url}" alt="Headshot of ${
+                data.full_name
+              }" class="profile-headshot">
+          <h2>${data.full_name}</h2>
+          <p class="country">${data.country}</p>
+          <div class="profile-stats-grid">
+            <div class="stat-item">
+              <span class="label">Birthday</span>
+              <span class="value">${data.birthday || "N/A"}</span>
+            </div>
+            <div class="stat-item">
+              <span class="label">Turned Pro</span>
+              <span class="value">${data.turned_pro || "N/A"}</span>
+            </div>
+            <div class="stat-item">
+              <span class="label">Height</span>
+              <span class="value">${data.height || "N/A"} in</span>
+            </div>
+            <div class="stat-item">
+              <span class="label">Weight</span>
+              <span class="value">${data.weight || "N/A"} lbs</span>
+            </div>
+          </div>
+        </div>
+      `;
+            } catch (error) {
+              panelBody.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+          });
+        });
+        panelCloseBtn.addEventListener("click", closeProfilePanel);
+        slideInOverlay.addEventListener("click", closeProfilePanel);
+      }
+
+      // --- LOGIC 3: Live Tournament Leaderboard Popup ---
+      const viewBtn = document.getElementById("view-live-leaderboard-btn");
+      if (viewBtn) {
+        // Define all elements related to the popup
+        const overlay = document.getElementById("live-leaderboard-overlay");
+        const closeBtn = document.getElementById("popup-close-btn");
+        const leaderboardBody = document.querySelector(
+          "#live-leaderboard-body .live-leaderboard-table tbody"
+        );
+
+        // Define the helper functions BEFORE they are used
+        const openPopup = () => {
+          if (overlay) overlay.classList.add("active");
+        };
+        const closePopup = () => {
+          if (overlay) overlay.classList.remove("active");
+        };
+
+        // Attach the main event listener
+        viewBtn.addEventListener("click", async () => {
+          if (!leaderboardBody) return;
+
+          leaderboardBody.innerHTML =
+            '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
+          openPopup(); // Now this function is defined and can be called
+
+          try {
+            const tour = viewBtn.dataset.tour;
+            const response = await fetch(`/api/live-leaderboard/${tour}`);
+            if (!response.ok) throw new Error("Network response was not ok");
+
+            const players = await response.json();
+            leaderboardBody.innerHTML = ""; // Clear loading message
+
+            if (players.length === 0) {
+              leaderboardBody.innerHTML =
+                '<tr><td colspan="5" style="text-align:center;">Live data not available for this tour.</td></tr>';
+              return;
+            }
+
+            players.forEach((player) => {
+              // --- Conditional Score Logic ---
+              let scoreText = player.total;
+              let rndScore = player.today;
+              let scoreClass = "score-negative"; // Default to red for under par
+
+              if (player.total === 0) {
+                scoreText = "E";
+                scoreClass = "score-even";
+              } else if (player.total > 0) {
+                scoreText = `+${player.total}`;
+                scoreClass = "score-positive";
+              }
+
+              rndScore = player.today === 0 ? "E" : player.today;
+
+              // Display 'F' if thru is 18, otherwise display the number
+              const thruText = player.thru === 18 ? "F" : player.thru;
+
+              const row = `
+                            <tr>
+                                <td class="pos">${player.current_pos}</td>
+                                <td class="player-name">${player.player_name}</td>
+
+                                <td style="text-align:center"> <span class="live-score ${scoreClass}">${player.current_score}</span></td>
+                                <td style="text-align:center; font-weight:bold">${thruText}</td>
+                                <td style="text-align:center; font-weight:bold; padding-right:8px">${rndScore}</td>
+                            </tr>
+                        `;
+              leaderboardBody.insertAdjacentHTML("beforeend", row);
+            });
+          } catch (error) {
+            console.error("Failed to fetch live leaderboard:", error);
+            leaderboardBody.innerHTML =
+              '<tr><td colspan="5" style="text-align:center;">Could not load live data.</td></tr>';
+          }
+        });
+
+        // Attach listeners for closing the popup
+        if (closeBtn) closeBtn.addEventListener("click", closePopup);
+        if (overlay)
+          overlay.addEventListener("click", (e) => {
+            if (e.target === overlay) closePopup();
+          });
+      }
+
+      // --- LOGIC 4: Collapsible League Leaderboard Rows ---
       const mainRows = document.querySelectorAll(".leaderboard-main-row");
       mainRows.forEach((row) => {
         row.addEventListener("click", () => {
           const targetId = row.dataset.target;
           const detailsRow = document.querySelector(targetId);
-
           if (detailsRow) {
             row.classList.toggle("is-open");
             detailsRow.classList.toggle("is-open");
           }
         });
       });
+
+      // --- LOGIC 5: Socket.IO for Live Page Reload ---
+      var socket = io();
+      socket.on("connect", function () {
+        console.log("Socket.IO connected!");
+      });
+      socket.on("scores_updated", function (data) {
+        var currentLeagueTour = "{{ league.tour }}";
+        if (data.updated_tours.includes(currentLeagueTour)) {
+          location.reload();
+        }
+      });
+
+      // --- Collapsible Details Logic ---
+      console.log("Setting up collapsible details..."); // Log #1
+      const toggleButton = document.getElementById("details-toggle");
+      const content = document.getElementById("details-content");
+
+      // Log #2: Check if the button and content elements were found
+      console.log("Toggle Button element:", toggleButton);
+      console.log("Content Div element:", content);
+      const buttonText = toggleButton.querySelector("span");
+      const buttonArrow = toggleButton.querySelector(".arrow");
+
+      if (toggleButton && content) {
+        // Log #3: Confirm that the elements were found and the listener will be attached
+        console.log("Button and content found. Attaching click listener...");
+
+        toggleButton.addEventListener("click", function () {
+          // Log #4: This will appear ONLY when the button is successfully clicked
+          console.log("Details button CLICKED!");
+
+          const isExpanded =
+            toggleButton.getAttribute("aria-expanded") === "true";
+          toggleButton.setAttribute("aria-expanded", !isExpanded);
+          content.hidden = isExpanded;
+
+          // Log #5: Check the state after the click
+          console.log(`Content is now hidden: ${isExpanded}`);
+        });
+      } else {
+        // Log #6: This will show if one or both elements are missing
+        console.error(
+          "CRITICAL: Could not find the toggle button or the content div."
+        );
+      }
+
+      if (toggleButton) {
+        toggleButton.addEventListener("click", function () {
+          // Check if the content is currently open
+          const isOpen =
+            content.style.maxHeight && content.style.maxHeight !== "0px";
+
+          if (isOpen) {
+            content.style.maxHeight = "0px";
+            buttonText.textContent = "View league details";
+            buttonArrow.style.transform = "rotate(0deg)";
+          } else {
+            // Set max-height to the content's scroll height to make it expand
+            content.style.maxHeight = content.scrollHeight + "px";
+            buttonText.textContent = "Hide league details";
+            buttonArrow.style.transform = "rotate(180deg)";
+          }
+        });
+      }
     });
   </script>
 </div>

@@ -7,11 +7,11 @@ from .. import db
 import re
 # fantasy_league_app/api/routes.py
 from pywebpush import webpush, WebPushException
-from flask import jsonify, current_app
 from flask_login import login_required
 from ..data_golf_client import DataGolfClient #
-from ..models import Player, PushSubscription
+from ..models import Player, PushSubscription, PlayerBucket
 from . import api_bp
+from datetime import datetime, timezone
 
 @api_bp.route('/player-stats/<int:dg_id>')
 @login_required
@@ -46,8 +46,9 @@ def get_player_stats(dg_id):
         return jsonify({'error': f'Live stats not found for this player.'}), 404
 
 
-# --- NEW: Live Leaderboard API Endpoint ---
+# --- Live Leaderboard API Endpoint ---
 @api_bp.route('/live-leaderboard/<string:tour>')
+@login_required
 def get_live_leaderboard(tour):
     """
     Fetches the live in-play leaderboard from the DataGolf API.
@@ -90,6 +91,59 @@ def get_live_leaderboard(tour):
         current_app.logger.error(f"An unexpected error occurred: {e}")
         return jsonify({'error': 'An internal server error occurred'}), 500
 
+@api_bp.route('/tour-schedule/<string:tour>')
+@login_required
+def get_tournament_schedules(tour):
+    """
+    API endpoint to fetch the upcoming tournament schedule for a tour.
+    """
+    client = DataGolfClient()
+    schedule, error = client.get_tournament_schedule(tour)
+
+    if error:
+        return jsonify({"error": str(error)}), 500
+
+    return jsonify(schedule)
+
+@api_bp.route('/tournament-details/<int:bucket_id>')
+@login_required
+def get_tournament_details(bucket_id):
+    """
+    Fetches tournament start date and first tee time for a given player bucket.
+    """
+    bucket = PlayerBucket.query.get_or_404(bucket_id)
+    if not bucket.tour:
+        return jsonify({'error': 'Player bucket has no associated tour.'}), 404
+
+    client = DataGolfClient()
+    field_data, error = client.get_tournament_field_updates(bucket.tour)
+
+    if error or not field_data or 'field' not in field_data:
+        return jsonify({'error': 'Could not retrieve tournament data.'}), 500
+
+    event_name = field_data.get('event_name', 'N/A')
+    earliest_tee_time = None
+
+    # Iterate through the 'field' list to find the earliest r1_teetime
+    for player in field_data.get('field', []):
+        tee_time_str = player.get('r1_teetime')
+        if tee_time_str:
+            try:
+                tee_time = datetime.strptime(tee_time_str, '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
+                if earliest_tee_time is None or tee_time < earliest_tee_time:
+                    earliest_tee_time = tee_time
+            except (ValueError, TypeError):
+                continue
+
+    # Format the data for the frontend
+    start_date_str = earliest_tee_time.strftime('%d %b %Y') if earliest_tee_time else "TBC"
+    formatted_tee_time = earliest_tee_time.strftime('%I:%M %p %Z') if earliest_tee_time else "TBC"
+
+    return jsonify({
+        'event_name': event_name,
+        'start_date': start_date_str,
+        'tee_time': formatted_tee_time
+    })
 
 @api_bp.route('/vapid_public_key', methods=['GET'])
 def vapid_public_key():

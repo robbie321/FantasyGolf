@@ -1,0 +1,145 @@
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How it Works - Fantasy Golf for Clubs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='club_style.css') }}"
+  />
+</head>
+
+<div class="dashboard-layout">
+  <aside class="sidebar"></aside>
+
+  <main class="dashboard-content">
+    <header class="page-header">
+      <h1>How it Works</h1>
+      <p class="subtitle">
+        Everything you need to know about running successful golf tournaments on
+        our platform
+      </p>
+    </header>
+
+    <section class="icon-features-grid">
+      <div class="icon-feature-card">
+        <i class="fa-solid fa-trophy"></i>
+        <h4>Create Leagues</h4>
+        <p>Set up tournaments with custom rules and entry fees</p>
+      </div>
+      <div class="icon-feature-card">
+        <i class="fa-solid fa-users"></i>
+        <h4>Players Join</h4>
+        <p>Members create teams and pay entry fees to participate</p>
+      </div>
+      <div class="icon-feature-card">
+        <i class="fa-solid fa-chart-simple"></i>
+        <h4>Track Results</h4>
+        <p>Real-time scoring and automatic leaderboard updates</p>
+      </div>
+      <div class="icon-feature-card">
+        <i class="fa-solid fa-sack-dollar"></i>
+        <h4>Earn Revenue</h4>
+        <p>Keep a percentage of entry fees as tournament revenue</p>
+      </div>
+    </section>
+
+    <section class="card-section text-center">
+      <button class="btn btn-primary btn-large">Create Your League Now</button>
+    </section>
+
+    <section class="card-section">
+      <h3>Marketing Kit</h3>
+      <p class="subtitle">
+        Download our digital assets to promote your league via email or social
+        media.
+      </p>
+      <div class="marketing-kit-grid">
+        <a href="#" class="marketing-item">
+          <i class="fa-regular fa-envelope"></i>
+          <span>Email Template</span>
+          <i class="fa-solid fa-download"></i>
+        </a>
+        <a href="#" class="marketing-item">
+          <i class="fa-solid fa-arrow-up-from-bracket"></i>
+          <span>Social Media Graphics</span>
+          <i class="fa-solid fa-download"></i>
+        </a>
+        <a href="#" class="marketing-item">
+          <i class="fa-regular fa-image"></i>
+          <span>Digital Poster/Flyer</span>
+          <i class="fa-solid fa-download"></i>
+        </a>
+      </div>
+    </section>
+
+    <section class="card-section fundraising-section">
+      <h3>
+        <i class="fa-solid fa-chart-line"></i> How Much Could Your Club Raise?
+      </h3>
+      <p>
+        Your club's fundraising potential is directly in your hands. Our model
+        is simple: your club keeps 70% of all entry fees. See the potential
+        profit from a single league:
+      </p>
+      <div class="formula">
+        <p>[Number of Members Joined] x [Entry Fee €] = Total Pot</p>
+        <p>Total Pot x 70% = <strong>YOUR CLUB'S PROFIT</strong></p>
+      </div>
+      <h4>Example Scenarios:</h4>
+      <div class="table-container">
+        <table class="scenarios-table">
+          <thead>
+            <tr>
+              <th>Members Joined</th>
+              <th>Entry Fee</th>
+              <th>Total Pot</th>
+              <th>Your Club's Profit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>50</td>
+              <td>€10</td>
+              <td>€500</td>
+              <td class="profit">€350</td>
+            </tr>
+            <tr>
+              <td>100</td>
+              <td>€10</td>
+              <td>€1,000</td>
+              <td class="profit">€700</td>
+            </tr>
+            <tr>
+              <td>75</td>
+              <td>€20</td>
+              <td>€1,500</td>
+              <td class="profit">€1,050</td>
+            </tr>
+            <tr>
+              <td>150</td>
+              <td>€20</td>
+              <td>€3,000</td>
+              <td class="profit">€2,100</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fund-usage">
+        <strong>Use the funds for anything your club needs:</strong> Equipment
+        upgrades • Course improvements • Member events • Tournament prizes •
+        Facility maintenance
+      </p>
+    </section>
+  </main>
+</div>

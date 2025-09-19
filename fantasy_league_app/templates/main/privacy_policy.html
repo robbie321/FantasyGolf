@@ -1,0 +1,194 @@
+{% extends "base.html" %} {% block content %}
+<style>
+  body {
+    background: #6b9e86;
+    background: radial-gradient(
+      circle,
+      rgba(107, 158, 134, 1) 0%,
+      rgba(0, 106, 78, 1) 100%
+    );
+  }
+  .terms-container {
+    max-width: 800px;
+    margin: auto;
+    padding: 2rem;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    color: #333;
+    line-height: 1.6;
+  }
+  .terms-container h1 {
+    font-size: 2.2rem;
+    color: var(--dark-grey);
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  .terms-container .intro-text {
+    text-align: center;
+    color: #666;
+    margin-bottom: 2.5rem;
+  }
+  .terms-container h2 {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5rem;
+  }
+  .terms-container .term-card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  .terms-container .term-icon {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    padding-top: 5px;
+  }
+  .terms-container .term-content strong {
+    display: block;
+    font-size: 1.1rem;
+    color: var(--dark-grey);
+    margin-bottom: 0.25rem;
+  }
+  .terms-container .term-content p {
+    margin: 0;
+    color: #555;
+  }
+  .terms-container a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .terms-container a:hover {
+    text-decoration: underline;
+  }
+  .terms-container .last-updated {
+    text-align: center;
+    font-style: italic;
+    color: #777;
+    margin-top: 3rem;
+    font-size: 0.9rem;
+  }
+  @media (min-width: 768px) {
+    .terms-container {
+      margin: 2rem auto;
+    }
+  }
+</style>
+
+<div class="terms-container">
+  <h1>Privacy Policy</h1>
+  <p class="intro-text">
+    This policy explains how Fantasy Fairways collects, uses, and protects your
+    personal data in accordance with EU data protection laws, including GDPR.
+  </p>
+
+  <h2>1. Data We Collect</h2>
+  <div class="term-card">
+    <i class="fa-solid fa-user-shield term-icon"></i>
+    <div class="term-content">
+      <strong>For Club Admins & Users</strong>
+      <p>
+        We collect your name, email address, and organisation name (for clubs)
+        to manage your account.
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-user-group term-icon"></i>
+    <div class="term-content">
+      <strong>For League Participants</strong>
+      <p>
+        We collect your name and email address to register you for the leagues
+        you join.
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-cookie-bite term-icon"></i>
+    <div class="term-content">
+      <strong>Usage & Device Data</strong>
+      <p>
+        We collect your IP address, browser type, and pages visited to improve
+        and secure our services.
+      </p>
+    </div>
+  </div>
+
+  <h2>2. How We Use Your Data</h2>
+  <div class="term-card">
+    <i class="fa-solid fa-file-contract term-icon"></i>
+    <div class="term-content">
+      <strong>To Provide Our Service</strong>
+      <p>
+        Your data is essential for account registration, league management,
+        billing, and platform support.
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-chart-line term-icon"></i>
+    <div class="term-content">
+      <strong>To Improve Our Platform</strong>
+      <p>
+        We analyze usage data for security, fraud prevention, and to enhance the
+        user experience.
+      </p>
+    </div>
+  </div>
+
+  <h2>3. Data Sharing & Security</h2>
+  <div class="term-card">
+    <i class="fa-brands fa-stripe-s term-icon"></i>
+    <div class="term-content">
+      <strong>Third-Party Services</strong>
+      <p>
+        We share necessary data with trusted partners like Stripe for payment
+        processing and with our hosting providers.
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-lock term-icon"></i>
+    <div class="term-content">
+      <strong>Security Measures</strong>
+      <p>
+        We implement industry-standard security, including encryption and access
+        controls, to protect your data.
+      </p>
+    </div>
+  </div>
+
+  <h2>4. Your Rights</h2>
+  <div class="term-card">
+    <i class="fa-solid fa-circle-info term-icon"></i>
+    <div class="term-content">
+      <strong>Access, Correct, or Delete</strong>
+      <p>
+        You have the right to access, update, or request the deletion of your
+        personal data. You can also object to our data processing or request a
+        copy of your data.
+      </p>
+    </div>
+  </div>
+  <div class="term-card">
+    <i class="fa-solid fa-headset term-icon"></i>
+    <div class="term-content">
+      <strong>Contact Us</strong>
+      <p>
+        To exercise any of these rights, please get in touch with our support
+        team. <a href="#">info@fantasyfairways.ie</a>
+      </p>
+    </div>
+  </div>
+
+  <p class="last-updated">Last updated: September 9, 2025</p>
+</div>
+{% endblock %}

@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>Fantasy Fairways</title>
+    <!-- Add Google Fonts Link -->
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link
       rel="manifest"
       href="{{ url_for('static', filename='manifest.json') }}"
@@ -12,123 +21,31 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
     />
+    <link
+      href="{{ url_for('static', filename='css/fa/css/fontawesome.css') }}"
+      rel="stylesheet"
+    />
+    <link
+      href="{{ url_for('static', filename='css/fa/css/brands.css') }}"
+      rel="stylesheet"
+    />
+    <link
+      href="{{ url_for('static', filename='css/fa/css/solid.css') }}"
+      rel="stylesheet"
+    />
+
+    <script
+      type="module"
+      src="{{ url_for('static', filename='js/main.js') }}"
+    ></script>
 
     {% block head %}{% endblock %}
   </head>
   <body>
+    {% block content %}{% endblock %}
+
+    <div class="page-wrapper fade-in-section"></div>
     <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
-
-
-    <nav class="navbar">
-    <div class="navbar-container">
-        <a href="{{ url_for('main.index') }}" class="navbar-brand">
-            <img src="{{ url_for('static', filename='images/logo/logo.svg') }}" alt="Fantasy Fairways Logo" />
-        </a>
-
-        <div class="navbar-links" id="navbar-links">
-            <a href="{{ url_for('main.browse_leagues') }}" class="nav-link">Browse Leagues</a>
-            
-            {% if current_user.is_authenticated %}
-                <div class="nav-separator"></div>
-                <div class="navbar-dropdown">
-                    <button class="dropdown-button" onclick="toggleDropdown()">
-                        <img src="{{ url_for('static', filename='images/icons/default-avatar.svg') }}" alt="User Avatar" class="avatar">
-                        <span>{{ current_user.full_name or current_user.username }}</span>
-                        <span class="arrow"></span>
-                    </button>
-                    <div class="dropdown-content" id="myDropdown">
-                        {% if current_user.is_site_admin %}
-                            <a href="{{ url_for('admin.admin_dashboard') }}">Admin Dashboard</a>
-                        {% elif current_user.is_club_admin %}
-                            <a href="{{ url_for('main.club_dashboard') }}">Club Dashboard</a>
-                        {% else %}
-                            <a href="{{ url_for('main.user_dashboard') }}">My Dashboard</a>
-                        {% endif %}
-                        <a href="{{ url_for('auth.logout') }}" class="logout-link">Logout</a>
-                    </div>
-                </div>
-            {% else %}
-                <div class="nav-separator"></div>
-                <a href="{{ url_for('auth.login_choice') }}" class="nav-link">Login</a>
-                <div class="nav-separator"></div>
-                <a href="{{ url_for('auth.register') }}" >Register</a>
-            {% endif %}
-        </div>
-        
-        <button class="navbar-toggle" id="navbar-toggle">
-            <span class="navbar-toggle-icon"></span>
-        </button>
-    </div>
-</nav>
-
-    <!-- <nav class="navbar">
-      <a href="{{ url_for('main.index') }}" class="navbar-brand">
-        <img
-          src="{{ url_for('static', filename='images/logo/logo.svg') }}"
-          alt="Fantasy Fairways Logo"
-        />
-      </a>
-
-      <div class="navbar-links" id="navbar-links">
-        <div class="navbar-links-wrapper">
-          <a href="{{ url_for('main.browse_leagues') }}">Browse Leagues</a>
-          {% if current_user.is_authenticated %}
-          <div class="navbar-dropdown">
-            <button class="dropdown-button" onclick="toggleDropdown()">
-              {{ current_user.full_name or current_user.username }}
-              <span class="arrow"></span>
-            </button>
-            <div class="dropdown-content" id="myDropdown">
-              {% if current_user.is_site_admin %}
-              <a href="{{ url_for('admin.admin_dashboard') }}"
-                >Admin Dashboard</a
-              >
-              {% elif current_user.is_club_admin %}
-              <a href="{{ url_for('main.club_dashboard') }}">Club Dashboard</a>
-              {% else %}
-              <a href="{{ url_for('main.user_dashboard') }}">My Dashboard</a>
-              {% endif %}
-              <a href="{{ url_for('auth.logout') }}">Logout</a>
-            </div>
-          </div>
-          {% else %}
-          <a href="{{ url_for('auth.login_choice') }}">Login</a>
-          <a href="{{ url_for('auth.register') }}" class="btn btn-outline"
-            >Register</a
-          >
-          {% endif %}
-        </div>
-      </div>
-
-      <button
-        class="navbar-toggle"
-        id="navbar-toggle"
-        aria-label="Toggle navigation"
-      >
-        <span class="navbar-toggle-icon"></span>
-      </button>
-    </nav> -->
-
-    <!-- {% with messages = get_flashed_messages(with_categories=true) %} {% if
-    messages %}
-    <div
-      class="flash-modal-overlay"
-      id="flash-modal-overlay"
-      style="display: flex"
-    >
-      <div class="flash-modal-content">
-        <span class="flash-modal-close-btn" id="flash-modal-close-btn"
-          >&times;</span
-        >
-        {% for category, message in messages %}
-        <div class="flash-{{ category }}">
-          <h2>{{ category|capitalize }}</h2>
-          <p>{{ message }}</p>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %} {% endwith %} -->
 
     <div class="toast-container">
       {% with messages = get_flashed_messages(with_categories=true) %} {% if
@@ -142,119 +59,63 @@
       {% endfor %} {% endif %} {% endwith %}
     </div>
 
-    <main>
-      {% block content %}
-      <div id="ios-pwa-prompt" class="ios-pwa-prompt">
-        <div class="prompt-content">
-          <img
-            src="{{ url_for('static', filename='images/icons/icon-192x192.png') }}"
-            alt="App Icon"
-            class="prompt-icon"
-          />
-          <div class="prompt-text">
-            <strong>Get Push Notifications!</strong>
-            <p>For the best experience, add this app to your Home Screen.</p>
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!--      MOBILE NAVIGATION & MENU      -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!--      JOIN LEAGUE MODAL           -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <div class="modal-overlay hidden" id="join-league-overlay">
+      <div class="modal" id="join-league-modal">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-user-plus"></i> Join League</h3>
+          <button class="close-btn" id="modal-close-btn">&times;</button>
+        </div>
+        <p class="modal-subtitle">
+          Enter your league invitation code to join an existing tournament
+        </p>
+        <div class="modal-body">
+          <div class="icon-container">
+            <i class="fa-solid fa-trophy"></i>
           </div>
-          <button id="close-pwa-prompt" class="prompt-close-btn">
-            &times;
+          <form id="join-league-form">
+            <div class="input-group">
+              <label for="league-code">League Code</label>
+              <input
+                type="text"
+                id="league-code"
+                placeholder="Enter 6-digit code (e.g., ABC123)"
+              />
+            </div>
+            <p class="modal-message" id="modal-message"></p>
+          </form>
+          <div class="info-box">
+            <h4>How it works</h4>
+            <ul>
+              <li>Get your league code from the tournament organizer</li>
+              <li>Enter the 6-digit code above</li>
+              <li>You'll be added to the league instantly</li>
+              <li>Start competing and tracking your progress</li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+          <button
+            type="submit"
+            form="join-league-form"
+            class="btn btn-primary"
+            id="join-league-submit-btn"
+          >
+            Join League
           </button>
         </div>
+        <p class="modal-sub-link">
+          Don't have a code? <a href="#">Contact your tournament organizer</a>
+        </p>
       </div>
-      {% endblock %}
-    </main>
-    {% if current_user.is_authenticated %}
-    <nav class="bottom-nav">
-      <a
-        href="{{ url_for('main.user_dashboard') }}"
-        class="bottom-nav__link {% if request.endpoint == 'main.user_dashboard' %}active{% endif %}"
-      >
-        <svg
-          class="bottom-nav__icon"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-          <polyline points="9 22 9 12 15 12 15 22"></polyline>
-        </svg>
-        <span class="bottom-nav__text">Dashboard</span>
-      </a>
-      <a
-        href="{{ url_for('main.browse_leagues') }}"
-        class="bottom-nav__link {% if request.endpoint == 'main.browse_leagues' %}active{% endif %}"
-      >
-        <svg
-          class="bottom-nav__icon"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <span class="bottom-nav__text">Browse</span>
-      </a>
-      <a
-        href="{{ url_for('player.rankings') }}"
-        class="bottom-nav__link {% if request.endpoint == 'player.rankings' %}active{% endif %}"
-      >
-        <svg
-          class="bottom-nav__icon"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
-          <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
-          <path d="M4 22h16"></path>
-          <path
-            d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"
-          ></path>
-          <path
-            d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"
-          ></path>
-          <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
-        </svg>
-        <span class="bottom-nav__text">Rankings</span>
-      </a>
-      <a href="{{ url_for('main.user_dashboard') }}" class="bottom-nav__link">
-        <svg
-          class="bottom-nav__icon"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-        <span class="bottom-nav__text">More</span>
-      </a>
-    </nav>
-    {% endif %}
+    </div>
     <script>
       function toggleDropdown() {
         document.getElementById("myDropdown").classList.toggle("show");
@@ -324,24 +185,6 @@
         });
       }
 
-      // --- Hamburger Menu Logic ---
-      const navbarToggle = document.getElementById("navbar-toggle");
-      const navbarLinks = document.getElementById("navbar-links");
-      const menuOverlay = document.getElementById("mobile-menu-overlay");
-
-      if (navbarToggle) {
-        navbarToggle.addEventListener("click", () => {
-          navbarLinks.classList.toggle("active");
-          menuOverlay.classList.toggle("active");
-          document.body.classList.toggle("menu-open");
-        });
-
-        menuOverlay.addEventListener("click", () => {
-          navbarLinks.classList.remove("active");
-          menuOverlay.classList.remove("active");
-          document.body.classList.remove("menu-open");
-        });
-      }
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
@@ -357,6 +200,27 @@
             });
         });
       }
+    </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Simple script to trigger the fade-in animation
+        const sections = document.querySelectorAll(".fade-in-section");
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("is-visible");
+              }
+            });
+          },
+          { threshold: 0.1 }
+        );
+
+        sections.forEach((section) => {
+          observer.observe(section);
+        });
+      });
     </script>
   </body>
 </html>

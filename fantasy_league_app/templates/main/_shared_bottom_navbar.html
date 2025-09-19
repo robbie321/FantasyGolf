@@ -1,0 +1,78 @@
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!--      MOBILE NAVIGATION & MENU      -->
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<nav class="mobile-nav">
+  {% set base_url = url_for('main.club_dashboard') if current_user.is_club_admin
+  else url_for('main.user_dashboard') %}
+  <a href="{{ base_url }}#dashboard-section" class="nav-item active">
+    <i class="fa-solid fa-table-cells-large"></i>
+    <span>Dashboard</span>
+  </a>
+  <a href="{{ base_url }}#profiles-section" class="nav-item">
+    <i class="fa-solid fa-user-group"></i>
+    <span>Players</span>
+  </a>
+  {% if current_user.is_club_admin %}
+  <a
+    href="{{ url_for('league.create_league') }}"
+    class="nav-item nav-item-cta"
+    id="create-league-btn-mobile"
+  >
+    <i class="fa-solid fa-plus"></i>
+    <span>Create</span>
+  </a>
+  {% else %}
+  <button class="nav-item nav-item-cta" id="join-league-btn-mobile">
+    <i class="fa-solid fa-plus"></i>
+    <span>Join</span>
+  </button>
+  {%endif%}
+  <a href="{{ base_url }}#leaderboards-section" class="nav-item">
+    <i class="fa-solid fa-trophy"></i>
+    <span>Leaderboards</span>
+  </a>
+  <button class="nav-item" id="more-btn">
+    <i class="fa-solid fa-ellipsis"></i>
+    <span>More</span>
+  </button>
+</nav>
+
+<div class="more-options-overlay hidden"></div>
+<div class="more-options-menu">
+  <div class="menu-header">
+    <h4>More Options</h4>
+    <button id="close-menu-btn">&times;</button>
+  </div>
+  <ul class="menu-list">
+    <li>
+      <a href="{{ base_url }}#schedule-section"
+        ><i class="fa-solid fa-calendar-days"></i> Tour Schedules</a
+      >
+    </li>
+    {% if current_user.is_club_admin %}
+    <li>
+      <a href="{{ url_for('main.club_dashboard') }}"
+        ><i class="fa-solid fa-wallet"></i> Wallet</a
+      >
+    </li>
+    {% endif %}
+    <li>
+      <a href="{{ url_for('main.privacy_policy') }}"
+        ><i class="fa-solid fa-shield-halved"></i> Privacy</a
+      >
+    </li>
+    <li>
+      <a href="{{ url_for('main.terms_and_conditions') }}"
+        ><i class="fa-solid fa-terminal"></i> Terms & Conditions</a
+      >
+    </li>
+    <li>
+      <a href="#settings-section"><i class="fa-solid fa-gear"></i> Settings</a>
+    </li>
+    <li>
+      <a href="{{ url_for('auth.logout') }}" class="logout-link"
+        ><i class="fa-solid fa-right-from-bracket"></i> Logout</a
+      >
+    </li>
+  </ul>
+</div>

@@ -1,112 +1,164 @@
 ﻿{% extends 'base.html' %} {% from "_form_macros.html" import render_field %} {%
-block content %}
+block head %}
+<!-- Link to the form-specific stylesheet -->
 <link
   rel="stylesheet"
   href="{{ url_for('static', filename='css/form_style.css') }}"
 />
+{% endblock %} {% block content %}
+<main class="dashboard-content">
+  <div class="form-wrapper">
+    <form
+      method="POST"
+      action="{{ url_for('league.create_league') }}"
+      novalidate
+    >
+      {{ form.hidden_tag() }}
 
-<div class="form-wrapper">
-  <div class="form-header">
-    <h1>Create Public League</h1>
-    <p>
-      Set up a new public league that will be available for all users to join.
-    </p>
-  </div>
-
-  <form
-    method="POST"
-    action="{{ url_for('admin.create_public_league') }}"
-    novalidate
-  >
-    {{ form.hidden_tag() }}
-
-    <!-- League Information Section -->
-    <div class="form-section">
-      <div class="form-section-header">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          ></path>
-        </svg>
-        <div>
-          <h2>League Information</h2>
-          <p>Basic details about your fantasy league</p>
+      <!-- League Information Section -->
+      <section class="form-section">
+        <div class="form-header">
+          <h1>Create New League</h1>
+          <p>Set up a new fantasy league for your club members.</p>
         </div>
-      </div>
-      <div class="form-grid">
-        {{ render_field(form.name, class="form-input") }}
-        <div class="form-grid two-col">
-          {{ render_field(form.tour, class="form-input") }} {{
-          render_field(form.player_bucket_id, class="form-input") }}
-        </div>
-      </div>
-    </div>
-
-    <!-- Financial Settings Section -->
-    <div class="form-section">
-      <div class="form-section-header">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 10v-1m0-6H9.401M14.599 12H15m0 0a3 3 0 10-3-3m3 3a3 3 0 11-3 3"
-          ></path>
-        </svg>
-        <div>
-          <h2>Financial Settings</h2>
-          <p>Configure entry fees and prize distribution</p>
-        </div>
-      </div>
-      <div class="form-grid two-col">
-        {{ render_field(form.entry_fee, class="form-input") }} {{
-        render_field(form.max_entries, class="form-input") }} {{
-        render_field(form.prize_amount, class="form-input") }} {{
-        render_field(form.odds_limit, class="form-input") }}
-      </div>
-    </div>
-
-    <!-- League Rules & Details Section -->
-    <div class="form-section">
-      <div class="form-section-header">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          ></path>
-        </svg>
-        <div>
-          <h2>League Rules & Details</h2>
-          <p>Customize your league rules and prize structure</p>
-        </div>
-      </div>
-      <div class="form-grid">
-        {{ render_field(form.prize_details, class="form-input", rows="4") }} {{
-        render_field(form.rules, class="form-input", rows="4") }}
-        <div class="toggle-switch">
-          <div class="label-group">
-            <label for="no_favorites_rule">Enforce No Favourites Rule</label>
-            <p>Prevents players from selecting highly favored golfers</p>
+        <div class="form-section-header">
+          <i class="fa-solid fa-trophy"></i>
+          <div>
+            <h2>League Information</h2>
+            <p>Enter the basic details for your tournament.</p>
           </div>
-          {{ form.no_favorites_rule() }}
-          <label for="no_favorites_rule" class="slider"></label>
         </div>
-      </div>
-    </div>
+        <div class="form-group">{{ render_field(form.name) }}</div>
+        <div class="form-grid two-col">
+          <div class="form-group">{{ render_field(form.tour) }}</div>
+          <div class="form-group">
+            {{ render_field(form.player_bucket_id, class="form-control") }}
+          </div>
+        </div>
+        <div id="tournament-details-container" class="tournament-details"></div>
+      </section>
 
-    <div class="form-actions">
-      {{ form.submit(class="btn btn-primary btn-block",style=" width:
-      -webkit-fill-available;") }}
-    </div>
-  </form>
-</div>
+      <!-- Financial Settings Section -->
+      <section class="form-section">
+        <div class="form-section-header">
+          <i class="fa-solid fa-dollar-sign"></i>
+          <div>
+            <h2>Financial Settings</h2>
+            <p>Configure entry fees and tournament rules.</p>
+          </div>
+        </div>
+        <div class="form-grid two-col">
+          <div class="form-group">{{ render_field(form.entry_fee) }}</div>
+          <div class="form-group">{{ render_field(form.max_entries) }}</div>
+          <div class="form-group">{{ render_field(form.prize_amount) }}</div>
+          <div class="form-group">{{ render_field(form.odds_limit) }}</div>
+        </div>
+      </section>
+
+      <!-- League Rules & Details Section -->
+      <section class="form-section">
+        <div class="form-section-header">
+          <i class="fa-solid fa-gavel"></i>
+          <div>
+            <h2>League Rules & Details</h2>
+            <p>Add custom rules and define the prize structure.</p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            {{ render_field(form.prize_details, rows="4") }}
+          </div>
+          <div class="form-group">{{ render_field(form.rules, rows="4") }}</div>
+          <div class="toggle-switch">
+            <div class="label-group">
+              <label for="no_favorites_rule">Enforce No Favorites Rule</label>
+              <p>Prevents players from selecting highly favored golfers.</p>
+            </div>
+            {{ form.no_favorites_rule() }}
+          </div>
+        </div>
+        <div class="form-actions">
+          {{ form.submit(class="btn btn-primary") }}
+        </div>
+      </section>
+    </form>
+  </div>
+</main>
 
 <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const playerBucketSelect = document.getElementById("player_bucket_id");
+    const tourSelect = document.getElementById("tour");
+
+    if (playerBucketSelect && tourSelect) {
+      playerBucketSelect.addEventListener("change", function () {
+        const bucketId = this.value;
+
+        // Make sure the user has selected a valid bucket
+        if (bucketId) {
+          // Fetch the tour from our new API endpoint
+          fetch(`/get-tour-for-bucket/${bucketId}`)
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error("Network response was not ok");
+              }
+              return response.json();
+            })
+            .then((data) => {
+              if (data.tour) {
+                // Update the 'Tour' dropdown to the correct value
+                tourSelect.value = data.tour;
+              }
+            })
+            .catch((error) => {
+              console.error("Error fetching tour for bucket:", error);
+            });
+        }
+      });
+    }
+
+    const detailsContainer = document.getElementById(
+      "tournament-details-container"
+    );
+
+    if (playerBucketSelect) {
+      playerBucketSelect.addEventListener("change", function () {
+        const bucketId = this.value;
+        detailsContainer.innerHTML = "";
+        detailsContainer.classList.remove("visible");
+
+        if (!bucketId) return;
+
+        detailsContainer.innerHTML = "<p>Fetching tournament info...</p>";
+        detailsContainer.classList.add("visible");
+
+        fetch(`/api/tournament-details/${bucketId}`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              detailsContainer.innerHTML = `<p class="error">${data.error}</p>`;
+            } else {
+              detailsContainer.innerHTML = `
+                            <div class="detail-item">
+                                <strong>Tournament:</strong> ${data.event_name}
+                            </div>
+                            <div class="detail-item">
+                                <strong>Start Date:</strong> ${data.start_date}
+                            </div>
+                            <div class="detail-item">
+                                <strong>First Tee Time (R1):</strong> ${data.tee_time}
+                            </div>
+                        `;
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching tournament details:", error);
+            detailsContainer.innerHTML =
+              '<p class="error">Could not load tournament details.</p>';
+          });
+      });
+    }
+  });
   function validateFee(input) {
     const warning = document.getElementById("fee-warning");
     const value = parseFloat(input.value);

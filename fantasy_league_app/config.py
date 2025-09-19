@@ -14,6 +14,9 @@ class Config:
     # Ensure the upload folder exists
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+    broker_url = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+    result_backend = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+
 
     # NEW: Stripe API Keys (use test keys for development)
     # You would get these from your Stripe Dashboard
@@ -22,6 +25,8 @@ class Config:
     STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY') or 'sk_test_51Rt4YFAAtiw6IkD3N2CNruve7zbaafKruqfMuJNeudIYNoL0eljrySxsoN9J2TGRDcYRCQFsRrz94roJF9hiaxXy00NwhqsECS'
     # For a real integration, you'd also need a webhook secret
     STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET') or 'whsec_YOUR_STRIPE_WEBHOOK_SECRET'
+
+    STRIPE_PLATFORM_ACCOUNT_ID = os.environ.get('STRIPE_PLATFORM_ACCOUNT_ID')
 
     # Data Golf API
     DATA_GOLF_API_KEY = os.environ.get('DATA_GOLF_API_KEY') or '6194d71ab637acf3eb7800202456'

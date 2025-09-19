@@ -1,215 +1,267 @@
-{% extends 'base.html' %} {% block content %}
-<!-- Link to the new stylesheet -->
-<link
-  rel="stylesheet"
-  href="{{ url_for('static', filename='css/dashboards.css') }}"
-/>
-
-<div class="page-wrapper">
-  <div class="dashboard-container">
-    <div class="dashboard-header">
-      <div class="header-text">
-        <h1>Dashboard</h1>
-        <p>Manage your leagues and track your performance</p>
-      </div>
-      <div class="header-actions">
-        <a href="#" class="action-btn primary" id="join-league-btn">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="lucide lucide-plus w-5 h-5 mr-2"
-            aria-hidden="true"
-          >
-            <path d="M5 12h14"></path>
-            <path d="M12 5v14"></path>
-          </svg>
-
-          Join a League</a
-        >
-        <a
-          href="{{ url_for('league.create_user_league') }}"
-          class="btn btn-secondary"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="lucide lucide-plus w-5 h-5 mr-2"
-            aria-hidden="true"
-          >
-            <path d="M5 12h14"></path>
-            <path d="M12 5v14"></path>
-          </svg>
-          Create a League</a
-        >
-      </div>
-    </div>
-
-    <!-- Slider Tabs -->
-    <div class="tabs-container">
-      <div class="tab active" data-tab="my-leagues">My Leagues</div>
-      <div class="tab" data-tab="my-profile">My Profile</div>
-    </div>
-
-    <div class="tab-content active" id="my-leagues">
-      <div class="league-category">
-        <h2 class="category-title">
-          <span class="live-indicator"></span>
-          Live Leagues
-          <span class="count-badge">{{ live_leagues|length }}</span>
-        </h2>
-        {% if live_leagues %}
-        <div class="dashboard-leagues-grid">
-          {% for data in live_leagues %} {% include
-          'main/_dashboard_league_card.html' with context %} {% endfor %}
-        </div>
-        {% else %}
-        <p class="no-leagues-text">No active leagues right now.</p>
-        {% endif %}
-      </div>
-
-      <div class="league-category">
-        <h2 class="category-title">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="lucide lucide-clock w-5 h-5 text-blue-600"
-            aria-hidden="true"
-          >
-            <path d="M12 6v6l4 2"></path>
-            <circle cx="12" cy="12" r="10"></circle>
-          </svg>
-          Upcoming Leagues
-          <span class="count-badge">{{ upcoming_leagues|length }}</span>
-        </h2>
-        {% if upcoming_leagues %}
-        <div class="dashboard-leagues-grid">
-          {% for data in upcoming_leagues %} {% include
-          'main/_dashboard_league_card.html' with context %} {% endfor %}
-        </div>
-        {% else %}
-        <p class="no-leagues-text">No upcoming leagues. Why not create one?</p>
-        {% endif %}
-      </div>
-
-      <div class="league-category">
-        <h2 class="category-title">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="lucide lucide-trophy w-5 h-5 text-slate-600"
-            aria-hidden="true"
-          >
-            <path
-              d="M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978"
-            ></path>
-            <path
-              d="M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978"
-            ></path>
-            <path d="M18 9h1.5a1 1 0 0 0 0-5H18"></path>
-            <path d="M4 22h16"></path>
-            <path
-              d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"
-            ></path>
-            <path d="M6 9H4.5a1 1 0 0 1 0-5H6"></path>
-          </svg>
-          Past Leagues
-          <span class="count-badge">{{ past_leagues|length }}</span>
-        </h2>
-        {% if past_leagues %}
-        <div class="dashboard-leagues-grid">
-          {% for data in past_leagues %} {% include
-          'main/_dashboard_league_card.html' with context %} {% endfor %}
-        </div>
-        {% else %}
-        <p class="no-leagues-text">No past leagues to show.</p>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Profile Content -->
-    <div id="my-profile" class="tab-content">
-      <div class="profile-section">
-        <h2>My Profile</h2>
-        <p>Manage your account details and payout information.</p>
-        <form action="{{ url_for('main.onboard_stripe') }}" method="POST">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <button type="submit" class="action-btn primary">
-            Update Stripe Payout Details
-          </button>
-        </form>
-
-        <button id="enable-notifications-btn" class="btn btn-primary">
-          Enable Notifications
-        </button>
-        <p id="notification-status" style="margin-top: 1rem; color: #666"></p>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="popup-overlay" id="join-league-overlay">
-  <div class="popup-container" id="join-league-popup">
-    <button class="popup-close" id="popup-close-btn">&times;</button>
-    <h3>Join a League</h3>
-    <p>Enter the 8-character code for the league you want to join.</p>
-    <form action="{{ url_for('league.join_league') }}" method="POST">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <div class="form-group">
-        <input
-          type="text"
-          name="league_code"
-          placeholder="e.g. A1B2C3D4"
-          required
-          minlength="6"
-          maxlength="6"
-        />
-      </div>
-      <button type="submit" class="action-btn primary full-width">
-        Submit Code
-      </button>
-    </form>
-  </div>
-</div>
-
+{% extends 'base.html' %} {% block content %} {% block head %}
+<!-- This script block now runs first, making the data available to all other scripts -->
 <script>
+  window.serverTimeNow = new Date({{ now | tojson }});
+  window.liveLeaguesData = {{ live_leagues | tojson }};
+  window.upcomingLeaguesData = {{ upcoming_leagues | tojson }};
+  window.pastLeaguesData = {{ past_leagues | tojson }};
+</script>
+
+{% endblock %}
+
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!--      MAIN CONTENT       -->
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~ -->
+<div class="dashboard-wrapper">
+  {% include 'main/_shared_side_navbar.html' with context %}
+  <div>{% include 'main/_shared_bottom_navbar.html' with context %}</div>
+
+  <main class="dashboard-content">
+    <header class="dashboard-hero">
+      <div class="user-info">
+        <div class="avatar">{{ current_user.full_name[0] }}</div>
+
+        <div class="user-details">
+          <div class="welcome-message">
+            <h1 class="dashboard-h1">
+              Welcome back, {{ current_user.full_name.split(' ')[0] }}!
+            </h1>
+            <p class="dashboard-subheading">
+              Here's a look at your current leagues and entries.
+            </p>
+          </div>
+
+          <div class="join-league-box">
+            <a
+              href="#"
+              class="btn btn-primary join-league-hero-btn"
+              id="join-league-btn"
+            >
+              <i class="fa-solid fa-plus"></i> Join a League
+            </a>
+          </div>
+        </div>
+        <!-- <div class="user-level">
+          <span>⭐ Level 15</span>
+          <div class="xp-bar">
+            <div class="xp-progress" style="width: 75%"></div>
+          </div>
+          <small>Next level: 250 XP</small>
+        </div> -->
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="value"
+            >{{ live_leagues|length + upcoming_leagues|length }}</span
+          >
+          <span class="label">Active Leagues</span>
+        </div>
+        <div class="stat-card">
+          <span class="value">{{ stats.leagues_played }}</span>
+          <span class="label">Leagues Entered</span>
+        </div>
+        <div class="stat-card">
+          <span class="value">{{ stats.leagues_won }}</span>
+          <span class="label">Leagues Won</span>
+        </div>
+      </div>
+    </header>
+    <div class="content-container">
+      <!-- 1. Dashboard Section (My Leagues) -->
+      <section id="dashboard-section" class="page-section">
+        <div class="leagues-section">
+          <h2>My Leagues</h2>
+          <div class="tabs-container">
+            <div class="tabs capsule-tabs league-tabs">
+              <button class="tab-button active">Live</button>
+              <button class="tab-button">Upcoming</button>
+              <button class="tab-button">Past</button>
+            </div>
+          </div>
+          <div class="leagues-grid">
+            <!-- League cards injected by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Settings Section -->
+      <section id="settings-section" class="page-section hidden">
+        <header class="dashboard-header">
+          <div>
+            <h1>Settings</h1>
+            <p class="subtitle">
+              Manage your account preferences and app settings
+            </p>
+          </div>
+        </header>
+        <form class="settings-form">
+          <div class="form-card">
+            <h4>Profile Information</h4>
+            <div class="profile-header">
+              <div class="avatar-placeholder">UN</div>
+              <button class="btn btn-outline-sm">Change Photo</button>
+            </div>
+            <div class="form-row">
+              <div class="input-group">
+                <label for="first-name">First Name</label>
+                <input type="text" id="first-name" value="Max" />
+              </div>
+              <div class="input-group">
+                <label for="last-name">Last Name</label>
+                <input type="text" id="last-name" value="Johnson" />
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="username">Username</label>
+              <input type="text" id="username" value="maxjohnson" />
+            </div>
+          </div>
+          <div class="form-card">
+            <h4>Notification Preferences</h4>
+            <div class="toggle-group">
+              <div>
+                <h5>Tournament Updates</h5>
+                <p>
+                  Get notified about tournament starts, results, and leaderboard
+                  changes.
+                </p>
+              </div>
+              <label class="switch"
+                ><input type="checkbox" checked /><span
+                  class="slider round"
+                ></span
+              ></label>
+            </div>
+            <div class="toggle-group">
+              <div>
+                <h5>Push Notifications</h5>
+                <p>Receive push notifications on your mobile device.</p>
+              </div>
+              <label class="switch"
+                ><input type="checkbox" /><span class="slider round"></span
+              ></label>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </section>
+      <div>
+        {% include 'main/_shared_dashboard_sections.html' with context%}
+      </div>
+    </div>
+
+    <!-- 2. Player Profiles Section -->
+
+    <!-- 3. Tour Schedule Section -->
+
+    <!-- 4. Tour Leaderboards Section -->
+
+    <!-- 5. Wallet Section -->
+    <!-- <section id="wallet-section" class="page-section hidden">
+        <header class="dashboard-header">
+          <div>
+            <h1>Wallet & Payments</h1>
+            <p class="subtitle">
+              Manage your payment details and tournament winnings
+            </p>
+          </div>
+        </header>
+        <div class="wallet-grid">
+          <div class="info-card">
+            <h4>Payment Account Status</h4>
+            <div class="alert warning">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <div>
+                <strong>Setup Required</strong>
+                <span>Connect your payment account to receive winnings.</span>
+              </div>
+            </div>
+            <h5>Why connect Stripe?</h5>
+            <ul class="feature-list">
+              <li>Secure, encrypted payment processing</li>
+              <li>Fast tournament winnings deposits</li>
+              <li>Automatic tax document generation</li>
+              <li>24/7 fraud protection and monitoring</li>
+            </ul>
+          </div>
+          <div class="info-card">
+            <h4>Security & Privacy</h4>
+            <div class="alert info">
+              <i class="fa-solid fa-shield-halved"></i>
+              <div>
+                <strong>Your data is protected</strong>
+                <span
+                  >We use Stripe's enterprise-grade security to protect your
+                  financial information.</span
+                >
+              </div>
+            </div>
+            <h5>Security Features</h5>
+            <ul class="feature-list">
+              <li>PCI DSS Level 1 compliance</li>
+              <li>256-bit SSL encryption</li>
+              <li>Two-factor authentication</li>
+              <li>Real-time fraud detection</li>
+            </ul>
+          </div>
+        </div>
+        <div class="form-card earnings-overview">
+          <h4>Earnings Overview</h4>
+          <div class="earnings-grid">
+            <div class="earnings-stat">
+              <i class="fa-solid fa-dollar-sign icon"></i>
+              <strong>$0.00</strong>
+              <span>Total Earnings</span>
+            </div>
+            <div class="earnings-stat">
+              <i class="fa-regular fa-clock icon"></i>
+              <strong>$0.00</strong>
+              <span>Pending Winnings</span>
+            </div>
+            <div class="earnings-stat">
+              <i class="fa-solid fa-trophy icon"></i>
+              <strong>0</strong>
+              <span>Tournaments Won</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-card text-center">
+          <h4>Ready to receive your winnings?</h4>
+          <p>
+            Connect your Stripe account to start receiving tournament winnings
+            directly to your bank account. The setup process takes just a few
+            minutes and is completely secure.
+          </p>
+          <button
+            class="btn btn-primary"
+            style="max-width: 250px; margin: 1rem auto 0"
+          >
+            <i class="fa-brands fa-stripe-s"></i> Connect Stripe Account
+          </button>
+        </div>
+      </section> -->
+  </main>
+</div>
+
+<!-- <script>
+  const serverTimeNow = new Date({{ now | tojson }});
+  const upcomingLeaguesData = {{ upcoming_leagues | tojson }};
+  const pastLeaguesData = {{ past_leagues | tojson  }};
+  const liveLeaguesData = {{ live_leagues | tojson }};
   document.addEventListener("DOMContentLoaded", () => {
+    console.log("DEBUG: 1.LIVE LEAGUES: ",liveLeaguesData)
     const tabs = document.querySelectorAll(".tab");
     const tabContents = document.querySelectorAll(".tab-content");
 
     tabs.forEach((tab) => {
       tab.addEventListener("click", () => {
-        // Deactivate all tabs and content
         tabs.forEach((t) => t.classList.remove("active"));
         tabContents.forEach((c) => c.classList.remove("active"));
 
-        // Activate the clicked tab and its content
         tab.classList.add("active");
         document.getElementById(tab.dataset.tab).classList.add("active");
       });
@@ -309,7 +361,6 @@
           console.log("Error", err);
         }
 
-        // --- START: THIS IS THE MISSING PART ---
 
         console.log(
           "DEBUG: Successfully subscribed with push service. Sending to server..."
@@ -321,7 +372,7 @@
           body: JSON.stringify(subscription),
           headers: {
             "Content-Type": "application/json",
-            "X-CSRFToken": "{{ csrf_token() }}", // For CSRF protection
+            "X-CSRFToken": "{{ csrf_token() }}",
           },
         });
 
@@ -336,7 +387,6 @@
           );
         }
 
-        // --- END: THIS IS THE MISSING PART ---
       } catch (error) {
         console.error("!!! PUSH NOTIFICATION ERROR:", error);
         statusEl.textContent =
@@ -344,28 +394,14 @@
       }
     }
   });
+</script> -->
+{{ super() }}
+<script type="module">
+  import { initialiseLeagueView } from "{{ url_for('static', filename='js/leaderboard.js') }}";
 
-  // --- Join League Popup Logic ---
-  const joinLeagueBtn = document.getElementById("join-league-btn");
-  const joinLeagueOverlay = document.getElementById("join-league-overlay");
-  const popupCloseBtn = document.getElementById("popup-close-btn");
-
-  if (joinLeagueBtn) {
-    joinLeagueBtn.addEventListener("click", () => {
-      joinLeagueOverlay.classList.add("active");
-    });
-  }
-  if (popupCloseBtn) {
-    popupCloseBtn.addEventListener("click", () => {
-      joinLeagueOverlay.classList.remove("active");
-    });
-  }
-  if (joinLeagueOverlay) {
-    joinLeagueOverlay.addEventListener("click", (e) => {
-      if (e.target === joinLeagueOverlay) {
-        joinLeagueOverlay.classList.remove("active");
-      }
-    });
-  }
+  // This code will only run on the view_league page
+  document.addEventListener("DOMContentLoaded", () => {
+    initialiseLeagueView();
+  });
 </script>
 {% endblock %}

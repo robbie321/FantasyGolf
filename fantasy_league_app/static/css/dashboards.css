@@ -17,7 +17,7 @@ body {
 }
 
 .dashboard-wrapper {
-    max-width: 600px;
+    max-width: 1200px;
     margin: 2rem auto;
     padding: 0 1rem;
     font-size: 1.4rem;
@@ -415,6 +415,17 @@ body {
 }
 
 /* --- League Card --- */
+/* Add this to your dashboards.css file */
+
+.league-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: var(--border-radius);
+}
+
+.league-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+}
 .dashboard-league-card {
     background-color: #fff;
     border: 1px solid #bcc2ca;
@@ -556,6 +567,43 @@ body {
     background-color: #f1f5f9;
     color: #64748b;
     border: 1px solid #e2e8f0;
+}
+
+
+.user-details {
+    display: flex;
+    justify-content: space-between; /* This is the key property */
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.welcome-message {
+    /* No special styling needed, it will align left by default */
+}
+
+.join-league-box {
+    /* This ensures the form doesn't take up too much space */
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 300px; /* Adjust width as needed */
+}
+
+/* Optional: Adjust form styling for the new layout */
+.join-league-form .input-group {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-radius: 0.5rem;
+}
+
+.join-league-form .form-control {
+    border-top-left-radius: 0.5rem;
+    border-bottom-left-radius: 0.5rem;
+}
+
+.join-league-form .btn {
+    border-top-right-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
 }
 
 
