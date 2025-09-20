@@ -22,7 +22,6 @@ mail = Mail()
 csrf = CSRFProtect()
 socketio = SocketIO()
 celery = Celery(__name__,
-                broker=Config.broker_url,
                 include=['fantasy_league_app.tasks'])
 celery.config_from_object('fantasy_league_app.config', namespace='CELERY')
 
