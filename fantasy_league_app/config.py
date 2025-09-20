@@ -27,7 +27,9 @@ class Config:
     result_backend = result_backend  # Already correct
 
     # IMPORTANT: RedBeat specific configuration
-    redbeat_redis_url = redis_url  # This is specifically for RedBeat
+    REDBEAT_REDIS_URL = redis_url  # Explicit RedBeat Redis URL
+    REDBEAT_KEY_PREFIX = 'redbeat'  # Redis key prefix for RedBeat
+    redbeat_redis_url = redis_url  # Lowercase version for modern Celery
     redis_url = redis_url  # This is what redbeat needs
 
     # Additional Celery settings for better reliability (new style)
