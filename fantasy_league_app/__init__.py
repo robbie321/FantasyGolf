@@ -33,6 +33,33 @@ def make_celery(app=None):
         include=['fantasy_league_app.tasks']
     )
 
+    # Import here to avoid circular imports
+    from celery.schedules import crontab
+
+    # IMPORTANT: Set beat schedule immediately for beat process
+    beat_schedule = {
+        'ensure-live-updates-running': {
+            'task': 'fantasy_league_app.tasks.ensure_live_updates_are_running',
+            'schedule': crontab(minute='*/1'),
+        },
+        'schedule-live-score-updates': {
+            'task': 'fantasy_league_app.tasks.schedule_score_updates_for_the_week',
+            'schedule': crontab(hour=14, minute=50, day_of_week='thu,fri,sat,sun'),
+        },
+        'reset-player-scores-weekly': {
+            'task': 'fantasy_league_app.tasks.reset_player_scores',
+            'schedule': crontab(hour=8, minute=0, day_of_week='wed'),
+        },
+        'update-buckets-weekly': {
+            'task': 'fantasy_league_app.tasks.update_player_buckets',
+            'schedule': crontab(hour=10, minute=0, day_of_week='tuesday'),
+        },
+        'finalize-leagues-weekly': {
+            'task': 'fantasy_league_app.tasks.finalize_finished_leagues',
+            'schedule': crontab(hour=10, minute=30, day_of_week='monday'),
+        },
+    }
+
     # Update basic configuration
     celery.conf.update(
         broker_url=redis_url,
@@ -45,6 +72,7 @@ def make_celery(app=None):
         broker_connection_retry_on_startup=True,
         broker_connection_retry=True,
         broker_connection_max_retries=10,
+        beat_schedule=beat_schedule,
     )
 
     if app is not None:
