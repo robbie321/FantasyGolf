@@ -16,6 +16,10 @@ from celery import shared_task
 from .stripe_client import process_payouts,  create_payout
 from .utils import send_winner_notification_email, send_push_notification, send_email
 
+# Set up proper logging for Celery tasks
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 @shared_task(bind=True)
 def update_player_scores(self, tour, end_time_iso):
     """
@@ -128,24 +132,93 @@ def ensure_live_updates_are_running():
     It checks if the main 5 AM scheduler has run and, if not, triggers it.
     """
 
-    app = create_app()
-    with app.app_context():
+    # STEP 1: Log that the task is actually running
+    logger.info("=" * 60)
+    logger.info("SUPERVISOR TASK STARTED")
+    logger.info(f"Task ID: {self.request.id}")
+    logger.info(f"UTC Time: {datetime.utcnow()}")
+    logger.info("=" * 60)
+
+    try:
         today = date.today()
+        weekday = today.weekday()
+        weekday_name = today.strftime('%A')
+
+        logger.info(f"Today: {today}")
+        logger.info(f"Weekday: {weekday} ({weekday_name})")
+        logger.info(f"Tournament days check: 3 <= {weekday} <= 6 = {3 <= weekday <= 6}")
         # Only run on tournament days (Thursday=3, Sunday=6)
         if 3 <= today.weekday() <= 6:
+            logger.info("✅ TOURNAMENT DAY DETECTED - Checking for missed 5 AM job")
             # Check if the task has already been marked as run for today
             task_ran_today = DailyTaskTracker.query.filter_by(
                 task_name='schedule_score_updates',
                 run_date=today
             ).first()
 
-            if not task_ran_today:
-                print(f"Supervisor detected missed 5 AM job for {today}. Running it now.")
-                schedule_score_updates_for_the_week.delay()
+            if task_ran_today:
+                logger.info(f"✅ SUPERVISOR: 5 AM job already ran today ({task_ran_today.created_at})")
             else:
-                print(f"Supervisor confirmed 5 AM job for {today} has already run.")
+                logger.warning(f"⚠️  SUPERVISOR: Missed 5 AM job for {today}. Triggering now!")
+
+                # Import here to avoid circular imports
+                from .tasks import schedule_score_updates_for_the_week
+
+                # Trigger the missed job
+                result = schedule_score_updates_for_the_week.delay()
+                logger.info(f"✅ SUPERVISOR: Triggered job with task ID: {result.id}")
+
         else:
-            print(f"SUPERVISOR: It's not a tournament day ({today.strftime('%A')}). No action taken.")
+            logger.info(f"ℹ️  SUPERVISOR: Not a tournament day ({weekday_name}). No action needed.")
+
+    except Exception as e:
+        logger.error(f"❌ SUPERVISOR ERROR: {str(e)}")
+        logger.exception("Full traceback:")
+        # Re-raise so Celery can handle retry logic if configured
+        raise
+
+    logger.info("SUPERVISOR TASK COMPLETED")
+    logger.info("=" * 60)
+    return f"Supervisor check completed for {date.today()}"
+
+
+@shared_task
+def test_celery_connection():
+    """Simple test task to verify Celery is working"""
+    logger.info("🧪 TEST TASK RUNNING!")
+    logger.info(f"Current time: {datetime.utcnow()}")
+    logger.info(f"Today: {date.today()}")
+    logger.info(f"Weekday: {date.today().weekday()}")
+    return f"Test successful at {datetime.utcnow()}"
+
+
+# DEBUG HELPER: Manual trigger function
+@shared_task
+def debug_trigger_supervisor():
+    """Manual debug task to trigger supervisor logic"""
+    logger.info("🔧 DEBUG: Manually triggering supervisor logic")
+    return ensure_live_updates_are_running.delay()
+
+
+# VERIFICATION TASK: Check what's in the beat schedule
+@shared_task
+def debug_list_scheduled_tasks():
+    """Debug task to show all scheduled tasks"""
+    from celery import current_app as celery_app
+
+    logger.info("📋 SCHEDULED TASKS DEBUG:")
+    logger.info("=" * 50)
+
+    if hasattr(celery_app.conf, 'beat_schedule'):
+        for task_name, task_config in celery_app.conf.beat_schedule.items():
+            logger.info(f"Task: {task_name}")
+            logger.info(f"  - Function: {task_config.get('task')}")
+            logger.info(f"  - Schedule: {task_config.get('schedule')}")
+            logger.info("-" * 30)
+    else:
+        logger.warning("No beat_schedule found in Celery config!")
+
+    return "Debug info logged"
 
 
 # --- REPLACEMENT 2: The Final schedule_score_updates_for_the_week Task ---
