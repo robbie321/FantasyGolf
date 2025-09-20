@@ -22,19 +22,18 @@ mail = Mail()
 csrf = CSRFProtect()
 socketio = SocketIO()
 
-# FIXED: Celery initialization with proper configuration
-def make_celery(app_name=__name__):
+def make_celery(app=None):
     """Create and configure Celery instance"""
     redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
 
     celery = Celery(
-        app_name,
+        'fantasy_league_app',
         broker=redis_url,
         backend=redis_url,
         include=['fantasy_league_app.tasks']
     )
 
-    # Update configuration
+    # Update basic configuration
     celery.conf.update(
         broker_url=redis_url,
         result_backend=redis_url,
@@ -47,6 +46,16 @@ def make_celery(app_name=__name__):
         broker_connection_retry=True,
         broker_connection_max_retries=10,
     )
+
+    if app is not None:
+        # Configure tasks to run with app context
+        class ContextTask(celery.Task):
+            """Make celery tasks work with Flask app context."""
+            def __call__(self, *args, **kwargs):
+                with app.app_context():
+                    return self.run(*args, **kwargs)
+
+        celery.Task = ContextTask
 
     return celery
 
