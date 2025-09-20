@@ -58,11 +58,12 @@ class Config:
     CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
     CELERY_TIMEZONE = "UTC"
     CELERY_ENABLE_UTC = True
+    REDBEAT_REDIS_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6.3.7.9/1')
     # Celery Beat Schedule
     CELERY_BEAT_SCHEDULE = {
         'schedule-live-score-updates': {
             'task': 'fantasy_league_app.tasks.schedule_score_updates_for_the_week',
-            'schedule': crontab(hour=14, minute=59, day_of_week='thu,fri,sat,sun'),
+            'schedule': crontab(hour=15, minute=05, day_of_week='thu,fri,sat,sun'),
         },
         'reset-player-scores-weekly': {
             'task': 'fantasy_league_app.tasks.reset_player_scores',

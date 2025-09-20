@@ -21,8 +21,7 @@ migrate = Migrate()
 mail = Mail()
 csrf = CSRFProtect()
 socketio = SocketIO()
-celery = Celery(__name__,
-                include=['fantasy_league_app.tasks'])
+celery = Celery(__name__,include=['fantasy_league_app.tasks'])
 celery.config_from_object('fantasy_league_app.config', namespace='CELERY')
 
 login_manager = LoginManager()
