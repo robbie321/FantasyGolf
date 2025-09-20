@@ -193,7 +193,8 @@ def reset_player_scores(app):
             db.session.commit()
             print(f"Successfully reset scores for {updated_rows} players.")
             # After resetting, find all users and send them a notification
-            all_users = User.query.filter_by(is_active=True).all()
+            all_users = User.query.filter_by(is_active=True).yield_per(100) # Process 100 users at a time
+            # all_users = User.query.filter_by(is_active=True).all()
             for user in all_users:
                 send_push_notification(
                     user.id,
