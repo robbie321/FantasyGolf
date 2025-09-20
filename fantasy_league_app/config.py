@@ -59,7 +59,7 @@ class Config:
     TESTING_MODE_FLAG = 'testing_mode.flag'
 
     # Celery Beat Schedule
-   CELERY_BEAT_SCHEDULE = {
+    CELERY_BEAT_SCHEDULE = {
         'schedule-live-score-updates': {
             'task': 'fantasy_league_app.tasks.schedule_score_updates_for_the_week',
             'schedule': crontab(hour=5, minute=0, day_of_week='thu,fri,sat,sun'),
