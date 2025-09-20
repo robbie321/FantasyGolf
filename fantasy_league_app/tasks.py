@@ -138,48 +138,50 @@ def ensure_live_updates_are_running():
     logger.info("SUPERVISOR TASK STARTED")
     logger.info(f"UTC Time: {datetime.utcnow()}")
     logger.info("=" * 60)
+    from fantasy_league_app import create_app
+    app = create_app()
+    with app.app_context():
+        try:
+            today = date.today()
+            weekday = today.weekday()
+            weekday_name = today.strftime('%A')
 
-    try:
-        today = date.today()
-        weekday = today.weekday()
-        weekday_name = today.strftime('%A')
+            logger.info(f"Today: {today}")
+            logger.info(f"Weekday: {weekday} ({weekday_name})")
+            logger.info(f"Tournament days check: 3 <= {weekday} <= 6 = {3 <= weekday <= 6}")
+            # Only run on tournament days (Thursday=3, Sunday=6)
+            if 3 <= today.weekday() <= 6:
+                logger.info("✅ TOURNAMENT DAY DETECTED - Checking for missed 5 AM job")
+                # Check if the task has already been marked as run for today
+                task_ran_today = DailyTaskTracker.query.filter_by(
+                    task_name='schedule_score_updates',
+                    run_date=today
+                ).first()
 
-        logger.info(f"Today: {today}")
-        logger.info(f"Weekday: {weekday} ({weekday_name})")
-        logger.info(f"Tournament days check: 3 <= {weekday} <= 6 = {3 <= weekday <= 6}")
-        # Only run on tournament days (Thursday=3, Sunday=6)
-        if 3 <= today.weekday() <= 6:
-            logger.info("✅ TOURNAMENT DAY DETECTED - Checking for missed 5 AM job")
-            # Check if the task has already been marked as run for today
-            task_ran_today = DailyTaskTracker.query.filter_by(
-                task_name='schedule_score_updates',
-                run_date=today
-            ).first()
+                if task_ran_today:
+                    logger.info(f"✅ SUPERVISOR: 5 AM job already ran today ({task_ran_today.created_at})")
+                else:
+                    logger.warning(f"⚠️  SUPERVISOR: Missed 5 AM job for {today}. Triggering now!")
 
-            if task_ran_today:
-                logger.info(f"✅ SUPERVISOR: 5 AM job already ran today ({task_ran_today.created_at})")
+                    # Import here to avoid circular imports
+                    from .tasks import schedule_score_updates_for_the_week
+
+                    # Trigger the missed job
+                    result = schedule_score_updates_for_the_week.delay()
+                    logger.info(f"✅ SUPERVISOR: Triggered job with task ID: {result.id}")
+
             else:
-                logger.warning(f"⚠️  SUPERVISOR: Missed 5 AM job for {today}. Triggering now!")
+                logger.info(f"ℹ️  SUPERVISOR: Not a tournament day ({weekday_name}). No action needed.")
 
-                # Import here to avoid circular imports
-                from .tasks import schedule_score_updates_for_the_week
+        except Exception as e:
+            logger.error(f"❌ SUPERVISOR ERROR: {str(e)}")
+            logger.exception("Full traceback:")
+            # Re-raise so Celery can handle retry logic if configured
+            raise
 
-                # Trigger the missed job
-                result = schedule_score_updates_for_the_week.delay()
-                logger.info(f"✅ SUPERVISOR: Triggered job with task ID: {result.id}")
-
-        else:
-            logger.info(f"ℹ️  SUPERVISOR: Not a tournament day ({weekday_name}). No action needed.")
-
-    except Exception as e:
-        logger.error(f"❌ SUPERVISOR ERROR: {str(e)}")
-        logger.exception("Full traceback:")
-        # Re-raise so Celery can handle retry logic if configured
-        raise
-
-    logger.info("SUPERVISOR TASK COMPLETED")
-    logger.info("=" * 60)
-    return f"Supervisor check completed for {date.today()}"
+        logger.info("SUPERVISOR TASK COMPLETED")
+        logger.info("=" * 60)
+        return f"Supervisor check completed for {date.today()}"
 
 
 @shared_task
