@@ -14,7 +14,6 @@ from celery.schedules import crontab
 import mimetypes
 
 # --- Extension Initialization ---
-# All extension objects are created here in the global scope.
 cache = Cache()
 db = SQLAlchemy()
 migrate = Migrate()
@@ -22,6 +21,7 @@ mail = Mail()
 csrf = CSRFProtect()
 socketio = SocketIO()
 
+# FIXED: Create Celery instance with better configuration
 def make_celery(app=None):
     """Create and configure Celery instance"""
     redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
@@ -59,11 +59,11 @@ def make_celery(app=None):
 
     return celery
 
-# Create Celery instance
+# Create Celery instance without app initially
 celery = make_celery()
 
 login_manager = LoginManager()
-login_manager.login_view = 'auth.login_choice' # Main login page
+login_manager.login_view = 'auth.login_choice'
 login_manager.session_protection = "strong"
 
 
@@ -84,9 +84,10 @@ def create_app(config_class=Config):
     cache.init_app(app)
     login_manager.init_app(app)
 
+    # FIXED: Properly configure Celery with app context
     celery.conf.update(app.config)
 
-    # IMPORTANT: Configure Celery to work with Flask app context
+    # Configure tasks to run with app context
     class ContextTask(celery.Task):
         """Make celery tasks work with Flask app context."""
         def __call__(self, *args, **kwargs):
