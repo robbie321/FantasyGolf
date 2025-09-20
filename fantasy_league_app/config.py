@@ -15,10 +15,6 @@ class Config:
     # Ensure the upload folder exists
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-    broker_url = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-    result_backend = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
-
-
     # NEW: Stripe API Keys (use test keys for development)
     # You would get these from your Stripe Dashboard
     STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY') or 'pk_test_51Rt4YFAAtiw6IkD3q6QEunjHZZIlhDBfKvpefcbEHafQqqKV0En2Eu5QJaxomlGgk4CYA8Jk9nBH9hQu3Amsstf800E0bzTL1S'
@@ -58,13 +54,15 @@ class Config:
 
     TESTING_MODE_FLAG = 'testing_mode.flag'
 
+    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+    CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
     CELERY_TIMEZONE = "UTC"
     CELERY_ENABLE_UTC = True
     # Celery Beat Schedule
     CELERY_BEAT_SCHEDULE = {
         'schedule-live-score-updates': {
             'task': 'fantasy_league_app.tasks.schedule_score_updates_for_the_week',
-            'schedule': crontab(hour=14, minute=50, day_of_week='thu,fri,sat,sun'),
+            'schedule': crontab(hour=14, minute=57, day_of_week='thu,fri,sat,sun'),
         },
         'reset-player-scores-weekly': {
             'task': 'fantasy_league_app.tasks.reset_player_scores',

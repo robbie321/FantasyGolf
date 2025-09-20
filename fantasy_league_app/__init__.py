@@ -24,6 +24,7 @@ socketio = SocketIO()
 celery = Celery(__name__,
                 broker=Config.broker_url,
                 include=['fantasy_league_app.tasks'])
+celery.config_from_object('fantasy_league_app.config', namespace='CELERY')
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login_choice' # Main login page
