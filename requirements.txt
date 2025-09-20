@@ -16,7 +16,7 @@ WTForms==3.2.1
 gunicorn
 psycopg2-binary
 redis
-Celery
+celery==5.2.7
 Flask-Caching
 pywebpush
 stripe
