@@ -89,7 +89,7 @@ def create_app(config_class=Config):
 
     # IMPORTANT: Explicitly set the beat schedule
     from celery.schedules import crontab
-    celery.conf.beat_schedule = app.config.get('beat_schedule', {})
+    celery.conf.beat_schedule = app.config.get('BEAT_SCHEDULE', {})
 
     # Configure tasks to run with app context
     class ContextTask(celery.Task):

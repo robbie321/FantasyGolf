@@ -69,8 +69,8 @@ class Config:
 
     TESTING_MODE_FLAG = 'testing_mode.flag'
 
-    # Celery Beat Schedule (use new-style configuration)
-    beat_schedule = {
+    # Celery Beat Schedule (Flask requires UPPERCASE for config loading)
+    BEAT_SCHEDULE = {
         'schedule-live-score-updates': {
             'task': 'fantasy_league_app.tasks.schedule_score_updates_for_the_week',
             'schedule': crontab(hour=14, minute=50, day_of_week='thu,fri,sat,sun'),
