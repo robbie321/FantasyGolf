@@ -214,12 +214,11 @@ def schedule_score_updates_for_the_week():
 
 # --- Task to reset all player scores weekly ---
 @shared_task
-def reset_player_scores(app):
+def reset_player_scores():
     """
     Scheduled to run weekly to reset the 'current_score' for all players to 0.
     This prepares the database for the new week of tournaments.
     """
-    with app.app_context():
         print(f"--- Running weekly player score reset at {datetime.now()} ---")
         try:
             # This is a bulk update, which is very efficient
@@ -241,38 +240,36 @@ def reset_player_scores(app):
             db.session.rollback()
 
 @shared_task
-def send_deadline_reminders(app):
+def send_deadline_reminders():
     """
     Runs periodically to send reminders for leagues whose entry deadline is approaching.
     """
-    with app.app_context():
-        with app.app_context():
-            now = datetime.utcnow()
+    now = datetime.utcnow()
 
-            # Check for 48h, 24h, and 6h windows
-            windows = [48, 24, 6]
-            for hours in windows:
-                reminder_time = now + timedelta(hours=hours)
+    # Check for 48h, 24h, and 6h windows
+    windows = [48, 24, 6]
+    for hours in windows:
+        reminder_time = now + timedelta(hours=hours)
 
-                # Find leagues whose deadline is in the next hour
-                leagues_needing_reminder = League.query.filter(
-                    League.entry_deadline.between(reminder_time, reminder_time + timedelta(hours=1)),
-                    # You might need a more advanced way to track sent reminders per user/window
-                ).all()
+        # Find leagues whose deadline is in the next hour
+        leagues_needing_reminder = League.query.filter(
+            League.entry_deadline.between(reminder_time, reminder_time + timedelta(hours=1)),
+            # You might need a more advanced way to track sent reminders per user/window
+        ).all()
 
-                for league in leagues_needing_reminder:
-                    # Find users who have entered but not yet selected 3 players
-                    entries_to_remind = LeagueEntry.query.filter(
-                        LeagueEntry.league_id == league.id,
-                        LeagueEntry.player3_id == None
-                    ).all()
+        for league in leagues_needing_reminder:
+            # Find users who have entered but not yet selected 3 players
+            entries_to_remind = LeagueEntry.query.filter(
+                LeagueEntry.league_id == league.id,
+                LeagueEntry.player3_id == None
+            ).all()
 
-                    for entry in entries_to_remind:
-                        send_push_notification(
-                            entry.user_id,
-                            f"Reminder for {league.name}",
-                            f"Your entry is incomplete! The deadline is in {hours} hours."
-                        )
+            for entry in entries_to_remind:
+                send_push_notification(
+                    entry.user_id,
+                    f"Reminder for {league.name}",
+                    f"Your entry is incomplete! The deadline is in {hours} hours."
+                )
 
 
 #redundant
@@ -444,83 +441,82 @@ def check_and_queue_fee_collection(self):
 
 # In fantasy_league_app/tasks.py
 @shared_task
-def update_player_buckets(app):
+def update_player_buckets():
     """
     Scheduled task to create new player buckets for upcoming tournaments.
     It fetches the tournament field and the latest betting odds,
     applies a cap to the odds, and populates the bucket.
     """
-    with app.app_context():
-        print("--- Running scheduled job: update_player_buckets ---")
-        tours = ['pga', 'euro']
-        data_golf_client = DataGolfClient()
+    print("--- Running scheduled job: update_player_buckets ---")
+    tours = ['pga', 'euro']
+    data_golf_client = DataGolfClient()
 
-        for tour in tours:
-            print(f"--- Processing tour: {tour} ---")
+    for tour in tours:
+        print(f"--- Processing tour: {tour} ---")
 
-            # --- Step 1: Fetch Tournament Field and Betting Odds ---
-            field_data, field_error = data_golf_client.get_tournament_field_updates(tour)
-            odds_data, odds_error = data_golf_client.get_betting_odds(tour) # Assuming this function exists
+        # --- Step 1: Fetch Tournament Field and Betting Odds ---
+        field_data, field_error = data_golf_client.get_tournament_field_updates(tour)
+        odds_data, odds_error = data_golf_client.get_betting_odds(tour) # Assuming this function exists
 
-            if field_error or odds_error:
-                current_app.logger.error(f"Failed to fetch data for {tour}. Field Error: {field_error}, Odds Error: {odds_error}")
+        if field_error or odds_error:
+            current_app.logger.error(f"Failed to fetch data for {tour}. Field Error: {field_error}, Odds Error: {odds_error}")
+            continue
+
+        if not field_data or not field_data.get('field') or not odds_data:
+            print(f"No complete field or odds data found for tour: {tour}. Skipping bucket update.")
+            continue
+
+        # --- Step 2: Create an efficient lookup map for odds ---
+        # We assume odds_data is a list of dicts, each with 'dg_id' and 'odds_bet365'
+        odds_map = {player['dg_id']: player.get('bet365') for player in odds_data}
+
+        # --- Step 3: Get or Create the Player Bucket ---
+        bucket_name = f"{tour.upper()} Players - {field_data.get('event_name', datetime.utcnow().strftime('%Y-%m-%d'))}"
+        latest_bucket = PlayerBucket.query.filter_by(name=bucket_name).first()
+
+        if not latest_bucket:
+            latest_bucket = PlayerBucket(name=bucket_name, tour=tour)
+            db.session.add(latest_bucket)
+            print(f"Created new player bucket: {latest_bucket.name}")
+        else:
+            print(f"Bucket '{bucket_name}' already exists. Updating players.")
+            latest_bucket.players = [] # Clear out old players to ensure an accurate field
+
+        # --- Step 4: Process Players and Apply Odds Cap ---
+        for player_data in field_data['field']:
+            player_dg_id = player_data.get('dg_id')
+            if not player_dg_id:
                 continue
 
-            if not field_data or not field_data.get('field') or not odds_data:
-                print(f"No complete field or odds data found for tour: {tour}. Skipping bucket update.")
-                continue
+            player = Player.query.filter_by(dg_id=player_dg_id).first()
+            if not player:
+                player = Player(dg_id=player_dg_id)
+                db.session.add(player)
 
-            # --- Step 2: Create an efficient lookup map for odds ---
-            # We assume odds_data is a list of dicts, each with 'dg_id' and 'odds_bet365'
-            odds_map = {player['dg_id']: player.get('bet365') for player in odds_data}
+            # Update player name details
+            player_name_parts = player_data.get('player_name', ',').split(',')
+            player.surname = player_name_parts[0].strip()
+            player.name = player_name_parts[1].strip() if len(player_name_parts) > 1 else ''
 
-            # --- Step 3: Get or Create the Player Bucket ---
-            bucket_name = f"{tour.upper()} Players - {field_data.get('event_name', datetime.utcnow().strftime('%Y-%m-%d'))}"
-            latest_bucket = PlayerBucket.query.filter_by(name=bucket_name).first()
+            # --- Odds Capping Logic ---
+            odds_from_api = odds_map.get(player_dg_id)
 
-            if not latest_bucket:
-                latest_bucket = PlayerBucket(name=bucket_name, tour=tour)
-                db.session.add(latest_bucket)
-                print(f"Created new player bucket: {latest_bucket.name}")
-            else:
-                print(f"Bucket '{bucket_name}' already exists. Updating players.")
-                latest_bucket.players = [] # Clear out old players to ensure an accurate field
-
-            # --- Step 4: Process Players and Apply Odds Cap ---
-            for player_data in field_data['field']:
-                player_dg_id = player_data.get('dg_id')
-                if not player_dg_id:
-                    continue
-
-                player = Player.query.filter_by(dg_id=player_dg_id).first()
-                if not player:
-                    player = Player(dg_id=player_dg_id)
-                    db.session.add(player)
-
-                # Update player name details
-                player_name_parts = player_data.get('player_name', ',').split(',')
-                player.surname = player_name_parts[0].strip()
-                player.name = player_name_parts[1].strip() if len(player_name_parts) > 1 else ''
-
-                # --- Odds Capping Logic ---
-                odds_from_api = odds_map.get(player_dg_id)
-
-                if odds_from_api and isinstance(odds_from_api, (int, float)):
-                    # If the odds are over 85, cap them at 85.
-                    if odds_from_api > 250:
-                        player.odds = 250
-                    elif odds_from_api < 1:
-                        player.odds = 250
-                    else:
-                        player.odds = odds_from_api
-                else:
-                    # Set a high default for players without odds so they can still be picked
+            if odds_from_api and isinstance(odds_from_api, (int, float)):
+                # If the odds are over 85, cap them at 85.
+                if odds_from_api > 250:
                     player.odds = 250
+                elif odds_from_api < 1:
+                    player.odds = 250
+                else:
+                    player.odds = odds_from_api
+            else:
+                # Set a high default for players without odds so they can still be picked
+                player.odds = 250
 
-                latest_bucket.players.append(player)
+            latest_bucket.players.append(player)
 
-        db.session.commit()
-        print("--- Player bucket update finished successfully. ---")
+    db.session.commit()
+    print("--- Player bucket update finished successfully. ---")
 
 
 @shared_task
@@ -719,19 +715,18 @@ def finalize_finished_leagues():
 #     return f"League {league.id} finalized. Winners determined. Notification sent to club."
 
 @shared_task
-def broadcast_notification_task(app, title, body):
+def broadcast_notification_task(title, body):
     """
     Background task to send a push notification to ALL subscribed users.
     """
-    with app.app_context():
-        print(f"--- Starting broadcast task: '{title}' ---")
-        # Fetch all active users who might have subscriptions
-        all_users = User.query.filter_by(is_active=True).all()
-        user_ids = [user.id for user in all_users]
+    print(f"--- Starting broadcast task: '{title}' ---")
+    # Fetch all active users who might have subscriptions
+    all_users = User.query.filter_by(is_active=True).all()
+    user_ids = [user.id for user in all_users]
 
-        # Send a notification to each user
-        # The send_push_notification helper already handles finding all devices for a user
-        for user_id in user_ids:
-            send_push_notification(user_id, title, body)
+    # Send a notification to each user
+    # The send_push_notification helper already handles finding all devices for a user
+    for user_id in user_ids:
+        send_push_notification(user_id, title, body)
 
-        print(f"--- Broadcast task finished. Notifications sent to {len(user_ids)} users. ---")
+    print(f"--- Broadcast task finished. Notifications sent to {len(user_ids)} users. ---")

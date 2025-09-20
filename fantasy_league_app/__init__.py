@@ -21,8 +21,37 @@ migrate = Migrate()
 mail = Mail()
 csrf = CSRFProtect()
 socketio = SocketIO()
-celery = Celery(__name__,include=['fantasy_league_app.tasks'])
-celery.config_from_object('fantasy_league_app.config', namespace='CELERY')
+
+# FIXED: Celery initialization with proper configuration
+def make_celery(app_name=__name__):
+    """Create and configure Celery instance"""
+    redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
+
+    celery = Celery(
+        app_name,
+        broker=redis_url,
+        backend=redis_url,
+        include=['fantasy_league_app.tasks']
+    )
+
+    # Update configuration
+    celery.conf.update(
+        broker_url=redis_url,
+        result_backend=redis_url,
+        task_serializer='json',
+        result_serializer='json',
+        accept_content=['json'],
+        timezone='UTC',
+        enable_utc=True,
+        broker_connection_retry_on_startup=True,
+        broker_connection_retry=True,
+        broker_connection_max_retries=10,
+    )
+
+    return celery
+
+# Create Celery instance
+celery = make_celery()
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login_choice' # Main login page
@@ -47,6 +76,15 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
 
     celery.conf.update(app.config)
+
+    # IMPORTANT: Configure Celery to work with Flask app context
+    class ContextTask(celery.Task):
+        """Make celery tasks work with Flask app context."""
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+    celery.Task = ContextTask
 
     # Import models and define user loaders before registering blueprints
     from .models import User, Club, SiteAdmin

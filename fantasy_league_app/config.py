@@ -15,6 +15,9 @@ class Config:
     # Ensure the upload folder exists
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
+
+
     # NEW: Stripe API Keys (use test keys for development)
     # You would get these from your Stripe Dashboard
     STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY') or 'pk_test_51Rt4YFAAtiw6IkD3q6QEunjHZZIlhDBfKvpefcbEHafQqqKV0En2Eu5QJaxomlGgk4CYA8Jk9nBH9hQu3Amsstf800E0bzTL1S'
@@ -54,11 +57,25 @@ class Config:
 
     TESTING_MODE_FLAG = 'testing_mode.flag'
 
-    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-    CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+    redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
+    broker_url = redis_url
+    result_backend = redis_url
+    CELERY_BROKER_URL = broker_url
+    CELERY_RESULT_BACKEND = result_backend
+    CELERY_REDIS_URL = redis_url
+
+    # Additional Celery settings for better reliability
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_ACCEPT_CONTENT = ['json']
     CELERY_TIMEZONE = "UTC"
     CELERY_ENABLE_UTC = True
-    CELERY_REDBEAT_REDIS_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6.3.7.9/1')
+
+    # Broker connection retry settings
+    CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+    CELERY_BROKER_CONNECTION_RETRY = True
+    CELERY_BROKER_CONNECTION_MAX_RETRIES = 10
+
     # Celery Beat Schedule
     CELERY_BEAT_SCHEDULE = {
         'schedule-live-score-updates': {
