@@ -21,6 +21,6 @@ Flask-Caching
 pywebpush
 stripe
 email_validator
-redis-celery-beat==2.2.1
+celery-redbeat==2.0.0
 
 
