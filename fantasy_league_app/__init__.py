@@ -73,6 +73,10 @@ def create_app(config_class=Config):
             'task': 'fantasy_league_app.tasks.check_and_queue_fee_collection',
             'schedule': crontab(hour=10, minute=0, day_of_week='thursday'),
         },
+        'ensure-live-updates-running': {
+            'task': 'fantasy_league_app.tasks.ensure_live_updates_are_running',
+            'schedule': crontab(minute='*/1'), # Runs every 15 minutes
+        },
     }
 
     print("\n--- STRIPE KEY CHECK (on app start) ---")

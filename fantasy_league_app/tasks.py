@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from collections import defaultdict
 import requests
 import os
@@ -11,7 +11,7 @@ from flask import current_app
 from .data_golf_client import DataGolfClient
 
 from collections import defaultdict # Add this import
-from .models import League, Player, PlayerBucket, LeagueEntry, PlayerScore, User, PushSubscription, db
+from .models import League, Player, PlayerBucket, LeagueEntry, PlayerScore, User, PushSubscription, db, DailyTaskTracker
 from celery import shared_task
 from .stripe_client import process_payouts,  create_payout
 from .utils import send_winner_notification_email, send_push_notification, send_email
@@ -121,6 +121,33 @@ def update_player_scores(self, tour, end_time_iso):
             print(f"End time reached for tour '{tour}'. Stopping live score updates for the day.")
 
 
+@shared_task
+def ensure_live_updates_are_running():
+    """
+    A supervisor task that runs frequently on tournament days.
+    It checks if the main 5 AM scheduler has run and, if not, triggers it.
+    """
+
+    app = create_app()
+    with app.app_context():
+        today = date.today()
+        # Only run on tournament days (Thursday=3, Sunday=6)
+        if 3 <= today.weekday() <= 6:
+            # Check if the task has already been marked as run for today
+            task_ran_today = DailyTaskTracker.query.filter_by(
+                task_name='schedule_score_updates',
+                run_date=today
+            ).first()
+
+            if not task_ran_today:
+                print(f"Supervisor detected missed 5 AM job for {today}. Running it now.")
+                schedule_score_updates_for_the_week.delay()
+            else:
+                print(f"Supervisor confirmed 5 AM job for {today} has already run.")
+        else:
+            print(f"SUPERVISOR: It's not a tournament day ({today.strftime('%A')}). No action taken.")
+
+
 # --- REPLACEMENT 2: The Final schedule_score_updates_for_the_week Task ---
 @shared_task
 def schedule_score_updates_for_the_week():
@@ -130,6 +157,13 @@ def schedule_score_updates_for_the_week():
     """
     app = create_app()
     with app.app_context():
+        today = date.today()
+        task_tracker = DailyTaskTracker.query.filter_by(run_date=today, task_name='schedule_score_updates').first()
+        if not task_tracker:
+            new_tracker = DailyTaskTracker(task_name='schedule_score_updates', run_date=today)
+            db.session.add(new_tracker)
+            db.session.commit()
+
         print(f"--- Running DAILY scheduler setup at {datetime.now()} ---")
         tours = ['pga', 'euro']
         data_golf_client = DataGolfClient()

@@ -334,3 +334,12 @@ class PushSubscription(db.Model):
         return json.loads(self.subscription_json).get('endpoint')
 
 
+class DailyTaskTracker(db.Model):
+    """Tracks whether a daily scheduled task has been successfully run."""
+    id = db.Column(db.Integer, primary_key=True)
+    task_name = db.Column(db.String(100), nullable=False)
+    run_date = db.Column(db.Date, nullable=False, unique=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<DailyTaskTracker {self.task_name} on {self.run_date}>'
