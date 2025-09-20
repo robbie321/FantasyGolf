@@ -14,6 +14,18 @@ Tasks []
 [] check over finialised leagues payouts
 [] check that all scheduled tasks are running
 [] add player profiles
+[] first time log in, display how to works to users
+[] add in stripe API key config vars heroku
+[] add back to dashboard on terms & condistions and privacy
+[] complete settings
+[] add link to support where it opens email to info@
+[] feature for tee time timezone
+
+###############
+####SIGNUP ####
+###############
+[]Fix user and club registration
+
 
 
 
@@ -27,6 +39,8 @@ Tasks []
 [✅] show join league button at the top right on desktop
 [] load top 30 players. show a button to load 30 more
 [] fix winner banner. its not showing on completed leagues
+[] add back button to leaderboard
+[] change bubble score to odds and add player score beside their name on the team view
 
 
 
@@ -38,6 +52,7 @@ Tasks []
 [✅] fix adding wallet on club navbar
 [✅] on the create league page, show date and first tee time of the selected player pool
 [] complete design of club league view
+[] display notice to clubs that deadline is 1h before
 
 
 
