@@ -2,6 +2,8 @@ Start App:
 flask --app fantasy_league_app:create_app run
 source venv/Scripts/activate
 
+heroku run flask db upgrade
+
 
 python -m venv venv
 

@@ -58,6 +58,8 @@ class Config:
 
     TESTING_MODE_FLAG = 'testing_mode.flag'
 
+    CELERY_TIMEZONE = "UTC"
+    CELERY_ENABLE_UTC = True
     # Celery Beat Schedule
     CELERY_BEAT_SCHEDULE = {
         'schedule-live-score-updates': {
