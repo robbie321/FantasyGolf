@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone, date
 from collections import defaultdict
 import requests
