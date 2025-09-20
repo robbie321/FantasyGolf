@@ -295,24 +295,27 @@ def reset_player_scores():
     This prepares the database for the new week of tournaments.
     """
     print(f"--- Running weekly player score reset at {datetime.now()} ---")
-    try:
-        # This is a bulk update, which is very efficient
-        updated_rows = db.session.query(Player).update({"current_score": 0})
-        db.session.commit()
-        print(f"Successfully reset scores for {updated_rows} players.")
-        # After resetting, find all users and send them a notification
-        all_users = User.query.filter_by(is_active=True).yield_per(100) # Process 100 users at a time
-        # all_users = User.query.filter_by(is_active=True).all()
-        for user in all_users:
-            send_push_notification(
-                user.id,
-                "New Week, New Leagues!",
-                "Player data has been updated. Check out the new leagues for this week's tournaments."
-            )
+    from fantasy_league_app import create_app
+    app = create_app()
+    with app.app_context():
+        try:
+            # This is a bulk update, which is very efficient
+            updated_rows = db.session.query(Player).update({"current_score": 0})
+            db.session.commit()
+            print(f"Successfully reset scores for {updated_rows} players.")
+            # After resetting, find all users and send them a notification
+            all_users = User.query.filter_by(is_active=True).yield_per(100) # Process 100 users at a time
+            # all_users = User.query.filter_by(is_active=True).all()
+            for user in all_users:
+                send_push_notification(
+                    user.id,
+                    "New Week, New Leagues!",
+                    "Player data has been updated. Check out the new leagues for this week's tournaments."
+                )
 
-    except Exception as e:
-        print(f"ERROR: Could not reset player scores: {e}")
-        db.session.rollback()
+        except Exception as e:
+            print(f"ERROR: Could not reset player scores: {e}")
+            db.session.rollback()
 
 @shared_task
 def send_deadline_reminders():
@@ -523,75 +526,80 @@ def update_player_buckets():
     applies a cap to the odds, and populates the bucket.
     """
     print("--- Running scheduled job: update_player_buckets ---")
-    tours = ['pga', 'euro']
-    data_golf_client = DataGolfClient()
 
-    for tour in tours:
-        print(f"--- Processing tour: {tour} ---")
 
-        # --- Step 1: Fetch Tournament Field and Betting Odds ---
-        field_data, field_error = data_golf_client.get_tournament_field_updates(tour)
-        odds_data, odds_error = data_golf_client.get_betting_odds(tour) # Assuming this function exists
 
-        if field_error or odds_error:
-            current_app.logger.error(f"Failed to fetch data for {tour}. Field Error: {field_error}, Odds Error: {odds_error}")
-            continue
+    from fantasy_league_app import create_app
+    app = create_app()
+    with app.app_context():
+        tours = ['pga', 'euro']
+        data_golf_client = DataGolfClient()
+        for tour in tours:
+            print(f"--- Processing tour: {tour} ---")
 
-        if not field_data or not field_data.get('field') or not odds_data:
-            print(f"No complete field or odds data found for tour: {tour}. Skipping bucket update.")
-            continue
+            # --- Step 1: Fetch Tournament Field and Betting Odds ---
+            field_data, field_error = data_golf_client.get_tournament_field_updates(tour)
+            odds_data, odds_error = data_golf_client.get_betting_odds(tour) # Assuming this function exists
 
-        # --- Step 2: Create an efficient lookup map for odds ---
-        # We assume odds_data is a list of dicts, each with 'dg_id' and 'odds_bet365'
-        odds_map = {player['dg_id']: player.get('bet365') for player in odds_data}
-
-        # --- Step 3: Get or Create the Player Bucket ---
-        bucket_name = f"{tour.upper()} Players - {field_data.get('event_name', datetime.utcnow().strftime('%Y-%m-%d'))}"
-        latest_bucket = PlayerBucket.query.filter_by(name=bucket_name).first()
-
-        if not latest_bucket:
-            latest_bucket = PlayerBucket(name=bucket_name, tour=tour)
-            db.session.add(latest_bucket)
-            print(f"Created new player bucket: {latest_bucket.name}")
-        else:
-            print(f"Bucket '{bucket_name}' already exists. Updating players.")
-            latest_bucket.players = [] # Clear out old players to ensure an accurate field
-
-        # --- Step 4: Process Players and Apply Odds Cap ---
-        for player_data in field_data['field']:
-            player_dg_id = player_data.get('dg_id')
-            if not player_dg_id:
+            if field_error or odds_error:
+                current_app.logger.error(f"Failed to fetch data for {tour}. Field Error: {field_error}, Odds Error: {odds_error}")
                 continue
 
-            player = Player.query.filter_by(dg_id=player_dg_id).first()
-            if not player:
-                player = Player(dg_id=player_dg_id)
-                db.session.add(player)
+            if not field_data or not field_data.get('field') or not odds_data:
+                print(f"No complete field or odds data found for tour: {tour}. Skipping bucket update.")
+                continue
 
-            # Update player name details
-            player_name_parts = player_data.get('player_name', ',').split(',')
-            player.surname = player_name_parts[0].strip()
-            player.name = player_name_parts[1].strip() if len(player_name_parts) > 1 else ''
+            # --- Step 2: Create an efficient lookup map for odds ---
+            # We assume odds_data is a list of dicts, each with 'dg_id' and 'odds_bet365'
+            odds_map = {player['dg_id']: player.get('bet365') for player in odds_data}
 
-            # --- Odds Capping Logic ---
-            odds_from_api = odds_map.get(player_dg_id)
+            # --- Step 3: Get or Create the Player Bucket ---
+            bucket_name = f"{tour.upper()} Players - {field_data.get('event_name', datetime.utcnow().strftime('%Y-%m-%d'))}"
+            latest_bucket = PlayerBucket.query.filter_by(name=bucket_name).first()
 
-            if odds_from_api and isinstance(odds_from_api, (int, float)):
-                # If the odds are over 85, cap them at 85.
-                if odds_from_api > 250:
-                    player.odds = 250
-                elif odds_from_api < 1:
-                    player.odds = 250
-                else:
-                    player.odds = odds_from_api
+            if not latest_bucket:
+                latest_bucket = PlayerBucket(name=bucket_name, tour=tour)
+                db.session.add(latest_bucket)
+                print(f"Created new player bucket: {latest_bucket.name}")
             else:
-                # Set a high default for players without odds so they can still be picked
-                player.odds = 250
+                print(f"Bucket '{bucket_name}' already exists. Updating players.")
+                latest_bucket.players = [] # Clear out old players to ensure an accurate field
 
-            latest_bucket.players.append(player)
+            # --- Step 4: Process Players and Apply Odds Cap ---
+            for player_data in field_data['field']:
+                player_dg_id = player_data.get('dg_id')
+                if not player_dg_id:
+                    continue
 
-    db.session.commit()
-    print("--- Player bucket update finished successfully. ---")
+                player = Player.query.filter_by(dg_id=player_dg_id).first()
+                if not player:
+                    player = Player(dg_id=player_dg_id)
+                    db.session.add(player)
+
+                # Update player name details
+                player_name_parts = player_data.get('player_name', ',').split(',')
+                player.surname = player_name_parts[0].strip()
+                player.name = player_name_parts[1].strip() if len(player_name_parts) > 1 else ''
+
+                # --- Odds Capping Logic ---
+                odds_from_api = odds_map.get(player_dg_id)
+
+                if odds_from_api and isinstance(odds_from_api, (int, float)):
+                    # If the odds are over 85, cap them at 85.
+                    if odds_from_api > 250:
+                        player.odds = 250
+                    elif odds_from_api < 1:
+                        player.odds = 250
+                    else:
+                        player.odds = odds_from_api
+                else:
+                    # Set a high default for players without odds so they can still be picked
+                    player.odds = 250
+
+                latest_bucket.players.append(player)
+
+        db.session.commit()
+        print("--- Player bucket update finished successfully. ---")
 
 
 @shared_task
@@ -600,6 +608,7 @@ def finalize_finished_leagues():
     Finds all leagues that have ended but are not yet finalized, calculates
     winners for each, and sends email notifications.
     """
+    from fantasy_league_app import create_app
     app = create_app()
     with app.app_context():
         now = datetime.utcnow()

@@ -87,6 +87,10 @@ def create_app(config_class=Config):
     # FIXED: Properly configure Celery with app context
     celery.conf.update(app.config)
 
+    # IMPORTANT: Explicitly set the beat schedule
+    from celery.schedules import crontab
+    celery.conf.beat_schedule = app.config.get('CELERY_BEAT_SCHEDULE', {})
+
     # Configure tasks to run with app context
     class ContextTask(celery.Task):
         """Make celery tasks work with Flask app context."""
