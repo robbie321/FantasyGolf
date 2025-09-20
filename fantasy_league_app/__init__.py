@@ -49,43 +49,6 @@ def create_app(config_class=Config):
 
     celery.conf.update(app.config)
 
-    # Celery Beat Schedule
-    celery.conf.beat_schedule = {
-        'schedule-live-score-updates': {
-            'task': 'fantasy_league_app.tasks.schedule_score_updates_for_the_week',
-            'schedule': crontab(hour=5, minute=0, day_of_week='thu,fri,sat,sun'),
-        },
-        'reset-player-scores-weekly': {
-            'task': 'fantasy_league_app.tasks.reset_player_scores',
-            'schedule': crontab(hour=8, minute=0, day_of_week='wed'),
-        },
-        'send-deadline-reminders-hourly': {
-            'task': 'fantasy_league_app.tasks.send_deadline_reminders',
-            'schedule': crontab(minute=0),
-        },
-        'update-buckets-weekly': {
-            'task': 'fantasy_league_app.tasks.update_player_buckets',
-            'schedule': crontab(hour=10, minute=0, day_of_week='tuesday'),
-        },
-        'finalize-leagues-weekly': {
-            'task': 'fantasy_league_app.tasks.finalize_finished_leagues',
-            'schedule': crontab(hour=10, minute=30, day_of_week='monday'),
-        },
-        'check-for-fees-weekly': {
-            'task': 'fantasy_league_app.tasks.check_and_queue_fee_collection',
-            'schedule': crontab(hour=10, minute=0, day_of_week='thursday'),
-        },
-        'ensure-live-updates-running': {
-            'task': 'fantasy_league_app.tasks.ensure_live_updates_are_running',
-            'schedule': crontab(minute='*/1'), # Runs every 15 minutes
-        },
-    }
-
-    print("\n--- STRIPE KEY CHECK (on app start) ---")
-    print(f"STRIPE_PUBLIC_KEY loaded: {app.config.get('STRIPE_PUBLIC_KEY')}")
-    print(f"STRIPE_SECRET_KEY loaded: {app.config.get('STRIPE_SECRET_KEY')}")
-    print("---------------------------------------\n")
-
     # Import models and define user loaders before registering blueprints
     from .models import User, Club, SiteAdmin
 

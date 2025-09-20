@@ -1,4 +1,5 @@
 import os
+from celery.schedules import crontab
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your_super_secret_key_change_in_production'
@@ -56,3 +57,35 @@ class Config:
 
 
     TESTING_MODE_FLAG = 'testing_mode.flag'
+
+    # Celery Beat Schedule
+   CELERY_BEAT_SCHEDULE = {
+        'schedule-live-score-updates': {
+            'task': 'fantasy_league_app.tasks.schedule_score_updates_for_the_week',
+            'schedule': crontab(hour=5, minute=0, day_of_week='thu,fri,sat,sun'),
+        },
+        'reset-player-scores-weekly': {
+            'task': 'fantasy_league_app.tasks.reset_player_scores',
+            'schedule': crontab(hour=8, minute=0, day_of_week='wed'),
+        },
+        'send-deadline-reminders-hourly': {
+            'task': 'fantasy_league_app.tasks.send_deadline_reminders',
+            'schedule': crontab(minute=0),
+        },
+        'update-buckets-weekly': {
+            'task': 'fantasy_league_app.tasks.update_player_buckets',
+            'schedule': crontab(hour=10, minute=0, day_of_week='tuesday'),
+        },
+        'finalize-leagues-weekly': {
+            'task': 'fantasy_league_app.tasks.finalize_finished_leagues',
+            'schedule': crontab(hour=10, minute=30, day_of_week='monday'),
+        },
+        'check-for-fees-weekly': {
+            'task': 'fantasy_league_app.tasks.check_and_queue_fee_collection',
+            'schedule': crontab(hour=10, minute=0, day_of_week='thursday'),
+        },
+        'ensure-live-updates-running': {
+            'task': 'fantasy_league_app.tasks.ensure_live_updates_are_running',
+            'schedule': crontab(minute='*/1'), # Runs every 15 minutes
+        },
+    }
