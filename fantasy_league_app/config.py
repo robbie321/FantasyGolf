@@ -25,6 +25,9 @@ class Config:
     # FIXED: Use new-style Celery configuration names
     # These are the correct names for modern Celery
     result_backend = result_backend  # Already correct
+
+    # IMPORTANT: RedBeat specific configuration
+    redbeat_redis_url = redis_url  # This is specifically for RedBeat
     redis_url = redis_url  # This is what redbeat needs
 
     # Additional Celery settings for better reliability (new style)
