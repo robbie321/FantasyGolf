@@ -136,7 +136,6 @@ def ensure_live_updates_are_running():
     # STEP 1: Log that the task is actually running
     logger.info("=" * 60)
     logger.info("SUPERVISOR TASK STARTED")
-    logger.info(f"Task ID: {self.request.id}")
     logger.info(f"UTC Time: {datetime.utcnow()}")
     logger.info("=" * 60)
 
