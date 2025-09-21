@@ -787,7 +787,7 @@ h4 { font-size: 1.1rem; }
 }
 
 .btn-outline {
-    background: var(--white);
+    /* background: var(--white); */
     color: var(--primary-green);
     border: 1px solid var(--surface-border);
     box-shadow: var(--shadow-sm);

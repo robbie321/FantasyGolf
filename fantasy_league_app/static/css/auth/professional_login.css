@@ -214,9 +214,9 @@
 }
 
 .auth-links a {
-    color: var(--primary-green);
+    color: var(--live-green);
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 500;
     transition: var(--transition);
 }
 
@@ -283,7 +283,7 @@
 /* Professional Logo Enhancement */
 .auth-logo {
     text-align: center;
-    margin-bottom: 1rem;
+    margin-bottom: rem;
 }
 
 .auth-logo img {
@@ -464,7 +464,7 @@
 .auth-card input:focus + label,
 .auth-card input:not(:placeholder-shown) + label {
     transform: translateY(-1.5rem) scale(0.875);
-    color: var(--primary-green);
+    color: var(--live-green);
 }
 
 /* Professional Form Validation */
