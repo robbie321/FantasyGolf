@@ -6,7 +6,13 @@ from dotenv import load_dotenv
 
 # Set the environment variable directly in the script for foolproof local testing
 os.environ['SCHEDULER_ENABLED'] = 'true'
-load_dotenv()
+
+if os.getenv('DYNO') is None:  # Only load .env locally
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
 
 app = create_app()
 app.cli.add_command(db_scripts)
