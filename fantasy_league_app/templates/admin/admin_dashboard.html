@@ -261,6 +261,16 @@
         </div>
 
         <div class="management-card">
+          <h3>Run player score live</h3>
+          <p>View and manage all leagues created by clubs.</p>
+          <div class="btn-group">
+            <a href="{{ url_for('admin.debug_trigger_scheduler') }}" class="btn"
+              >Run live updates</a
+            >
+          </div>
+        </div>
+
+        <div class="management-card">
           <h3>Public Leagues</h3>
           <p>
             Create official, site-wide public leagues for all users to join.

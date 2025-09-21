@@ -698,3 +698,13 @@ def send_broadcast_notification():
         return redirect(url_for('admin.admin_dashboard'))
 
     return render_template('admin/send_notification.html', form=form, title="Send Broadcast Notification")
+
+
+@admin_bp.route('/debug/trigger-scheduler')
+@admin_required
+def debug_trigger_scheduler():
+    from fantasy_league_app.tasks import schedule_score_updates_for_the_week
+
+    result = schedule_score_updates_for_the_week.delay()
+    flash(f'Triggered scheduler task: {result.id}', 'info')
+    return redirect(url_for('admin.admin_dashboard'))
