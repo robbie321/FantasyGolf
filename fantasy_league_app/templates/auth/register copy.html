@@ -1,0 +1,179 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  .page-wrapper {
+    padding: 4rem 1rem;
+    background-color: #f7f7f7;
+    display: flex;
+    align-items: center;
+    min-height: calc(100vh - 70px - 8rem);
+    box-sizing: border-box;
+  }
+  .split-container {
+    max-width: 1000px;
+    width: 100%;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    display: flex;
+    overflow: hidden;
+  }
+  .split-left {
+    flex: 1;
+    background-color: #006a4e;
+    color: white;
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .split-left h1 {
+    font-family: "Merriweather", serif;
+    font-size: 2.5rem;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+  }
+  .split-left p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+  /* NEW: Styling for the club registration section */
+  .club-promo {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  .club-promo p {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+  .btn-outline {
+    display: inline-block;
+    padding: 12px 24px;
+    border: 2px solid white;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+  .btn-outline:hover {
+    background-color: white;
+    color: #006a4e;
+  }
+  .split-right {
+    flex: 1;
+    padding: 3rem;
+  }
+  .split-right h2 {
+    font-family: "Merriweather", serif;
+    margin-top: 0;
+    margin-bottom: 2rem;
+    color: #333;
+  }
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #555;
+  }
+  .form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+  }
+  .terms-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .terms-group input {
+    margin-right: 0.5rem;
+  }
+  .btn-submit {
+    width: 100%;
+    padding: 12px;
+    background-color: #006a4e;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: bold;
+  }
+  @media (max-width: 992px) {
+    .split-container {
+      flex-direction: column;
+    }
+    .split-left,
+    .split-right {
+      flex: auto;
+    }
+    .split-left {
+      text-align: center;
+    }
+  }
+</style>
+
+<div class="page-wrapper">
+  <div class="split-container">
+    <div class="split-left">
+      <h1>Create Account</h1>
+      <p>
+        Join the ultimate fantasy golf experience. Create or join leagues,
+        compete with friends, and prove your golf knowledge.
+      </p>
+
+      <div class="club-promo">
+        <p>
+          Register here if you want to host fantasy leagues within your club.
+        </p>
+        <a href="{{ url_for('auth.register_club') }}" class="btn-outline"
+          >Register Your Club</a
+        >
+      </div>
+    </div>
+
+    <div class="split-right">
+      <h2>Player Registration</h2>
+      <form method="POST" action="{{ url_for('auth.register') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="form-group">
+          <label for="full_name">Full Name</label>
+          <input type="text" id="full_name" name="full_name" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required />
+        </div>
+        <div class="form-group">
+          <label for="confirm_password">Confirm Password</label>
+          <input
+            type="password"
+            id="confirm_password"
+            name="confirm_password"
+            required
+          />
+        </div>
+        <div class="terms-group">
+          <input type="checkbox" id="terms" name="terms" required />
+          <label for="terms">I accept the Terms & Conditions</label>
+        </div>
+        <button type="submit" class="btn-submit">Register</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

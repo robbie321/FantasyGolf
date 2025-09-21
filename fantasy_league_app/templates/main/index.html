@@ -1,117 +1,359 @@
 ﻿{% extends 'base.html' %} {% block content %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/auth/professional_login.css') }}"
+/>
+<!-- DESKTOP VIEW -->
+<div class="landing-desktop">
+  <div class="split-screen-container">
+    <div class="split-left">
+      <div class="split-content">
+        <div class="landing-logo">
+          <img
+            src="{{ url_for('static', filename='images/logo/club_logo.png') }}"
+            alt="Fantasy Fairways Logo"
+          />
+        </div>
+        <h2>Fantasy Golf, Perfected.</h2>
+        <p>
+          The ultimate platform for clubs and friends. Create private leagues,
+          compete in major tournaments, and prove you're the best fantasy
+          manager on the course.
+        </p>
+
+        <div class="feature-highlights">
+          <div class="feature-item">
+            <i class="fas fa-users"></i>
+            <span>Private Club Leagues</span>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-trophy"></i>
+            <span>Major Tournament Competitions</span>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-chart-line"></i>
+            <span>Real-time Scoring</span>
+          </div>
+        </div>
+
+        <div class="sub-text">
+          Join thousands of golf enthusiasts competing in the most comprehensive
+          fantasy golf platform.
+        </div>
+      </div>
+    </div>
+
+    <div class="split-right">
+      <div class="auth-card">
+        <h1>Get in the Game</h1>
+        <p class="subtitle">Join a league or create your account</p>
+
+        <!-- Quick Join Form -->
+        <div class="quick-join-section">
+          <form id="landing-join-form" class="join-form">
+            <div class="form-group">
+              <label for="league-code-landing">Have a League Code?</label>
+              <div class="input-with-button">
+                <input
+                  type="text"
+                  id="league-code-landing"
+                  placeholder="Enter 6-digit code"
+                  maxlength="6"
+                />
+                <button type="submit" class="btn btn-primary btn-compact">
+                  <i class="fas fa-sign-in-alt"></i>
+                  Join
+                </button>
+              </div>
+            </div>
+            <p class="form-message" id="landing-form-message"></p>
+          </form>
+        </div>
+
+        <div class="divider">
+          <span>OR</span>
+        </div>
+
+        <!-- Authentication Buttons -->
+        <div class="auth-section">
+          <div class="auth-buttons">
+            <a
+              href="{{ url_for('auth.login_choice') }}"
+              class="btn btn-secondary"
+            >
+              <i class="fas fa-sign-in-alt"></i>
+              Sign In
+            </a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary">
+              <i class="fas fa-user-plus"></i>
+              Create Account
+            </a>
+          </div>
+        </div>
+
+        <div class="auth-links">
+          <p>
+            <a href="{{ url_for('main.clubs_landing') }}"
+              >Learn about Club Registration</a
+            >
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE VIEW -->
+<div class="landing-mobile">
+  <div class="auth-container">
+    <div class="auth-card mobile-card">
+      <div class="auth-logo">
+        <img
+          src="{{ url_for('static', filename='images/logo/club_logo.png') }}"
+          alt="Fantasy Fairways Logo"
+        />
+      </div>
+
+      <h1>Fantasy Golf, Perfected</h1>
+      <p class="subtitle">Join the ultimate fantasy golf experience</p>
+
+      <!-- Quick Join Section -->
+      <div class="mobile-quick-join">
+        <form id="mobile-join-form" class="join-form">
+          <div class="form-group">
+            <label for="league-code-mobile">Have a League Code?</label>
+            <div class="input-with-button mobile-input">
+              <input
+                type="text"
+                id="league-code-mobile"
+                placeholder="Enter 6-digit code"
+                maxlength="6"
+              />
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt"></i>
+                Join League
+              </button>
+            </div>
+          </div>
+          <p class="form-message" id="mobile-form-message"></p>
+        </form>
+      </div>
+
+      <div class="divider">
+        <span>OR</span>
+      </div>
+
+      <!-- Mobile Auth Buttons -->
+      <div class="mobile-auth-buttons">
+        <a href="{{ url_for('auth.login_choice') }}" class="btn btn-secondary">
+          <i class="fas fa-sign-in-alt"></i>
+          Sign In
+        </a>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary">
+          <i class="fas fa-user-plus"></i>
+          Create Account
+        </a>
+      </div>
+
+      <div class="auth-links">
+        <p>
+          <a href="{{ url_for('main.clubs_landing') }}"
+            >How it works for Clubs</a
+          >
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <style>
-  body {
-    background: #6b9e86;
-    background: radial-gradient(
-      circle,
-      rgba(107, 158, 134, 1) 0%,
-      rgba(0, 106, 78, 1) 100%
-    );
-  }
-  /* --- Landing Page --- */
-  .landing-page-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    width: 100%;
-    padding: 1rem;
-    background-color: var(--background-color);
-  }
+  /* Professional Landing Page Styles */
 
-  .desktop-landing {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4rem;
-    max-width: 1000px;
-    width: 100%;
-    background: var(--white);
-    padding: 4rem;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-  }
-
-  .landing-logo {
-    max-width: 150px;
-    margin-bottom: 1.5rem;
-  }
-  .landing-info {
-    text-align: center; /* Add this line */
-  }
-
-  .landing-info h1 {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    text-align: left;
-  }
-
-  .landing-info p {
-    font-size: 1.1rem;
-    color: var(--text-light);
-    line-height: 1.6;
-    text-align: left;
-  }
-
-  .landing-actions h2 {
-    font-size: 1.8rem;
-    margin-bottom: 1.5rem;
-    text-align: center;
-  }
-
-  .join-form label {
+  /* Desktop Landing */
+  .landing-desktop {
     display: block;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
+  }
+
+  .landing-mobile {
+    display: none;
+  }
+
+  /* Professional Logo Styling */
+  .landing-logo {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .landing-logo img {
+    max-width: 150px;
+    height: auto;
+    filter: drop-shadow(0 4px 8px rgba(255, 255, 255, 0.3));
+  }
+
+  .auth-logo img {
+    max-width: 120px;
+    height: auto;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+  }
+
+  /* Feature Highlights */
+  .feature-highlights {
+    margin: 2.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+  }
+
+  .feature-item i {
+    font-size: 1.25rem;
+    width: 24px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  /* Quick Join Section */
+  .quick-join-section {
+    background: var(--surface-light);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
   }
 
   .input-with-button {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    align-items: flex-end;
   }
 
   .input-with-button input {
-    flex-grow: 1;
+    flex: 1;
+    min-width: 0;
   }
 
-  .form-message {
-    text-align: center;
-    margin-top: 0.5rem;
+  .btn-compact {
+    padding: 1rem 1.5rem;
     font-size: 0.9rem;
-    height: 1em;
+    white-space: nowrap;
   }
 
+  /* Professional Divider */
   .divider {
     display: flex;
     align-items: center;
     text-align: center;
-    color: var(--border-color);
+    color: var(--text-muted);
     margin: 2rem 0;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
   }
+
   .divider span {
-    padding: 0 1rem;
+    padding: 0 1.5rem;
+    background: var(--surface-white);
   }
+
   .divider::before,
   .divider::after {
     content: "";
     flex: 1;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--surface-border);
   }
 
+  /* Professional Auth Buttons */
   .auth-buttons {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
+    margin-bottom: 1.5rem;
   }
+
   .auth-buttons .btn {
     width: 100%;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
   }
 
-  /* Keyframe animation for the fade-in effect */
+  /* Form Messages */
+  .form-message {
+    text-align: center;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    min-height: 1.25rem;
+    color: var(--text-secondary);
+  }
+
+  .form-message.success {
+    color: #16a34a;
+  }
+
+  .form-message.error {
+    color: #dc2626;
+  }
+
+  /* Mobile Specific Styles */
+  .mobile-card {
+    max-width: 400px;
+    text-align: center;
+  }
+
+  .mobile-quick-join {
+    background: var(--surface-light);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .mobile-input {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .mobile-input input {
+    width: 100%;
+  }
+
+  .mobile-input .btn {
+    width: 100%;
+  }
+
+  .mobile-auth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .mobile-auth-buttons .btn {
+    width: 100%;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  /* Professional Animations */
   @keyframes fadeInUp {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(30px);
     }
     to {
       opacity: 1;
@@ -119,169 +361,236 @@
     }
   }
 
-  .mobile-landing {
-    display: none; /* Still hidden by default on desktop */
-    text-align: center;
-    width: 100%;
-    max-width: 400px;
-    padding: 5rem 2rem;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+  .landing-mobile .auth-card {
+    animation: fadeInUp 0.6s ease-out;
   }
 
-  .mobile-landing .landing-logo {
-    max-width: 120px; /* Slightly smaller logo for better balance */
-    margin-bottom: 1rem;
-    animation: fadeInUp 0.6s ease-out both; /* 'both' keeps the final state */
+  .landing-mobile .auth-logo {
+    animation: fadeInUp 0.6s ease-out 0.1s both;
   }
 
-  .mobile-landing h1 {
-    font-size: 2rem; /* Larger, more impactful title */
-    margin-bottom: 2.5rem;
-    animation: fadeInUp 0.6s ease-out 0.2s both; /* Delayed start */
+  .landing-mobile h1 {
+    animation: fadeInUp 0.6s ease-out 0.2s both;
   }
 
-  .mobile-landing .auth-buttons {
-    display: flex;
-    flex-direction: column; /* Stack buttons vertically */
-    gap: 1rem;
-    width: 100%;
-    margin-top: 0; /* Remove top margin */
-    animation: fadeInUp 0.6s ease-out 0.4s both; /* Delayed start */
+  .landing-mobile .subtitle {
+    animation: fadeInUp 0.6s ease-out 0.3s both;
   }
 
-  .mobile-landing .auth-buttons .btn {
-    width: 100%;
-    padding: 1rem; /* Taller, more tappable buttons */
-    font-size: 1.1rem;
+  .landing-mobile .mobile-quick-join {
+    animation: fadeInUp 0.6s ease-out 0.4s both;
   }
 
-  .how-it-works-link {
-    display: inline-block;
-    margin-top: 2.5rem;
-    font-weight: 600;
-    font-size: 1rem;
-    color: var(--primary-color);
-    animation: fadeInUp 0.6s ease-out 0.6s both; /* Delayed start */
+  .landing-mobile .mobile-auth-buttons {
+    animation: fadeInUp 0.6s ease-out 0.5s both;
   }
 
-  /* --- Landing Page Join Form --- */
-  .join-form label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: var(--text-dark);
-  }
-
-  .input-with-button {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: center; /* This ensures both items are vertically centered */
-  }
-
-  .input-with-button input {
-    flex-grow: 1; /* Allows the input to take up the available space */
-    padding: 0.75rem 1rem;
-    width: -webkit-fill-available;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-    height: 50px; /* Set a fixed height */
-    box-sizing: border-box; /* Important for consistent sizing */
-  }
-
-  .input-with-button .btn {
-    flex-shrink: 0; /* Prevents the button from shrinking */
-    height: 50px; /* Match the height of the input */
-    box-sizing: border-box;
-  }
-
-  /* --- Media Query for Mobile --- */
+  /* Professional Responsive Design */
   @media (max-width: 768px) {
-    .desktop-landing {
+    .landing-desktop {
       display: none;
     }
-    .mobile-landing {
-      display: flex;
-      background-color: #f0fff9;
-      border-radius: 2rem;
+
+    .landing-mobile {
+      display: block;
     }
-    .landing-page-wrapper {
-      display: flex;
+
+    /* Adjust auth container for mobile landing */
+    .landing-mobile .auth-container {
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .feature-highlights {
+      margin: 2rem 0;
+    }
+
+    .feature-item {
       justify-content: center;
-      align-items: center;
-      padding-top: 0;
+      font-size: 0.9rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .landing-mobile .auth-container {
+      padding: 1rem 0.5rem;
+    }
+
+    .mobile-card {
+      padding: 2rem 1.5rem;
+    }
+
+    .mobile-card h1 {
+      font-size: 1.75rem;
+    }
+
+    .mobile-quick-join {
+      padding: 1.25rem;
+    }
+
+    .mobile-auth-buttons .btn {
+      padding: 1rem 1.5rem;
+      font-size: 1rem;
+    }
+  }
+
+  /* Professional form styling for landing */
+  .join-form label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .join-form input {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border: 2px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
+    font-size: 1rem;
+    transition: var(--transition);
+    background: var(--surface-white);
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .join-form input:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 4px rgba(0, 106, 78, 0.1);
+  }
+
+  .join-form input::placeholder {
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  /* Enhanced secondary button styling */
+  .btn-secondary {
+    background: var(--surface-white);
+    color: var(--primary-green);
+    border: 2px solid var(--primary-green);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-secondary:hover {
+    background: var(--primary-green);
+    color: var(--surface-white);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 106, 78, 0.3);
+  }
+
+  /* Professional focus management */
+  .form-group {
+    position: relative;
+    margin-bottom: 1rem;
+  }
+
+  /* Professional loading states */
+  .btn-loading {
+    position: relative;
+    color: transparent !important;
+  }
+
+  .btn-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    color: var(--surface-white);
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
     }
   }
 </style>
-<div class="landing-page-wrapper">
-  <!-- DESKTOP VIEW -->
-  <div class="desktop-landing">
-    <div class="landing-info">
-      <img
-        src="{{ url_for('static', filename='images/logo/club_logo.png') }}"
-        alt="Fantasy Fairways Logo"
-        class="landing-logo"
-      />
-      <h1>Fantasy Golf, Perfected.</h1>
-      <p>
-        The ultimate platform for clubs and friends. Create private leagues,
-        compete in major tournaments, and prove you're the best fantasy manager
-        on the course.
-      </p>
-    </div>
-    <div class="landing-actions">
-      <h2>Get in the Game</h2>
 
-      <form id="landing-join-form" class="join-form">
-        <label for="league-code-landing">Have a code? Join a league now.</label>
-        <div class="input-with-button">
-          <input
-            type="text"
-            id="league-code-landing"
-            placeholder="Enter 6-digit code"
-          />
-          <button type="submit" class="btn btn-primary">Join League</button>
-        </div>
-        <p class="form-message" id="landing-form-message"></p>
-      </form>
+<script>
+  // Professional form handling
+  document.addEventListener("DOMContentLoaded", function () {
+    // Handle desktop join form
+    const desktopForm = document.getElementById("landing-join-form");
+    const desktopMessage = document.getElementById("landing-form-message");
 
-      <div class="divider">
-        <span>OR</span>
-      </div>
+    if (desktopForm) {
+      desktopForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        handleLeagueJoin("league-code-landing", "landing-form-message");
+      });
+    }
 
-      <div class="auth-buttons">
-        <a href="{{ url_for('auth.login_choice') }}" class="btn btn-secondary"
-          >Log In</a
-        >
-        <a href="{{ url_for('auth.register') }}" class="btn btn-primary"
-          >Sign Up</a
-        >
-      </div>
-    </div>
-  </div>
+    // Handle mobile join form
+    const mobileForm = document.getElementById("mobile-join-form");
+    const mobileMessage = document.getElementById("mobile-form-message");
 
-  <!-- MOBILE VIEW -->
-  <div class="mobile-landing">
-    <img
-      src="{{ url_for('static', filename='images/logo/club_logo.png') }}"
-      alt="Fantasy Fairways Logo"
-      class="landing-logo"
-    />
-    <!-- <h1>Fantasy Fairways</h1> -->
-    <div class="auth-buttons">
-      <a href="{{ url_for('auth.login_choice') }}" class="btn btn-secondary"
-        >Log In</a
-      >
-      <a href="{{ url_for('auth.register') }}" class="btn btn-primary"
-        >Sign Up</a
-      >
-    </div>
-    <a href="{{ url_for('main.clubs_landing') }}" class="how-it-works-link"
-      >How it works for Clubs</a
-    >
-  </div>
-</div>
+    if (mobileForm) {
+      mobileForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        handleLeagueJoin("league-code-mobile", "mobile-form-message");
+      });
+    }
+
+    function handleLeagueJoin(inputId, messageId) {
+      const input = document.getElementById(inputId);
+      const message = document.getElementById(messageId);
+      const code = input.value.trim().toUpperCase();
+
+      // Clear previous messages
+      message.textContent = "";
+      message.className = "form-message";
+
+      // Validate code format
+      if (!/^[A-Z0-9]{6}$/.test(code)) {
+        message.textContent = "Please enter a valid 6-character code";
+        message.classList.add("error");
+        return;
+      }
+
+      // Add loading state
+      const submitBtn = input
+        .closest("form")
+        .querySelector('button[type="submit"]');
+      submitBtn.classList.add("btn-loading");
+      submitBtn.disabled = true;
+
+      // Simulate API call (replace with actual endpoint)
+      setTimeout(() => {
+        // Remove loading state
+        submitBtn.classList.remove("btn-loading");
+        submitBtn.disabled = false;
+
+        // For demo purposes - replace with actual logic
+        if (code === "DEMO01") {
+          message.textContent = "League found! Redirecting...";
+          message.classList.add("success");
+          // Redirect to league page
+          setTimeout(() => {
+            window.location.href = "/leagues/" + code;
+          }, 1500);
+        } else {
+          message.textContent =
+            "League code not found. Please check and try again.";
+          message.classList.add("error");
+        }
+      }, 1500);
+    }
+  });
+</script>
+
 {% endblock %}

@@ -1,123 +1,288 @@
 {% extends 'base.html' %} {% block content %}
-<style>
-  .page-wrapper {
-    padding: 4rem 1rem;
-    background-color: #f7f7f7;
-  }
-  .form-container {
-    max-width: 800px; /* Wider for more fields */
-    margin: 0 auto;
-    background-color: #ffffff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    padding: 3rem;
-  }
-  .form-container h1 {
-    font-family: "Merriweather", serif;
-    text-align: center;
-    margin-top: 0;
-    margin-bottom: 2rem;
-  }
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-  }
-  .form-group {
-    margin-bottom: 1rem;
-  }
-  .form-group.full-width {
-    grid-column: 1 / -1; /* Span full width */
-  }
-  .form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: bold;
-  }
-  .form-group input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
-  }
-  .terms-group {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1.5rem;
-  }
-  .btn-submit {
-    width: 100%;
-    padding: 12px;
-    background-color: #006a4e;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 1.1rem;
-    font-weight: bold;
-  }
-</style>
 
-<div class="page-wrapper">
-  <div class="form-container">
+<div class="auth-container">
+  <div class="auth-card" style="max-width: 700px">
+    <div class="auth-logo">
+      <i
+        class="fas fa-golf-ball"
+        style="
+          font-size: 3rem;
+          color: var(--primary-green);
+          margin-bottom: 1rem;
+        "
+      ></i>
+    </div>
+
     <h1>Register Your Club</h1>
+    <p class="subtitle">
+      Create a professional club account for fantasy golf leagues
+    </p>
+
     <form method="POST" action="{{ url_for('auth.register_club') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
       <div class="form-grid">
         <div class="form-group">
           <label for="club_name">Club Name</label>
-          <input type="text" id="club_name" name="club_name" required />
+          <input
+            type="text"
+            id="club_name"
+            name="club_name"
+            placeholder="Enter your club name"
+            required
+          />
         </div>
+
         <div class="form-group">
           <label for="contact_person">Contact Person</label>
           <input
             type="text"
             id="contact_person"
             name="contact_person"
+            placeholder="Primary contact name"
             required
           />
         </div>
+
         <div class="form-group">
           <label for="email">Email Address</label>
-          <input type="email" id="email" name="email" required />
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="Club contact email"
+            required
+          />
         </div>
+
         <div class="form-group">
           <label for="phone_number">Phone Number</label>
-          <input type="tel" id="phone_number" name="phone_number" required />
+          <input
+            type="tel"
+            id="phone_number"
+            name="phone_number"
+            placeholder="Contact phone number"
+            required
+          />
         </div>
+
         <div class="form-group full-width">
-          <label for="address">Address</label>
-          <input type="text" id="address" name="address" required />
+          <label for="address">Club Address</label>
+          <input
+            type="text"
+            id="address"
+            name="address"
+            placeholder="Full club address"
+            required
+          />
         </div>
+
         <div class="form-group full-width">
-          <label for="website">Website (Optional)</label>
-          <input type="url" id="website" name="website" />
+          <label for="website">Club Website</label>
+          <input
+            type="url"
+            id="website"
+            name="website"
+            placeholder="https://yourclub.com (optional)"
+          />
         </div>
+
         <div class="form-group">
           <label for="password">Password</label>
-          <input type="password" id="password" name="password" required />
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Create a secure password"
+            required
+          />
         </div>
+
         <div class="form-group">
           <label for="confirm_password">Confirm Password</label>
           <input
             type="password"
             id="confirm_password"
             name="confirm_password"
+            placeholder="Confirm your password"
             required
           />
         </div>
-        <div class="form-group full-width terms-group">
-          <input type="checkbox" id="terms" name="terms" required />
-          <label for="terms" style="margin-bottom: 0"
-            >I accept the Terms & Conditions</label
-          >
-        </div>
+
         <div class="form-group full-width">
-          <button type="submit" class="btn-submit">Register Club</button>
+          <div class="terms-group">
+            <input type="checkbox" id="terms" name="terms" required />
+            <label for="terms"
+              >I accept the Terms & Conditions and Privacy Policy</label
+            >
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-building"></i>
+            Register Club
+          </button>
         </div>
       </div>
     </form>
+
+    <div class="auth-links">
+      <p>
+        Individual player?
+        <a href="{{ url_for('auth.register') }}">Create a player account</a>
+      </p>
+      <p>
+        Already registered?
+        <a href="{{ url_for('auth.login') }}">Sign in to your account</a>
+      </p>
+    </div>
   </div>
 </div>
+
+<style>
+  /* Club registration specific styles */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .terms-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .terms-group input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  .terms-group label {
+    margin: 0;
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-transform: none;
+    letter-spacing: normal;
+    line-height: 1.4;
+    color: var(--text-secondary);
+  }
+
+  /* Enhanced auth card for larger forms */
+  .auth-card {
+    background: var(--surface-white);
+    padding: 3rem 2.5rem;
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--surface-border);
+    box-shadow: var(--shadow-xl);
+    width: 100%;
+    position: relative;
+    backdrop-filter: blur(10px);
+  }
+
+  /* Professional club branding */
+  .auth-logo i {
+    display: block;
+    text-align: center;
+    filter: drop-shadow(0 2px 4px rgba(0, 106, 78, 0.3));
+  }
+
+  /* Form validation styling */
+  .form-group.has-error input {
+    border-color: #dc2626;
+    background-color: #fef2f2;
+  }
+
+  .form-group.has-error label {
+    color: #dc2626;
+  }
+
+  .form-group.has-success input {
+    border-color: #16a34a;
+    background-color: #f0fdf4;
+  }
+
+  /* Responsive adjustments for club registration */
+  @media (max-width: 768px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .auth-card {
+      padding: 2rem 1.5rem;
+    }
+
+    .auth-card h1 {
+      font-size: 1.75rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .auth-container {
+      padding: 1rem 0.5rem;
+    }
+
+    .auth-card {
+      padding: 1.5rem 1rem;
+    }
+
+    .form-grid {
+      gap: 0.75rem;
+    }
+  }
+
+  /* Professional input focus states */
+  .auth-card input:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 4px rgba(0, 106, 78, 0.1);
+    background: var(--surface-white);
+  }
+
+  .auth-card input::placeholder {
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  /* Professional loading state for submit button */
+  .btn-loading {
+    position: relative;
+    color: transparent !important;
+  }
+
+  .btn-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    color: var(--surface-white);
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+</style>
+
 {% endblock %}
