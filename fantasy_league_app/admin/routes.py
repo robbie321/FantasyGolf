@@ -700,11 +700,89 @@ def send_broadcast_notification():
     return render_template('admin/send_notification.html', form=form, title="Send Broadcast Notification")
 
 
-@admin_bp.route('/debug/trigger-scheduler')
+# TESTING
+
+@admin_bp.route('/debug-trigger-scheduler', methods=['POST'])
 @admin_required
 def debug_trigger_scheduler():
-    from fantasy_league_app.tasks import schedule_score_updates_for_the_week
+    """Manual debug trigger for the scheduler"""
+    from ..tasks import debug_trigger_supervisor, schedule_score_updates_for_the_week
 
-    result = schedule_score_updates_for_the_week.delay()
-    flash(f'Triggered scheduler task: {result.id}', 'info')
+    # Trigger the supervisor task
+    result = debug_trigger_supervisor.delay()
+    flash(f'Debug supervisor task triggered: {result.id}', 'info')
+
+    # Also directly trigger the main scheduler
+    result2 = schedule_score_updates_for_the_week.delay()
+    flash(f'Main scheduler task triggered: {result2.id}', 'info')
+
+    return redirect(url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/debug-list-tasks', methods=['POST'])
+@admin_required
+def debug_list_tasks():
+    """Debug route to list scheduled tasks"""
+    from ..tasks import debug_list_scheduled_tasks
+
+    result = debug_list_scheduled_tasks.delay()
+    flash(f'Task list debug triggered: {result.id}', 'success')
+    return redirect(url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/test-celery', methods=['POST'])
+@admin_required
+def test_celery():
+    """Test basic Celery connectivity"""
+    from ..tasks import test_celery_connection
+
+    result = test_celery_connection.delay()
+    flash(f'Celery test triggered: {result.id}', 'success')
+    return redirect(url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/check-task-status/<task_id>')
+@admin_required
+def check_task_status(task_id):
+    """Check the status of a specific task"""
+    from .. import celery
+
+    result = celery.AsyncResult(task_id)
+
+    status_info = {
+        'task_id': task_id,
+        'status': result.status,
+        'result': str(result.result) if result.result else None,
+        'traceback': result.traceback if result.traceback else None,
+        'successful': result.successful(),
+        'failed': result.failed(),
+        'ready': result.ready(),
+    }
+
+    return f"<pre>{json.dumps(status_info, indent=2)}</pre>"
+
+@admin_bp.route('/celery-inspect')
+@admin_required
+def celery_inspect():
+    """Inspect Celery worker status"""
+    from .. import celery
+    import json
+
+    inspect = celery.control.inspect()
+
+    info = {
+        'active_tasks': inspect.active(),
+        'scheduled_tasks': inspect.scheduled(),
+        'reserved_tasks': inspect.reserved(),
+        'stats': inspect.stats(),
+        'registered_tasks': inspect.registered(),
+    }
+
+    return f"<pre>{json.dumps(info, indent=2, default=str)}</pre>"
+
+@admin_bp.route('/test-simple-task', methods=['POST'])
+@admin_required
+def test_simple_task():
+    """Test a very simple task without app context"""
+    from ..tasks import simple_test_task
+
+    result = simple_test_task.delay("Hello from admin!")
+    flash(f'Simple test task triggered: {result.id}', 'success')
     return redirect(url_for('admin.admin_dashboard'))

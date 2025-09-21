@@ -47,6 +47,7 @@
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     padding: 2rem;
+    margin-bottom: 2rem;
   }
   .management-section h2 {
     font-family: "Merriweather", serif;
@@ -89,6 +90,72 @@
     border-radius: 5px;
     font-weight: bold;
     margin: 5px;
+  }
+
+  /* Debug Section Styles */
+  .debug-section {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  .debug-section h2 {
+    font-family: "Merriweather", serif;
+    margin-top: 0;
+    text-align: center;
+    color: #856404;
+  }
+  .debug-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .debug-btn {
+    background-color: #ffc107;
+    color: #212529;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    transition: background-color 0.2s;
+  }
+  .debug-btn:hover {
+    background-color: #e0a800;
+    color: #212529;
+    text-decoration: none;
+  }
+  .debug-btn.btn-success {
+    background-color: #28a745;
+    color: white;
+  }
+  .debug-btn.btn-info {
+    background-color: #17a2b8;
+    color: white;
+  }
+  .debug-btn.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+  }
+  .debug-btn.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+  }
+
+  .debug-results {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: "Courier New", monospace;
+    font-size: 0.9rem;
   }
 
   /* Revenue Filter */
@@ -172,6 +239,93 @@
       </div>
     </div>
 
+    <!-- NEW: Debug & Testing Tools Section -->
+    <div class="debug-section">
+      <h2>🔧 Debug & Testing Tools</h2>
+      <div class="debug-grid">
+        <div style="text-align: center">
+          <form
+            method="POST"
+            action="{{ url_for('admin.test_simple_task') }}"
+            class="d-inline"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="debug-btn btn-success">
+              Simple Test Task
+            </button>
+          </form>
+          <small class="d-block text-muted mt-1">No app context needed</small>
+        </div>
+
+        <div style="text-align: center">
+          <form
+            method="POST"
+            action="{{ url_for('admin.test_celery') }}"
+            class="d-inline"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="debug-btn btn-info">
+              Test Celery + DB
+            </button>
+          </form>
+          <small class="d-block text-muted mt-1">Tests app context & DB</small>
+        </div>
+
+        <div style="text-align: center">
+          <form
+            method="POST"
+            action="{{ url_for('admin.debug_trigger_scheduler') }}"
+            class="d-inline"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="debug-btn btn-warning">
+              Trigger Scheduler
+            </button>
+          </form>
+          <small class="d-block text-muted mt-1"
+            >Run score update scheduler</small
+          >
+        </div>
+
+        <div style="text-align: center">
+          <a
+            href="{{ url_for('admin.celery_inspect') }}"
+            class="debug-btn btn-secondary"
+            target="_blank"
+          >
+            Inspect Workers
+          </a>
+          <small class="d-block text-muted mt-1">Check worker status</small>
+        </div>
+      </div>
+
+      <div style="margin-top: 2rem">
+        <h6>Last Test Results:</h6>
+        <div id="task-results" class="debug-results">
+          {% with messages = get_flashed_messages() %} {% if messages %} {% for
+          message in messages %}
+          <div class="mb-1">{{ message }}</div>
+          {% endfor %} {% else %}
+          <div class="text-muted">
+            No recent test results. Click a button above to test.
+          </div>
+          {% endif %} {% endwith %}
+        </div>
+      </div>
+
+      <div style="margin-top: 1rem">
+        <small class="text-muted">
+          <strong>Debug Steps:</strong><br />
+          1. First try "Simple Test Task" - should work without any
+          dependencies<br />
+          2. Then "Test Celery + DB" - tests Flask app context and database<br />
+          3. Finally "Trigger Scheduler" - tests the actual score update
+          logic<br />
+          4. Use "Inspect Workers" to see active/scheduled tasks
+        </small>
+      </div>
+    </div>
+
     <!-- Management Links Section -->
     <div class="management-section">
       <h2>Management Tools</h2>
@@ -185,7 +339,7 @@
               class="admin-card"
             >
               <div class="card-icon">...</div>
-              <div class="card-title">Reset Player Sxore</div>
+              <div class="card-title">Reset Player Score</div>
               <div class="card-description">Reset Player Scores to 0</div>
             </a>
           </div>
@@ -261,16 +415,6 @@
         </div>
 
         <div class="management-card">
-          <h3>Run player score live</h3>
-          <p>View and manage all leagues created by clubs.</p>
-          <div class="btn-group">
-            <a href="{{ url_for('admin.debug_trigger_scheduler') }}" class="btn"
-              >Run live updates</a
-            >
-          </div>
-        </div>
-
-        <div class="management-card">
           <h3>Public Leagues</h3>
           <p>
             Create official, site-wide public leagues for all users to join.
@@ -307,7 +451,7 @@
           {% endif %}
         </div>
 
-        <!-- NEW: Card for manually running the finalization task -->
+        <!-- Manual Task Runner Card -->
         <div class="management-card">
           <h3>Manual Task Runner</h3>
           <p>
@@ -333,4 +477,51 @@
     </div>
   </div>
 </div>
+
+<!-- JavaScript for auto-checking task status -->
+<script>
+  function checkTaskStatus(taskId) {
+    fetch(`/admin/check-task-status/${taskId}`)
+      .then((response) => response.text())
+      .then((data) => {
+        const resultsDiv = document.getElementById("task-results");
+        const timestamp = new Date().toLocaleTimeString();
+        resultsDiv.innerHTML =
+          `<strong>[${timestamp}] Task ${taskId}:</strong><br>${data}<hr>` +
+          resultsDiv.innerHTML;
+      })
+      .catch((error) => {
+        console.error("Error checking task status:", error);
+        const resultsDiv = document.getElementById("task-results");
+        resultsDiv.innerHTML =
+          `<strong>Error checking task ${taskId}:</strong> ${error}<hr>` +
+          resultsDiv.innerHTML;
+      });
+  }
+
+  // Auto-check task status after clicks
+  document.addEventListener("DOMContentLoaded", function () {
+    const forms = document.querySelectorAll(
+      'form[action*="test"], form[action*="debug"]'
+    );
+    forms.forEach((form) => {
+      form.addEventListener("submit", function (e) {
+        // Small delay to let task be created
+        setTimeout(() => {
+          // Look for task IDs in flash messages
+          const resultsDiv = document.getElementById("task-results");
+          const flashText = resultsDiv.innerHTML;
+          const match = flashText.match(/([a-f0-9-]{36})/);
+          if (match) {
+            // Wait a bit more for task to be processed
+            setTimeout(() => {
+              checkTaskStatus(match[1]);
+            }, 2000);
+          }
+        }, 1000);
+      });
+    });
+  });
+</script>
+
 {% endblock %}

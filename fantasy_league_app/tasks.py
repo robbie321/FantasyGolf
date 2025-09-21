@@ -5,7 +5,7 @@ import requests
 import os
 from sqlalchemy import func
 
-from . import db, mail, socketio, get_app  # Make sure mail is imported if you use it in other tasks
+from . import db, mail, socketio, get_app, cache    # Make sure mail is imported if you use it in other tasks
 from flask_mail import Message
 from flask import current_app
 
@@ -14,9 +14,19 @@ from .data_golf_client import DataGolfClient
 from collections import defaultdict # Add this import
 from .models import League, Player, PlayerBucket, LeagueEntry, PlayerScore, User, PushSubscription, db, DailyTaskTracker
 from celery import shared_task
+from celery.exceptions import SoftTimeLimitExceeded
 from .stripe_client import process_payouts,  create_payout
 from .utils import send_winner_notification_email, send_push_notification, send_email
-from requests.exceptions import RequestException, Timeout, ConnectionError
+from requests.exceptions import RequestException, Timeout,ConnectionError
+
+class CacheManager:
+    @staticmethod
+    def cache_key_for_player_scores(tour):
+        return f"player_scores_{tour}"
+
+    @staticmethod
+    def cache_key_for_leaderboard(league_id):
+        return f"leaderboard_{league_id}"
 
 # Custom exceptions for better error handling
 class TemporaryAPIError(Exception):
@@ -34,6 +44,66 @@ class DatabaseConnectionError(Exception):
 # Set up proper logging for Celery tasks
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+###########################
+###########################
+#####DEBUGGING#############
+###########################
+###########################
+
+@shared_task
+def simple_test_task(message):
+    """Very simple test task that doesn't need app context"""
+    import time
+
+    print(f"🚀 SIMPLE TASK STARTED: {message}")
+    print(f"🚀 Current time: {datetime.now()}")
+    print(f"🚀 Task is running successfully!")
+
+    # Small delay to see it's working
+    time.sleep(2)
+
+    result = f"Simple task completed at {datetime.now()} with message: {message}"
+    print(f"🚀 SIMPLE TASK FINISHED: {result}")
+
+    return result
+
+# Also fix your test_celery_connection task to be more verbose
+@shared_task
+def test_celery_connection():
+    """Simple test task to verify Celery is working"""
+    print("=" * 50)
+    print("🧪 TEST TASK STARTING!")
+    print(f"🧪 Current time: {datetime.utcnow()}")
+    print(f"🧪 Today: {date.today()}")
+    print(f"🧪 Weekday: {date.today().weekday()}")
+
+    # Test app context
+    try:
+        app = get_app()
+        with app.app_context():
+            print("🧪 App context is working!")
+            # Try a simple DB query
+            from .models import User
+            user_count = User.query.count()
+            print(f"🧪 Database connection working! User count: {user_count}")
+    except Exception as e:
+        print(f"🧪 ERROR with app context: {e}")
+        return f"App context failed: {str(e)}"
+
+    result = f"Test successful at {datetime.utcnow()}"
+    print(f"🧪 TEST TASK FINISHED: {result}")
+    print("=" * 50)
+
+    return result
+
+
+###########################
+###########################
+#####END DEBUGGING#########
+###########################
+###########################
 
 def invalidate_score_caches(tour):
     """Invalidate score-related caches when scores update"""
@@ -271,7 +341,16 @@ def test_celery_connection():
 def debug_trigger_supervisor():
     """Manual debug task to trigger supervisor logic"""
     logger.info("🔧 DEBUG: Manually triggering supervisor logic")
-    return ensure_live_updates_are_running.delay()
+
+    # Call the supervisor task directly
+    result = ensure_live_updates_are_running.delay()
+    logger.info(f"🔧 DEBUG: Supervisor task result: {result.id}")
+
+    # Also call the main scheduler
+    result2 = schedule_score_updates_for_the_week.delay()
+    logger.info(f"🔧 DEBUG: Main scheduler result: {result2.id}")
+
+    return f"Debug triggered: supervisor={result.id}, scheduler={result2.id}"
 
 
 # VERIFICATION TASK: Check what's in the beat schedule
@@ -402,18 +481,22 @@ def schedule_score_updates_for_the_week(self):
         raise
 
 # --- Task to reset all player scores weekly ---
-@shared_task
-def reset_player_scores(self):
+@shared_task(
+    autoretry_for=(DatabaseConnectionError,),
+    retry_kwargs={'max_retries': 2, 'countdown': 120},
+    soft_time_limit=300,
+    time_limit=360
+)
+def reset_player_scores():  # Removed self parameter
     """
     Scheduled to run weekly to reset the 'current_score' for all players to 0.
-    This prepares the database for the new week of tournaments.
     """
     print(f"--- Running weekly player score reset at {datetime.now()} ---")
 
     app = get_app()
     try:
         with app.app_context():
-            logger.info(f"RESET: Starting score reset (attempt {self.request.retries + 1})")
+            logger.info("RESET: Starting score reset")
 
             try:
                 updated_rows = db.session.query(Player).update({"current_score": 0})
@@ -444,12 +527,9 @@ def reset_player_scores(self):
                 db.session.rollback()
                 raise DatabaseConnectionError(f"Score reset failed: {db_error}")
 
-    except SoftTimeLimitExceeded:
-        logger.warning("RESET: Task timeout")
-        raise self.retry(countdown=120)
     except Exception as e:
         logger.error(f"RESET: Unexpected error: {e}")
-        raise
+        rais
 
 @shared_task
 def send_deadline_reminders():

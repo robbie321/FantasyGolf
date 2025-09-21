@@ -21,7 +21,6 @@ mail = Mail()
 csrf = CSRFProtect()
 socketio = SocketIO()
 
-# FIXED: Create Celery instance with better configuration
 def make_celery(app=None):
     """Create and configure Celery instance"""
     redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
@@ -40,7 +39,7 @@ def make_celery(app=None):
     beat_schedule = {
         'ensure-live-updates-running': {
             'task': 'fantasy_league_app.tasks.ensure_live_updates_are_running',
-            'schedule': crontab(minute='*/1'),
+            'schedule': crontab(minute='*/1'),  # Every minute
         },
         'schedule-live-score-updates': {
             'task': 'fantasy_league_app.tasks.schedule_score_updates_for_the_week',
@@ -59,9 +58,18 @@ def make_celery(app=None):
             'schedule': crontab(hour=10, minute=30, day_of_week='monday'),
         },
         'warm-caches-early-morning': {
-        'task': 'fantasy_league_app.tasks.warm_critical_caches',
-        'schedule': crontab(hour=5, minute=30),  # 5:30 AM daily
-    },
+            'task': 'fantasy_league_app.tasks.warm_critical_caches',
+            'schedule': crontab(hour=5, minute=30),
+        },
+        'cleanup-stale-caches': {
+            'task': 'fantasy_league_app.tasks.cleanup_expired_caches',
+            'schedule': crontab(hour=2, minute=0),
+        },
+        # ADD DEBUG TASKS FOR TESTING
+        'debug-test-every-2-minutes': {
+            'task': 'fantasy_league_app.tasks.test_celery_connection',
+            'schedule': crontab(minute='*/2'),  # Every 2 minutes for testing
+        },
     }
 
     # Update basic configuration
@@ -77,6 +85,9 @@ def make_celery(app=None):
         broker_connection_retry=True,
         broker_connection_max_retries=10,
         beat_schedule=beat_schedule,
+        # ADD THESE FOR BETTER DEBUGGING
+        task_track_started=True,
+        task_send_sent_event=True,
     )
 
     if app is not None:
