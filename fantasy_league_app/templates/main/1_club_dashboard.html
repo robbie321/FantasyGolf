@@ -99,6 +99,14 @@
           </a>
         </div>
         <p class="subtitle">Ready to raise some money?</p>
+
+        <!-- <div class="user-level">
+          <span>⭐ Level 15</span>
+          <div class="xp-bar">
+            <div class="xp-progress" style="width: 75%"></div>
+          </div>
+          <small>Next level: 250 XP</small>
+        </div> -->
       </div>
 
       <div class="stats-grid">
@@ -112,12 +120,21 @@
         </div>
         <div class="stat-card">
           <span class="value">{{ total_entries_count }}</span>
+          <!-- <span class="value">{{ total_participants }}</span> -->
           <span class="label">Total Entries</span>
         </div>
       </div>
     </header>
     <div class="content-container">
       <section id="dashboard-section" class="page-section">
+        <!-- <div class="header-actions">
+          <a
+            href="{{ url_for('league.create_league') }}"
+            class="btn btn-primary"
+          >
+            <i class="fa-solid fa-plus"></i> Create New League
+          </a>
+        </div> -->
         <!-- Leagues Table -->
         <div class="leagues-section">
           <div class="leaderboard-table-container">
@@ -148,35 +165,34 @@
                   {% for league in club_leagues %}
                   <tr>
                     <td>
-                      <strong>{{ league['name'] }}</strong><br />
-                      <small>Code: {{ league['league_code'] }}</small>
+                      <strong>{{ league.name }}</strong><br />
+                      <small>Code: {{ league.league_code }}</small>
                     </td>
-                    <td class="text-center">{{ league['entries'] }}</td>
+                    <td class="text-center">{{ league.entries }}</td>
                     <td class="text-center">
-                      <span class="tag tag-{{ league['status']|lower }}"
-                        >{{ league['status'] }}</span
+                      <span class="tag tag-{{ league.status|lower }}"
+                        >{{ league.status }}</span
                       >
                     </td>
 
                     <td class="text-right">
-                      {% set league_start_date = league['start_date'] %} {% if
-                      league_start_date and not league.get('is_finalized',
-                      false) and league_start_date > now.isoformat() %}
+                      {% if not league.is_finalized and league.start_date > now
+                      %}
                       <div class="share-box">
-                        {% if league['league_code'] %}
+                        {% if league.league_code %}
                         <label>Access Code</label>
                         <div class="input-group">
                           <input
                             type="text"
                             class="form-control"
-                            value="{{ league['league_code'] }}"
+                            value="{{ league.access_code }}"
                             readonly
-                            id="access-code-{{ league['id'] }}"
+                            id="access-code-{{ league.id }}"
                           />
                           <div class="input-group-append">
                             <button
                               class="btn btn-outline-secondary copy-btn"
-                              data-target="#access-code-{{ league['id'] }}"
+                              data-target="#access-code-{{ league.id }}"
                             >
                               Copy
                             </button>
@@ -188,14 +204,14 @@
                           <input
                             type="text"
                             class="form-control"
-                            value="{{ url_for('league.view_league', league_id=league['id'], _external=True) }}"
+                            value="{{ url_for('league.view_league', league_id=league.id, _external=True) }}"
                             readonly
-                            id="share-link-{{ league['id'] }}"
+                            id="share-link-{{ league.id }}"
                           />
                           <div class="input-group-append">
                             <button
                               class="btn btn-outline-secondary copy-btn"
-                              data-target="#share-link-{{ league['id'] }}"
+                              data-target="#share-link-{{ league.id }}"
                             >
                               Copy
                             </button>
@@ -205,20 +221,20 @@
                       </div>
                       {% endif %}
                       <a
-                        href="{{ url_for('league.club_league_view', league_id=league['id']) }}"
+                        href="{{ url_for('league.club_league_view', league_id=league.id) }}"
                         class="btn btn-outline"
                         >View</a
                       >
-                      {% if league_start_date and not league.get('is_finalized',
-                      false) and league_start_date > now.isoformat() %}
+                      {% if not league.is_finalized and league.start_date > now
+                      %}
                       <a
-                        href="{{ url_for('league.edit_league', league_id=league['id']) }}"
+                        href="{{ url_for('league.edit_league', league_id=league.id) }}"
                         class="btn btn-sm btn-info"
                         >Edit</a
                       >
 
                       <form
-                        action="{{ url_for('league.cancel_league', league_id=league['id']) }}"
+                        action="{{ url_for('league.cancel_league', league_id=league.id) }}"
                         method="POST"
                         style="display: inline"
                         onsubmit="return confirm('Are you sure you want to cancel this league? All entry fees will be refunded and this action cannot be undone.');"
@@ -309,6 +325,36 @@
             Connect Stripe Account {% endif %}
           </button>
         </form>
+        <!-- <div class="form-card earnings-overview">
+          <h4>Earnings Overview</h4>
+          <div class="earnings-grid">
+            <div class="earnings-stat">
+              <i class="fa-solid fa-dollar-sign icon"></i>
+              <strong>$0.00</strong>
+              <span>Total Earnings</span>
+            </div>
+            <div class="earnings-stat">
+              <i class="fa-regular fa-clock icon"></i>
+              <strong>$0.00</strong>
+              <span>Pending Winnings</span>
+            </div>
+            <div class="earnings-stat">
+              <i class="fa-solid fa-trophy icon"></i>
+              <strong>0</strong>
+              <span>Tournaments Won</span>
+            </div>
+          </div>
+        </div> -->
+        <!-- <div class="form-card text-center">
+          <h4>Ready to receive your winnings?</h4>
+          <p>
+            Connect your Stripe account to start receiving tournament winnings
+            directly to your bank account. The setup process takes just a few
+            minutes and is completely secure.
+          </p>
+
+
+        </div> -->
       </section>
 
       {% include 'main/_shared_dashboard_sections.html' %}

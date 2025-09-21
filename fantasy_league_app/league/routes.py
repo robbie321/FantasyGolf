@@ -179,26 +179,38 @@ def _create_new_league(name, player_bucket_id, entry_fee_str,
 @league_bp.route('/api/<int:league_id>/leaderboard')
 @login_required
 def get_leaderboard_data(league_id):
-    # 1. Call the helper function to get the league and the final sorted list
-    league, sorted_entries = _get_sorted_leaderboard(league_id)
-    leaderboard_data = []
+    """Cached leaderboard API endpoint"""
+    league = League.query.get_or_404(league_id)
 
-    # 2. Loop through the results from the helper function to build the JSON
-    for i, entry in enumerate(sorted_entries):
-        leaderboard_data.append({
-            'rank': i + 1,
-            'entry_name': entry.entry_name,
-            'user_id': entry.user.id,
-            'players': [
-                {'name': entry.player1.full_name(), 'score': entry.player1.current_score, 'dg_id': entry.player1.dg_id},
-                {'name': entry.player2.full_name(), 'score': entry.player2.current_score, 'dg_id': entry.player2.dg_id},
-                {'name': entry.player3.full_name(), 'score': entry.player3.current_score, 'dg_id': entry.player3.dg_id},
-            ],
-            'total_score': entry.total_score,
-            'is_current_user': entry.user_id == current_user.id
-        })
+    # Use the cached leaderboard method from the model
+    leaderboard_data = league.get_leaderboard_()
+
+    # Add user-specific data
+    for entry in leaderboard_data:
+        entry['is_current_user'] = entry.get('user_id') == current_user.id
 
     return jsonify(leaderboard_data)
+# def get_leaderboard_data(league_id):
+#     # 1. Call the helper function to get the league and the final sorted list
+#     league, sorted_entries = _get_sorted_leaderboard(league_id)
+#     leaderboard_data = []
+
+#     # 2. Loop through the results from the helper function to build the JSON
+#     for i, entry in enumerate(sorted_entries):
+#         leaderboard_data.append({
+#             'rank': i + 1,
+#             'entry_name': entry.entry_name,
+#             'user_id': entry.user.id,
+#             'players': [
+#                 {'name': entry.player1.full_name(), 'score': entry.player1.current_score, 'dg_id': entry.player1.dg_id},
+#                 {'name': entry.player2.full_name(), 'score': entry.player2.current_score, 'dg_id': entry.player2.dg_id},
+#                 {'name': entry.player3.full_name(), 'score': entry.player3.current_score, 'dg_id': entry.player3.dg_id},
+#             ],
+#             'total_score': entry.total_score,
+#             'is_current_user': entry.user_id == current_user.id
+#         })
+
+#     return jsonify(leaderboard_data)
 
 @league_bp.route('/create-league', methods=['GET', 'POST'])
 @login_required
@@ -770,104 +782,107 @@ def cancel():
 @league_bp.route('/view/<int:league_id>')
 @login_required
 def view_league(league_id):
-    """
-    API endpoint that returns all data needed for the league view as JSON.
-    """
     league = League.query.get_or_404(league_id)
-    entries = LeagueEntry.query.filter_by(league_id=league.id).all()
 
-    leaderboard = []
+    try:
+        # Use cached leaderboard
+        leaderboard = league.get_leaderboard_()
+    except Exception as e:
+        leaderboard = []
 
-    if league.is_finalized:
-        # --- LOGIC FOR FINALIZED LEAGUES (Your existing code) ---
-        print("League is finalized. Fetching historical scores.")
-        historical_scores = {hs.player_id: hs.score for hs in PlayerScore.query.filter_by(league_id=league.id).all()}
+    for item in leaderboard:
+        print(f"DEBUG: Item user_id: {item.get('user_id')}, user_name: {item.get('user_name')}")
 
-        for entry in entries:
-            p1_score = historical_scores.get(entry.player1_id, 0)
-            p2_score = historical_scores.get(entry.player2_id, 0)
-            p3_score = historical_scores.get(entry.player3_id, 0)
-            total_score = p1_score + p2_score + p3_score
+    # Find current user's entry in the cached data
+    current_user_entry = None
+    user_entry_data = next(
+        (item for item in leaderboard if item.get('user_id') == current_user.id),
+        None
+    )
 
-            leaderboard.append({
-                'entry': entry,
-                'user_name': entry.user.full_name,
-                'player1_name': f"{entry.player1.surname} {entry.player1.name} ",
-                'player1_score': p1_score,
-                'player2_name': f"{entry.player2.surname} {entry.player2.name}",
-                'player2_score': p2_score,
-                'player3_name': f"{entry.player3.surname} {entry.player3.name}",
-                'player3_score': p3_score,
-                'total_score': total_score
-            })
-
-    else:
-        # --- LOGIC FOR LIVE LEAGUES (New on-demand calculation) ---
-        print("League is active. Calculating live scores.")
-        for entry in entries:
-            score1 = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
-            score2 = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
-            score3 = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
-            total_score = score1 + score2 + score3
-
-            leaderboard.append({
-                'entry': entry,
-                'user_name': entry.user.full_name,
-                'player1_name': f"{entry.player1.surname} {entry.player1.name} ",
-                'player1_score': score1,
-                'player2_name': f"{entry.player2.surname} {entry.player2.name}",
-                'player2_score': score2,
-                'player3_name': f"{entry.player3.surname} {entry.player3.name}",
-                'player3_score': score3,
-                'total_score': total_score
-            })
-
-    # --- COMMON LOGIC FOR SORTING AND RANKING ---
-    # This part is the same for both live and finalized leagues
-    leaderboard.sort(key=lambda x: x['total_score'])
-    for i, item in enumerate(leaderboard):
-        item['rank'] = i + 1
-
-    current_user_entry = next((item for item in leaderboard if item['entry'].user_id == current_user.id), None)
+    if user_entry_data:
+        # Get the actual entry object for the "My Team" section
+        entry_obj = LeagueEntry.query.get(user_entry_data['entry_id'])
+        current_user_entry = {
+            'entry': entry_obj,
+            'total_score': user_entry_data['total_score'],
+            'player1_score': user_entry_data['players'][0]['score'],
+            'player2_score': user_entry_data['players'][1]['score'],
+            'player3_score': user_entry_data['players'][2]['score']
+        }
+        print(f"DEBUG: Created current_user_entry: {current_user_entry}")
 
     return render_template('league/view_league.html',
-                           league=league,
-                           leaderboard=leaderboard,
-                           user_entry=current_user_entry,
-                           now=datetime.utcnow())
-
+                         league=league,
+                         leaderboard=leaderboard,
+                         user_entry=current_user_entry,
+                         now=datetime.utcnow())
 # def view_league(league_id):
+#     """
+#     API endpoint that returns all data needed for the league view as JSON.
+#     """
 #     league = League.query.get_or_404(league_id)
 #     entries = LeagueEntry.query.filter_by(league_id=league.id).all()
 
-#     # This dictionary will hold the correct scores to display
-#     display_scores = {}
+#     leaderboard = []
 
 #     if league.is_finalized:
-#         # For finalized leagues, fetch historical scores
-#         historical_scores = PlayerScore.query.filter_by(league_id=league.id).all()
-#         for hs in historical_scores:
-#             display_scores[hs.player_id] = hs.score
-#     else:
-#         # For active leagues, use the live scores
+#         # --- LOGIC FOR FINALIZED LEAGUES (Your existing code) ---
+#         print("League is finalized. Fetching historical scores.")
+#         historical_scores = {hs.player_id: hs.score for hs in PlayerScore.query.filter_by(league_id=league.id).all()}
+
 #         for entry in entries:
-#             for player in [entry.player1, entry.player2, entry.player3]:
-#                 if player:
-#                     display_scores[player.id] = player.current_score
+#             p1_score = historical_scores.get(entry.player1_id, 0)
+#             p2_score = historical_scores.get(entry.player2_id, 0)
+#             p3_score = historical_scores.get(entry.player3_id, 0)
+#             total_score = p1_score + p2_score + p3_score
 
-#     # Calculate total scores for sorting and display
-#     for entry in entries:
-#         p1_score = display_scores.get(entry.player1_id, 0)
-#         p2_score = display_scores.get(entry.player2_id, 0)
-#         p3_score = display_scores.get(entry.player3_id, 0)
-#         entry.total_score = p1_score + p2_score + p3_score
+#             leaderboard.append({
+#                 'entry': entry,
+#                 'user_name': entry.user.full_name,
+#                 'player1_name': f"{entry.player1.surname} {entry.player1.name} ",
+#                 'player1_score': p1_score,
+#                 'player2_name': f"{entry.player2.surname} {entry.player2.name}",
+#                 'player2_score': p2_score,
+#                 'player3_name': f"{entry.player3.surname} {entry.player3.name}",
+#                 'player3_score': p3_score,
+#                 'total_score': total_score
+#             })
 
-#     sorted_entries = sorted(entries, key=lambda e: e.total_score)
-#     current_user_entry = LeagueEntry.query.filter_by(league_id=league.id, user_id=current_user.id).first()
+#     else:
+#         # --- LOGIC FOR LIVE LEAGUES (New on-demand calculation) ---
+#         print("League is active. Calculating live scores.")
+#         for entry in entries:
+#             score1 = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
+#             score2 = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
+#             score3 = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
+#             total_score = score1 + score2 + score3
 
-#     return render_template('league/view_league.html', league=league, entries=sorted_entries, scores=display_scores, user_entry=current_user_entry,
-#     now=datetime.utcnow())
+#             leaderboard.append({
+#                 'entry': entry,
+#                 'user_name': entry.user.full_name,
+#                 'player1_name': f"{entry.player1.surname} {entry.player1.name} ",
+#                 'player1_score': score1,
+#                 'player2_name': f"{entry.player2.surname} {entry.player2.name}",
+#                 'player2_score': score2,
+#                 'player3_name': f"{entry.player3.surname} {entry.player3.name}",
+#                 'player3_score': score3,
+#                 'total_score': total_score
+#             })
 
+#     # --- COMMON LOGIC FOR SORTING AND RANKING ---
+#     # This part is the same for both live and finalized leagues
+#     leaderboard.sort(key=lambda x: x['total_score'])
+#     for i, item in enumerate(leaderboard):
+#         item['rank'] = i + 1
+
+#     current_user_entry = next((item for item in leaderboard if item['entry'].user_id == current_user.id), None)
+
+#     return render_template('league/view_league.html',
+#                            league=league,
+#                            leaderboard=leaderboard,
+#                            user_entry=current_user_entry,
+#                            now=datetime.utcnow())
 
 #club league view
 @league_bp.route('/club-view/<int:league_id>')
@@ -876,7 +891,6 @@ def club_league_view(league_id):
     """
     Renders the club admin's view of one of their created leagues.
     """
-
     league = League.query.get_or_404(league_id)
 
     # Security check: ensure the club admin owns this league
@@ -884,29 +898,27 @@ def club_league_view(league_id):
         flash("You can only view leagues created by your club.", "danger")
         return redirect(url_for('main.club_dashboard'))
 
-    # Calculate leaderboard scores
-    entries = LeagueEntry.query.filter_by(league_id=league.id).all()
-    if league.is_finalized:
-        historical_scores = {hs.player_id: hs.score for hs in PlayerScore.query.filter_by(league_id=league.id).all()}
-        for entry in entries:
-            entry.total_score = historical_scores.get(entry.player1_id, 0) + \
-                                historical_scores.get(entry.player2_id, 0) + \
-                                historical_scores.get(entry.player3_id, 0)
-    else:
-        for entry in entries:
-            entry.total_score = (entry.player1.current_score or 0) + \
-                                (entry.player2.current_score or 0) + \
-                                (entry.player3.current_score or 0)
-
-    leaderboard = sorted(entries, key=lambda e: e.total_score)
+    # Use the cached leaderboard method - same as user view
+    leaderboard_data = league.get_leaderboard_()
 
     return render_template(
         'league/club_league_view.html',
         title=f"View {league.name}",
         league=league,
-        leaderboard=leaderboard,
+        leaderboard=leaderboard_data,  # Now using cached method
         now=datetime.utcnow()
     )
+
+# Cache invalidation for league routes
+def invalidate_league_caches(league_id):
+    """Invalidate league-specific caches"""
+    league = League.query.get(league_id)
+    if league:
+        league.invalidate_cache()
+
+        # Also invalidate user caches for all participants
+        for entry in league.entries:
+            invalidate_user_caches(entry.user_id)
 
 
 # --- Route for Admins to Trigger a Payout ---

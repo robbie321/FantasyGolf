@@ -87,8 +87,8 @@
         <tbody>
           {% for entry in leaderboard %}
           <tr>
-            <td>{{ loop.index }}</td>
-            <td>{{ entry.user.full_name }}</td>
+            <td>{{ entry.position }}</td>
+            <td>{{ entry.user_name }}</td>
             <td class="text-right">{{ entry.total_score }}</td>
           </tr>
           {% else %}

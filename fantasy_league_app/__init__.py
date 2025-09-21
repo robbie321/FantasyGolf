@@ -8,7 +8,7 @@ from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from flask_socketio import SocketIO
 from flask_mail import Mail
-from .config import Config
+from .config import config, Config
 from celery import Celery
 from celery.schedules import crontab
 import mimetypes
@@ -102,15 +102,24 @@ login_manager.session_protection = "strong"
 _app_instance = None
 
 
-
-
-def create_app(config_class=Config):
+def create_app(config_name=None):
     """
     Application factory function. Configures and returns the Flask app.
     """
     mimetypes.add_type('application/javascript', '.js')
     app = Flask(__name__)
-    app.config.from_object(config_class)
+
+    # Determine which configuration to use
+    if config_name is None:
+        config_name = os.environ.get('FLASK_ENV', 'development')
+
+    # Support both old and new ways of calling create_app
+    if isinstance(config_name, type) and hasattr(config_name, '__name__'):
+        # Old way: create_app(Config) - use the class directly
+        app.config.from_object(config_name)
+    else:
+        # New way: create_app('development') - use config dictionary
+        app.config.from_object(config[config_name])
 
     # --- Initialize Extensions with the App ---
     db.init_app(app)
@@ -191,3 +200,23 @@ def get_app():
     if _app_instance is None:
         _app_instance = create_app()
     return _app_instance
+
+
+def get_current_environment():
+    """Helper function to get current environment"""
+    return os.environ.get('FLASK_ENV', 'development')
+
+
+def is_development():
+    """Check if running in development mode"""
+    return get_current_environment() == 'development'
+
+
+def is_production():
+    """Check if running in production mode"""
+    return get_current_environment() == 'production'
+
+
+def is_testing():
+    """Check if running in testing mode"""
+    return get_current_environment() == 'testing'
