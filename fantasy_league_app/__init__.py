@@ -58,6 +58,10 @@ def make_celery(app=None):
             'task': 'fantasy_league_app.tasks.finalize_finished_leagues',
             'schedule': crontab(hour=10, minute=30, day_of_week='monday'),
         },
+        'warm-caches-early-morning': {
+        'task': 'fantasy_league_app.tasks.warm_critical_caches',
+        'schedule': crontab(hour=5, minute=30),  # 5:30 AM daily
+    },
     }
 
     # Update basic configuration

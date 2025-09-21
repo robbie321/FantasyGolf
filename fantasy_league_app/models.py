@@ -54,6 +54,33 @@ class User(db.Model, UserMixin):
     def __repr__(self):
         return f'<User {self.email}>'
 
+    @cache_result('user_data', lambda self: CacheManager.cache_key_for_user_leagues(self.id))
+    def get_active_leagues(self):
+        """Cached list of user's active leagues"""
+        return League.query.join(LeagueEntry).filter(
+            LeagueEntry.user_id == self.id,
+            League.is_finalized == False
+        ).all()
+
+    @cache_result('user_data')
+    def get_league_stats(self):
+        """Cached user statistics"""
+        total_entries = LeagueEntry.query.filter_by(user_id=self.id).count()
+        active_entries = LeagueEntry.query.join(League).filter(
+            LeagueEntry.user_id == self.id,
+            League.is_finalized == False
+        ).count()
+
+        return {
+            'total_entries': total_entries,
+            'active_entries': active_entries,
+            'total_winnings': self.total_winnings
+        }
+
+    def invalidate_cache(self):
+        """Invalidate all cached data for this user"""
+        cache.delete(CacheManager.cache_key_for_user_leagues(self.id))
+
 class Club(db.Model, UserMixin):
     __tablename__ = 'clubs'
     __table_args__ = (
@@ -178,6 +205,13 @@ class Player(db.Model):
     def full_name(self):
         return f'{self.name} {self.surname}'
 
+    @staticmethod
+    @cache_result('player_scores', lambda tour: CacheManager.cache_key_for_player_scores(tour))
+    def get_players_by_tour_cached(tour):
+        """Cached player list for a specific tour"""
+        return Player.query.join(player_bucket_association).join(PlayerBucket).filter(
+            PlayerBucket.tour == tour
+        ).all()
 
 # --- Model to store historical player scores for finalized leagues ---
 class PlayerScore(db.Model):
@@ -313,8 +347,57 @@ class League(db.Model):
     def __repr__(self):
         return f'<League {self.name}>'
 
+    @property
+    @cache_result('league_data', lambda self: CacheManager.cache_key_for_league_entries(self.id))
+    def entry_count(self):
+        """Cached entry count to avoid repeated queries"""
+        return LeagueEntry.query.filter_by(league_id=self.id).count()
 
+    @property
+    @cache_result('league_data')
+    def total_prize_pool(self):
+        """Cached prize pool calculation"""
+        return self.entry_fee * self.entry_count
 
+    @cache_result('leaderboards', lambda self: CacheManager.cache_key_for_leaderboard(self.id))
+    def get_leaderboard(self):
+        """Cached leaderboard calculation"""
+        entries = self.entries
+        leaderboard_data = []
+
+        for entry in entries:
+            total_score = 0
+            if entry.player1 and entry.player1.current_score is not None:
+                total_score += entry.player1.current_score
+            if entry.player2 and entry.player2.current_score is not None:
+                total_score += entry.player2.current_score
+            if entry.player3 and entry.player3.current_score is not None:
+                total_score += entry.player3.current_score
+
+            leaderboard_data.append({
+                'entry_id': entry.id,
+                'user_name': entry.user.full_name,
+                'total_score': total_score,
+                'players': [
+                    {'name': entry.player1.full_name(), 'score': entry.player1.current_score},
+                    {'name': entry.player2.full_name(), 'score': entry.player2.current_score},
+                    {'name': entry.player3.full_name(), 'score': entry.player3.current_score}
+                ]
+            })
+
+        # Sort by total score (lowest first in golf)
+        leaderboard_data.sort(key=lambda x: x['total_score'])
+
+        # Add positions
+        for i, entry in enumerate(leaderboard_data):
+            entry['position'] = i + 1
+
+        return leaderboard_data
+
+    def invalidate_cache(self):
+        """Invalidate all cached data for this league"""
+        cache.delete(CacheManager.cache_key_for_league_entries(self.id))
+        cache.delete(CacheManager.cache_key_for_leaderboard(self.id))
 
 class LeagueEntry(db.Model):
     __tablename__ = 'league_entries'

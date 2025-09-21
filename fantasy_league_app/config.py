@@ -11,6 +11,13 @@ class Config:
     SQLALCHEMY_DATABASE_URI = database_url or \
                               'postgresql://postgres:4bover2A!@localhost:5432/fantasy_league_db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+        'pool_timeout': 20,
+        'max_overflow': 0,
+        'pool_size': 10
+    }
     UPLOAD_FOLDER = 'uploads'
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -66,6 +73,16 @@ class Config:
     CACHE_TYPE = 'RedisCache'
     CACHE_REDIS_URL = redis_url
     CACHE_DEFAULT_TIMEOUT = 300
+    CACHE_KEY_PREFIX = 'ff_'
+    # Different timeouts for different data types
+    CACHE_TIMEOUTS = {
+        'player_scores': 180,      # 3 minutes - frequent updates during tournaments
+        'league_data': 300,        # 5 minutes - moderate updates
+        'user_data': 600,          # 10 minutes - infrequent updates
+        'static_data': 3600,       # 1 hour - rarely changes
+        'api_data': 900,           # 15 minutes - external API responses
+        'leaderboards': 120,       # 2 minutes - tournament leaderboards
+    }
 
     # VAPID Keys for Push Notifications
     VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY') or 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMikeN4Y56qUl9NKtb6vvneJs+0BC7DfKXJlCQGCY23qRKl5uJS36c3SWJqVVvv6eo+5rvgnNOb8Rv1dUKcdEZQ=='
@@ -104,4 +121,8 @@ class Config:
             'task': 'fantasy_league_app.tasks.ensure_live_updates_are_running',
             'schedule': crontab(minute='*/1'),
         },
+        'warm-caches-early-morning': {
+        'task': 'fantasy_league_app.tasks.warm_critical_caches',
+        'schedule': crontab(hour=5, minute=30),  # 5:30 AM daily
+    },
     }

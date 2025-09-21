@@ -12,6 +12,7 @@ from ..data_golf_client import DataGolfClient
 from ..models import User, League, LeagueEntry, PlayerScore
 from ..auth.decorators import user_required
 import stripe
+from fantasy_league_app.cache_utils import CacheManager, cache_result
 
 @main_bp.route('/offline.html')
 def offline():
@@ -58,193 +59,118 @@ def clubs_landing():
 def browse_leagues():
     search_query = request.args.get('search', '')
 
-    # Base query for public leagues that are not past their entry deadline
-    query = League.query.filter(
-        League.is_public == True,
-        League.is_finalized == False
-    )
+    @cache_result('league_data', timeout=180)  # 3 minute cache
+    def get_public_leagues_data(search_term=None):
+        query = League.query.filter(
+            League.is_public == True,
+            League.is_finalized == False
+        )
 
-    if search_query:
-        query = query.filter(League.name.ilike(f'%{search_query}%'))
+        if search_term:
+            query = query.filter(League.name.ilike(f'%{search_term}%'))
 
-    leagues = query.order_by(League.start_date).all()
+        leagues = query.order_by(League.start_date).all()
 
-    return render_template('main/browse_leagues.html', leagues=leagues, search_query=search_query)
+        # Convert to dict for JSON serialization
+        return [
+            {
+                'id': league.id,
+                'name': league.name,
+                'start_date': league.start_date.isoformat(),
+                'entry_fee': league.entry_fee,
+                'entry_count': len(league.entries),
+                'max_entries': league.max_entries,
+                'tour': league.tour
+            }
+            for league in leagues
+        ]
 
-# @main_bp.route('/user_dashboard')
-# @login_required
-# @password_reset_required
-# def user_dashboard():
-#     if getattr(current_user, 'is_club_admin', False):
-#         flash('You do not have permission to access the user dashboard.', 'warning')
-#         return redirect(url_for('main.club_dashboard'))
-
-#     # Fetch leagues the user has joined
-#     my_entries = LeagueEntry.query.filter_by(user_id=current_user.id).options(db.joinedload(LeagueEntry.league)).all()
-
-#     user_leagues = []
-#     for entry in my_entries:
-#         if entry.league:
-#             user_leagues.append({
-#                 'entry_id': entry.id,
-#                 'start_date': entry.league.start_date,
-#                 'league_obj': entry.league,
-#                 'entry_name': entry.entry_name,
-#                 'league_name': entry.league.name,
-#                 'league_code': entry.league.league_code,
-#                 'total_odds': entry.total_odds,
-#                 'league_id': entry.league.id,
-#                 'current_rank': entry.current_rank
-#             })
-
-#     return render_template('main/user_dashboard.html', user_leagues=user_leagues, today=datetime.utcnow())
+    leagues_data = get_public_leagues_data(search_query)
+    return render_template('main/browse_leagues.html',
+                         leagues=leagues_data,
+                         search_query=search_query)
 
 @main_bp.route('/user_dashboard')
 @user_required
 @password_reset_required
 def user_dashboard():
     now = datetime.utcnow()
-    user_entries = LeagueEntry.query.filter_by(user_id=current_user.id).all()
 
-     # --- Enhanced Statistics Calculation ---
-    leagues_played = len(user_entries)
-    leagues_won = League.query.filter_by(winner_id=current_user.id, is_finalized=True).count()
-    # total_winnings = user.total_winnings or 0.0
+    # Cache user-specific data
+    @cache_result('user_data',
+                  key_func=lambda: CacheManager.cache_key_for_user_leagues(current_user.id),
+                  timeout=300)  # 5 minute cache
+    def get_user_dashboard_data():
+        user_entries = LeagueEntry.query.filter_by(user_id=current_user.id).all()
 
-    # Calculate win percentage
-    win_percentage = (leagues_won / leagues_played * 100) if leagues_played > 0 else 0
+        # Enhanced Statistics Calculation
+        leagues_played = len(user_entries)
+        leagues_won = League.query.filter_by(winner_id=current_user.id, is_finalized=True).count()
+        win_percentage = (leagues_won / leagues_played * 100) if leagues_played > 0 else 0
 
-    stats = {
-        'leagues_played': leagues_played,
-        'leagues_won': leagues_won,
-        'win_percentage': f"{win_percentage:.1f}%"
-    }
+        stats = {
+            'leagues_played': leagues_played,
+            'leagues_won': leagues_won,
+            'win_percentage': f"{win_percentage:.1f}%"
+        }
 
-    # --- Categorize Leagues ---
-    live_leagues = []
-    upcoming_leagues = []
-    past_leagues = []
-    leaderboard_cache = {}
+        # Categorize Leagues with cached leaderboards
+        live_leagues = []
+        upcoming_leagues = []
+        past_leagues = []
+        leaderboard_cache = {}
 
-    for entry in user_entries:
-        league = entry.league
+        for entry in user_entries:
+            league = entry.league
 
-        # --- On-the-fly rank and score calculation (reused for all categories) ---
-        if league.id not in leaderboard_cache:
-            all_league_entries = LeagueEntry.query.filter_by(league_id=league.id).all()
-            leaderboard = []
-            if league.is_finalized:
-                historical_scores = {hs.player_id: hs.score for hs in PlayerScore.query.filter_by(league_id=league.id).all()}
-                for e in all_league_entries:
-                    s1 = historical_scores.get(e.player1_id, 0)
-                    s2 = historical_scores.get(e.player2_id, 0)
-                    s3 = historical_scores.get(e.player3_id, 0)
-                    leaderboard.append({'entry_id': e.id, 'total_score': s1+s2+s3})
-            else: # Live leagues
-                for e in all_league_entries:
-                    s1 = e.player1.current_score if e.player1 and e.player1.current_score is not None else 0
-                    s2 = e.player2.current_score if e.player2 and e.player2.current_score is not None else 0
-                    s3 = e.player3.current_score if e.player3 and e.player3.current_score is not None else 0
-                    leaderboard.append({'entry_id': e.id, 'total_score': s1+s2+s3})
+            # Use cached leaderboard calculation
+            if league.id not in leaderboard_cache:
+                leaderboard_cache[league.id] = league.get_leaderboard()
 
-            leaderboard.sort(key=lambda x: x['total_score'])
-            for i, item in enumerate(leaderboard):
-                item['rank'] = i + 1
-            leaderboard_cache[league.id] = leaderboard
+            final_leaderboard = leaderboard_cache[league.id]
+            user_entry_data = next(
+                (item for item in final_leaderboard if item.get('entry_id') == entry.id),
+                None
+            )
 
-        final_leaderboard = leaderboard_cache[league.id]
-        user_entry_data = next((item for item in final_leaderboard if item['entry_id'] == entry.id), None)
+            if user_entry_data:
+                league_data = {
+                    'id': league.id,
+                    'name': league.name,
+                    'league_code': league.league_code,
+                    'entries': len(final_leaderboard),
+                    'rank': user_entry_data.get('position', 'N/A'),
+                    'prizePool': league.prize_amount,
+                    'entryFee': league.entry_fee,
+                    'tour': league.tour
+                }
 
-        if user_entry_data:
-            # 1. Convert the base league object into a dictionary
-            league_data = league.to_dict()
-            # 2. Update the dictionary with your user-specific and calculated data
-            league_data.update({
-                'rank': user_entry_data['rank'],
-                'entries': len(final_leaderboard)
-            })
-            # league_data = {
-            #     'league': league,
-            #     'total_score': user_entry_data['total_score'],
-            #     'current_rank': user_entry_data['rank'],
-            #     'total_entries': len(final_leaderboard)
-            # }
+                # Sort into categories
+                if league.is_finalized:
+                    league_data['status'] = 'Past'
+                    past_leagues.append(league_data)
+                elif now >= league.start_date:
+                    league_data['status'] = 'Live'
+                    live_leagues.append(league_data)
+                else:
+                    league_data['status'] = 'Upcoming'
+                    upcoming_leagues.append(league_data)
 
-            # --- Sort into categories ---
-            if league.is_finalized:
-                league_data['status'] = 'Past'
-                past_leagues.append(league_data)
-            elif now >= league.start_date:
-                league_data['status'] = 'Live'
-                live_leagues.append(league_data)
-            else:
-                league_data['status'] = 'Upcoming'
-                upcoming_leagues.append(league_data)
+        return {
+            'live_leagues': live_leagues,
+            'upcoming_leagues': upcoming_leagues,
+            'past_leagues': past_leagues,
+            'stats': stats
+        }
+
+    dashboard_data = get_user_dashboard_data()
 
     return render_template('main/user_dashboard.html',
-                           live_leagues=live_leagues,
-                           upcoming_leagues=upcoming_leagues,
-                           past_leagues=past_leagues,
-                           stats=stats,
-                           now=datetime.utcnow())
-
-# def user_dashboard():
-#     user_entries = LeagueEntry.query.filter_by(user_id=current_user.id).all()
-
-#     leagues_data = []
-#     # Use a cache to avoid re-calculating the same leaderboard multiple times
-#     leaderboard_cache = {}
-
-#     for entry in user_entries:
-#         league = entry.league
-
-#         # Check if we have already calculated the leaderboard for this league
-#         if league.id not in leaderboard_cache:
-#             all_league_entries = LeagueEntry.query.filter_by(league_id=league.id).all()
-#             leaderboard = []
-
-#             if league.is_finalized:
-#                 # --- LOGIC FOR FINALIZED LEAGUES ---
-#                 historical_scores = {hs.player_id: hs.score for hs in PlayerScore.query.filter_by(league_id=league.id).all()}
-#                 for e in all_league_entries:
-#                     p1_score = historical_scores.get(e.player1_id, 0)
-#                     p2_score = historical_scores.get(e.player2_id, 0)
-#                     p3_score = historical_scores.get(e.player3_id, 0)
-#                     total_score = p1_score + p2_score + p3_score
-#                     leaderboard.append({'entry_id': e.id, 'total_score': total_score})
-#             else:
-#                 # --- LOGIC FOR LIVE LEAGUES ---
-#                 for e in all_league_entries:
-#                     s1 = e.player1.current_score if e.player1 and e.player1.current_score is not None else 0
-#                     s2 = e.player2.current_score if e.player2 and e.player2.current_score is not None else 0
-#                     s3 = e.player3.current_score if e.player3 and e.player3.current_score is not None else 0
-#                     total_score = s1 + s2 + s3
-#                     leaderboard.append({'entry_id': e.id, 'total_score': total_score})
-
-#             # Sort and rank
-#             leaderboard.sort(key=lambda x: x['total_score'])
-#             for i, item in enumerate(leaderboard):
-#                 item['rank'] = i + 1
-
-#             # Cache the result
-#             leaderboard_cache[league.id] = leaderboard
-
-#         # Find the current user's entry in the calculated leaderboard
-#         final_leaderboard = leaderboard_cache[league.id]
-#         user_entry_data = next((item for item in final_leaderboard if item['entry_id'] == entry.id), None)
-
-#         if user_entry_data:
-#             leagues_data.append({
-#                 'league_name': league.name,
-#                 'league_id': league.id,
-#                 'total_score': user_entry_data['total_score'],
-#                 'current_rank': user_entry_data['rank'], # Use the calculated rank
-#                 'total_entries': len(final_leaderboard),
-#                 'prize_pool': f"€{league.prize_amount}",
-#                 'start_date': league.start_date
-#             })
-
-#     return render_template('main/user_dashboard.html', leagues_data=leagues_data, today=datetime.utcnow())
+                         live_leagues=dashboard_data['live_leagues'],
+                         upcoming_leagues=dashboard_data['upcoming_leagues'],
+                         past_leagues=dashboard_data['past_leagues'],
+                         stats=dashboard_data['stats'],
+                         now=now)
 
 @main_bp.route('/club_dashboard')
 @user_required
@@ -254,41 +180,46 @@ def club_dashboard():
         flash('You do not have permission to access the club dashboard.', 'warning')
         return redirect(url_for('main.user_dashboard'))
 
-    club = current_user
+    # Cache club dashboard data
+    @cache_result('league_data',
+                  key_func=lambda: CacheManager.make_key('club_dashboard', current_user.id),
+                  timeout=300)  # 5 minute cache
+    def get_club_dashboard_data():
+        leagues = League.query.filter_by(club_id=current_user.id).order_by(League.start_date.desc()).all()
 
-    # 1. Get the original League OBJECTS from the database
-    leagues = League.query.filter_by(club_id=club.id).order_by(League.start_date.desc()).all()
+        # Calculate revenue and stats
+        club_revenue = 0.0
+        total_participants = 0
+        for league in leagues:
+            num_entries = len(league.entries)
+            club_revenue += max(0, league.entry_fee - 2.50)  # Account for fees
+            total_participants += num_entries
 
-    # 2. Calculate revenue using the list of OBJECTS
-    club_revenue = 0.0
-    total_participants = 0
-    for league in leagues:
-        num_entries = len(league.entries)
-        club_revenue += league.entry_fee - 2.50
-        total_participants += num_entries
+        now = datetime.utcnow()
+        active_leagues_count = sum(1 for league in leagues if not league.is_finalized and league.end_date > now)
+        total_entries_count = sum(len(league.entries) for league in leagues)
 
-    now = datetime.utcnow()
-    # Calculate the number of active leagues
-    active_leagues_count = sum(1 for league in leagues if not league.is_finalized and league.end_date > now)
+        return {
+            'leagues': [league.to_dict() for league in leagues],
+            'club_revenue': club_revenue,
+            'total_participants': total_participants,
+            'active_leagues_count': active_leagues_count,
+            'total_entries_count': total_entries_count,
+            'club_data': current_user.to_dict()
+        }
 
-    # Calculate the total number of entries across all leagues
-    total_entries_count = sum(len(league.entries) for league in leagues)
+    dashboard_data = get_club_dashboard_data()
 
-    # 3. Prepare JSON-safe data for the JavaScript section using the OBJECTS
-    club_data_for_js = club.to_dict()
-    club_leagues_for_js = [league.to_dict() for league in leagues]
-
-    # 4. Pass everything to the template
     return render_template(
         'main/club_dashboard.html',
-        club=club,
-        club_leagues=leagues,      # Pass the list of OBJECTS to the main template
-        club_revenue=club_revenue,
-        club_data_for_js=club_data_for_js,
-        club_leagues_for_js=club_leagues_for_js, # Pass the list of DICTIONARIES to the script block
-        active_leagues_count=active_leagues_count,
-        total_entries_count=total_entries_count,
-        now=now
+        club=current_user,
+        club_leagues=dashboard_data['leagues'],
+        club_revenue=dashboard_data['club_revenue'],
+        club_data_for_js=dashboard_data['club_data'],
+        club_leagues_for_js=dashboard_data['leagues'],
+        active_leagues_count=dashboard_data['active_leagues_count'],
+        total_entries_count=dashboard_data['total_entries_count'],
+        now=datetime.utcnow()
     )
 
 
@@ -299,58 +230,63 @@ def club_dashboard():
 def view_profile(user_id):
     user = User.query.get_or_404(user_id)
 
-    # Fetch all entries for this user
-    entries = LeagueEntry.query.filter_by(user_id=user.id).all()
+    # Cache user profile data
+    @cache_result('user_data',
+                  key_func=lambda: CacheManager.make_key('profile', user_id),
+                  timeout=600)  # 10 minute cache
+    def get_user_profile_data():
+        entries = LeagueEntry.query.filter_by(user_id=user.id).all()
 
-     # --- Enhanced Statistics Calculation ---
-    leagues_played = len(entries)
-    leagues_won = League.query.filter_by(winner_id=user.id, is_finalized=True).count()
-    total_winnings = user.total_winnings or 0.0
+        leagues_played = len(entries)
+        leagues_won = League.query.filter_by(winner_id=user.id, is_finalized=True).count()
+        total_winnings = user.total_winnings or 0.0
+        win_percentage = (leagues_won / leagues_played * 100) if leagues_played > 0 else 0
 
-    # Calculate win percentage
-    win_percentage = (leagues_won / leagues_played * 100) if leagues_played > 0 else 0
+        stats = {
+            'leagues_played': leagues_played,
+            'leagues_won': leagues_won,
+            'win_percentage': f"{win_percentage:.1f}%",
+            'total_winnings': f"€{total_winnings:.2f}"
+        }
 
-    stats = {
-        'leagues_played': leagues_played,
-        'leagues_won': leagues_won,
-        'win_percentage': f"{win_percentage:.1f}%",
-        'total_winnings': f"€{total_winnings:.2f}"
-    }
+        # Prepare league history data
+        league_history = []
+        for entry in entries:
+            league = entry.league
+            rank = "N/A"
+            winnings = 0.0
 
-    # Prepare league history data
-    league_history = []
-    for entry in entries:
-        league = entry.league
-        rank = "N/A"
-        winnings = 0.0 # Placeholder for winnings
+            if league.is_finalized:
+                leaderboard = league.get_leaderboard()  # This is cached
+                user_entry = next(
+                    (item for item in leaderboard if item.get('entry_id') == entry.id),
+                    None
+                )
+                if user_entry:
+                    rank = user_entry.get('position', 'N/A')
 
-        if league.is_finalized:
-            # Sort entries by final score to determine rank
-            sorted_entries = sorted(league.entries, key=lambda e: (e.player1.current_score + e.player2.current_score + e.player3.current_score))
-            try:
-                # Find the index of the current entry in the sorted list
-                rank = [i for i, item in enumerate(sorted_entries) if item.id == entry.id][0] + 1
-            except IndexError:
-                rank = "N/A"
+                if league.winner_id == user.id:
+                    winnings = league.entry_fee * len(league.entries)
 
-            # If the user is the winner, you could assign winnings here
-            # For now, we are just showing if they won
-            if league.winner_id == user.id:
-                 # This is a simple example. You might have more complex prize logic
-                 # For now, let's assume the winner takes the whole pot.
-                 winnings = league.entry_fee * len(league.entries)
+            league_history.append({
+                'league_name': league.name,
+                'league_id': league.id,
+                'rank': rank,
+                'is_winner': league.winner_id == user.id,
+                'winnings': f"€{winnings:.2f}"
+            })
 
+        return {
+            'stats': stats,
+            'league_history': league_history
+        }
 
-        league_history.append({
-            'league_name': league.name,
-            'league_id': league.id,
-            'rank': rank,
-            'is_winner': league.winner_id == user.id,
-            'winnings': f"€{winnings:.2f}"
-        })
+    profile_data = get_user_profile_data()
 
-    return render_template('main/profile.html', user=user, stats=stats, league_history=league_history)
-
+    return render_template('main/profile.html',
+                         user=user,
+                         stats=profile_data['stats'],
+                         league_history=profile_data['league_history'])
 
 # --- Stripe Connect Onboarding Routes ---
 
@@ -476,3 +412,30 @@ def stripe_connect_refresh():
 def service_worker():
     """Serves the service worker file with the correct MIME type."""
     return send_from_directory(current_app.static_folder, 'service-worker.js', mimetype='application/javascript')
+
+@main_bp.route('/health/cache')
+def cache_health():
+    """Cache health check endpoint"""
+    try:
+        # Test cache write/read
+        test_key = CacheManager.make_key('health_check', datetime.utcnow().timestamp())
+        test_value = {'status': 'ok', 'timestamp': datetime.utcnow().isoformat()}
+
+        cache.set(test_key, test_value, timeout=60)
+        retrieved = cache.get(test_key)
+
+        if retrieved == test_value:
+            cache.delete(test_key)  # Clean up
+            return jsonify({'cache_status': 'healthy', 'redis_connection': 'ok'}), 200
+        else:
+            return jsonify({'cache_status': 'unhealthy', 'error': 'write/read mismatch'}), 500
+
+    except Exception as e:
+        return jsonify({'cache_status': 'unhealthy', 'error': str(e)}), 500
+
+# Cache invalidation helper for main routes
+def invalidate_user_caches(user_id):
+    """Invalidate user-specific caches"""
+    cache.delete(CacheManager.cache_key_for_user_leagues(user_id))
+    cache.delete(CacheManager.make_key('profile', user_id))
+    cache.delete(CacheManager.make_key('club_dashboard', user_id))

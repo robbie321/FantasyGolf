@@ -35,6 +35,21 @@ class DatabaseConnectionError(Exception):
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def invalidate_score_caches(tour):
+    """Invalidate score-related caches when scores update"""
+    # Clear player scores cache
+    score_key = CacheManager.cache_key_for_player_scores(tour)
+    cache.delete(score_key)
+
+    # Clear leaderboards for leagues on this tour
+    active_leagues = League.query.filter(
+        League.tour == tour,
+        League.is_finalized == False
+    ).all()
+
+    for league in active_leagues:
+        league.invalidate_cache()
+
 @shared_task(bind=True,
     autoretry_for=(Exception,),
     retry_kwargs={'max_retries': 3, 'countdown': 60},
@@ -120,6 +135,8 @@ def update_player_scores(self, tour, end_time_iso):
                     if players_to_update:
                         db.session.bulk_update_mappings(Player, players_to_update)
                         db.session.commit()
+                        # INVALIDATE CACHES AFTER SCORE UPDATE
+                        invalidate_score_caches(tour)
                         logger.info(f"Successfully updated {len(players_to_update)} players for tour: '{tour}'")
                         socketio.emit('scores_updated', {'updated_tours': [tour]})
 
@@ -840,3 +857,57 @@ def broadcast_notification_task(title, body):
         send_push_notification(user_id, title, body)
 
     print(f"--- Broadcast task finished. Notifications sent to {len(user_ids)} users. ---")
+
+
+@shared_task
+def warm_critical_caches():
+    """Warm up critical caches during low-traffic periods"""
+    from fantasy_league_app import create_app
+    app = create_app()
+
+    with app.app_context():
+        logger.info("CACHE WARMING: Starting cache warm-up")
+
+        try:
+            # Warm up active leagues
+            active_leagues = League.query.filter(
+                League.is_finalized == False,
+                League.start_date <= datetime.utcnow()
+            ).all()
+
+            for league in active_leagues:
+                # Pre-populate leaderboard cache
+                league.get_leaderboard()
+
+            # Warm up player data for active tours
+            for tour in ['pga', 'euro']:
+                Player.get_players_by_tour_cached(tour)
+
+            logger.info(f"CACHE WARMING: Completed for {len(active_leagues)} leagues")
+
+        except Exception as e:
+            logger.error(f"CACHE WARMING: Error: {e}")
+
+@shared_task
+def cleanup_expired_caches():
+    """Clean up any manually tracked cache keys that might be stale"""
+    app = get_app()
+
+    with app.app_context():
+        logger.info("CACHE CLEANUP: Starting cleanup")
+
+        try:
+            # Clean up leaderboard caches for finalized leagues
+            finalized_leagues = League.query.filter(League.is_finalized == True).all()
+
+            cleanup_count = 0
+            for league in finalized_leagues:
+                leaderboard_key = CacheManager.cache_key_for_leaderboard(league.id)
+                if cache.get(leaderboard_key) is not None:
+                    cache.delete(leaderboard_key)
+                    cleanup_count += 1
+
+            logger.info(f"CACHE CLEANUP: Cleaned {cleanup_count} stale cache entries")
+
+        except Exception as e:
+            logger.error(f"CACHE CLEANUP: Error: {e}")
