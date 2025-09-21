@@ -63,3 +63,14 @@ def cache_result(cache_type, key_func=None, timeout=None):
             return result
         return wrapper
     return decorator
+
+@staticmethod
+def cache_key_for_leaderboard(league_id):
+    return CacheManager.make_key('leaderboard', league_id, prefix='leaderboards')
+
+def get_league_cache_timeout(league):
+    """Return different cache timeouts based on league status"""
+    if league.is_finalized:
+        return 3600 * 24  # 24 hours for finalized leagues
+    else:
+        return 120  # 2 minutes for live leagues

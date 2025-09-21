@@ -1,0 +1,1058 @@
+{% extends 'base.html' %} {% block head %}
+<!-- Link to the form-specific stylesheet -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/LeaguesView/league_view.css') }}"
+/>
+{% endblock %} {% block content %}
+<main class="dashboard-content">
+  <div
+    class="league-container"
+    style="background-color: var(--background-light)"
+  >
+    <a
+      href="{{ url_for('main.club_dashboard') if current_user.is_club_admin else url_for('main.user_dashboard') }}"
+      class="back-link"
+    >
+      <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+
+    <div class="container">
+      {% if league.is_finalized and league.winners %}
+      <div class="winner-banner">
+        <h2>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            height="32px"
+            viewBox="0 -960 960 960"
+            width="32px"
+            fill="currentColor"
+          >
+            <path
+              d="M220-180h520v-240l-60-60 60-60v-240H220v240l60 60-60 60v240Zm60-80v-184l-36-36 36-36v-184h400v184l36 36-36 36v184H280Zm200-260q25 0 42.5-17.5T540-580q0-25-17.5-42.5T480-640q-25 0-42.5 17.5T420-580q0 25 17.5 42.5T480-520Zm0-80q-8 0-14-6t-6-14q0-8 6-14t14-6q8 0 14 6t6 14q0 8-6 14t-14 6ZM220-80v-80h520v80H220Zm0-600v-80h520v80H220Zm260 260Z"
+            ></path>
+          </svg>
+          League Winner!
+        </h2>
+        <p>
+          <a
+            href="{{ url_for('main.view_profile', user_id=league.winners[0].id) }}"
+          >
+            {{ league.winners[0].full_name }}
+          </a>
+        </p>
+      </div>
+      {% else %}
+      <div
+        class="league-header-card {% if league.is_finalized %}finalized{% endif %}"
+      >
+        <div class="header-main-info">
+          <div class="header-icon">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+          <div class="header-details">
+            <div>
+              <h1 class="">{{ league.name }}</h1>
+              <p class="dashboard-subheading">
+                Hosted by {{ league.club.club_name if league.club else 'Fantasy
+                Fairways' }}
+              </p>
+            </div>
+            {% if league.is_finalized %}
+            <span class="tag tag-past">Completed</span>
+            {% else %}
+            <span class="tag tag-live">Live</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="header-buttons">
+          <!-- Step 1: The new button is now here -->
+          <button id="open-details-modal-btn" class="btn-header btn-outline">
+            League Details
+          </button>
+          {% if now >= league.start_date and not league.is_finalized %}
+          <button
+            class="btn btn-primary"
+            id="view-live-leaderboard-btn"
+            data-tour="{{ league.tour }}"
+          >
+            Live leaderboard
+          </button>
+          {% endif %}
+        </div>
+      </div>
+      {%endif%}
+    </div>
+
+    {% if not league.is_finalized and league.entry_deadline > now %}
+    <div class="countdown-container">
+      <h2>ENRTY DEADLINE</h2>
+      <div
+        id="countdown"
+        class="countdown-timer"
+        data-deadline="{{ league.entry_deadline.isoformat() }}"
+      >
+        <div class="timer-box">
+          <span id="days" class="time">00</span><span class="label">Days</span>
+        </div>
+        <div class="timer-box">
+          <span id="hours" class="time">00</span
+          ><span class="label">Hours</span>
+        </div>
+        <div class="timer-box">
+          <span id="minutes" class="time">00</span
+          ><span class="label">Minutes</span>
+        </div>
+        <div class="timer-box">
+          <span id="seconds" class="time">00</span
+          ><span class="label">Seconds</span>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    <div class="league-header">
+      {% if not user_entry and not league.has_entry_deadline_passed %}
+      <a
+        href="{{ url_for('league.add_entry', league_id=league.id) }}"
+        class="btn-join"
+        >Join This League</a
+      >
+      {% endif %}
+    </div>
+    {% if user_entry %}
+    <section class="my-team-section">
+      <div class="my-team-header">
+        <h2 style="font-size: 1rem">My Team</h2>
+        <div class="total-score">
+          Total Score: <strong>{{ user_entry['total_score'] }}</strong>
+        </div>
+      </div>
+      <div class="my-team-grid">
+        {% if user_entry['entry'].player1 %}
+        <div class="player-card">
+          <div class="player-image-placeholder">
+            <img
+              src="{{ url_for('static', filename='images/headshots/' + user_entry['entry'].player1.dg_id|string + '.png') }}"
+              alt="Player headshot"
+              class="player-headshot-icon"
+            />
+          </div>
+          <p>{{ user_entry['entry'].player1.full_name() }}</p>
+          <span class="player-badge">{{ user_entry['player1_score'] }}</span>
+        </div>
+        {% endif %} {% if user_entry['entry'].player2 %}
+        <div class="player-card">
+          <div class="player-image-placeholder">
+            <img
+              src="{{ url_for('static', filename='images/headshots/' + user_entry['entry'].player2.dg_id|string + '.png') }}"
+              alt="Player headshot"
+              class="player-headshot-icon"
+            />
+          </div>
+          <p>{{ user_entry['entry'].player2.full_name() }}</p>
+          <span class="player-badge">{{ user_entry['player2_score'] }}</span>
+        </div>
+        {% endif %} {% if user_entry['entry'].player3 %}
+        <div class="player-card">
+          <div class="player-image-placeholder">
+            <img
+              src="{{ url_for('static', filename='images/headshots/' + user_entry['entry'].player3.dg_id|string + '.png') }}"
+              alt="Player headshot"
+              class="player-headshot-icon"
+            />
+          </div>
+          <p>{{ user_entry['entry'].player3.full_name() }}</p>
+          <span class="player-badge">{{ user_entry['player3_score'] }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+    {% else %}
+    <div class="form-card text-center" style="margin-bottom: 2rem">
+      <p>You have not joined this league yet.</p>
+      <a
+        href="{{ url_for('league.add_entry', league_id=league.id) }}"
+        class="btn btn-primary"
+        style="max-width: 250px; margin: auto"
+        >Join Now</a
+      >
+    </div>
+    {% endif %} {% if league.has_entry_deadline_passed %}
+    <div class="leaderboard-container">
+      <div class="leaderboard-header"></div>
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th class="rank">Rank</th>
+            <th>Entry Name</th>
+            <th class="score">Total Score</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+          {% for item in leaderboard %}
+          <tr
+            class="leaderboard-main-row {% if item.entry.user_id == current_user.id %}my-entry{% endif %}"
+            data-target="#details-{{ loop.index }}"
+          >
+            <td class="rank" data-label="Rank">{{ item.rank }}</td>
+            <td data-label="Entry Name">{{ item.user_name }}</td>
+            <td
+              class="score {% if item.total_score > 0 %}score-positive{% elif item.total_score < 0 %}score-negative{% else %}score-even{% endif %}"
+              data-label="Total Score"
+            >
+              {{ item.total_score }}
+              <span class="toggle-arrow">▼</span>
+            </td>
+          </tr>
+          <tr class="leaderboard-details-row" id="details-{{ loop.index }}">
+            <td colspan="3">
+              <div class="details-wrapper">
+                <div class="player-details-grid">
+                  <div class="player-detail">
+                    <div class="player-detail-info">
+                      <div class="player-detail-name">
+                        <a
+                          href="#"
+                          class="player-name-link"
+                          data-player-id="{{ item.entry.player1.dg_id }}"
+                        >
+                          {{ item.player1_name }}
+                        </a>
+                      </div>
+                      <div
+                        class="player-detail-score {% if item.player1_score > 0 %}score-positive{% elif item.player1_score < 0 %}score-negative{% else %}score-even{% endif %}"
+                      >
+                        {{ item.player1_score }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="player-detail">
+                    <div class="player-detail-info">
+                      <div class="player-detail-name">
+                        <a
+                          href="#"
+                          class="player-name-link"
+                          data-player-id="{{ item.entry.player2.dg_id }}"
+                        >
+                          {{ item.player2_name }}
+                        </a>
+                      </div>
+                      <div
+                        class="player-detail-score {% if item.player2_score > 0 %}score-positive{% elif item.player2_score < 0 %}score-negative{% else %}score-even{% endif %}"
+                      >
+                        {{ item.player2_score }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="player-detail">
+                    <div class="player-detail-info">
+                      <div class="player-detail-name">
+                        <a
+                          href="#"
+                          class="player-name-link"
+                          data-player-id="{{ item.entry.player3.dg_id }}"
+                        >
+                          {{ item.player3_name }}
+                        </a>
+                      </div>
+                      <div
+                        class="player-detail-score {% if item.player3_score > 0 %}score-positive{% elif item.player3_score < 0 %}score-negative{% else %}score-even{% endif %}"
+                      >
+                        {{ item.player3_score }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" style="text-align: center; padding: 2rem">
+              No entries in this league yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="leaderboard-locked">
+      <h3>Leaderboard Locked</h3>
+      <p>
+        The leaderboard will be revealed after the entry deadline has passed.
+      </p>
+      <p>
+        <strong>Deadline:</strong>
+        {{ league.entry_deadline.strftime('%A, %d %B %Y at %H:%M') }} (UTC)
+      </p>
+    </div>
+    {% endif %}
+
+    <div class="popup-overlay" id="live-leaderboard-overlay">
+      <div class="popup-container">
+        <div class="popup-header">
+          <h3>Live Tournament Leaderboard</h3>
+          <button class="popup-close" id="popup-close-btn">&times;</button>
+        </div>
+        <div class="popup-body" id="live-leaderboard-body">
+          <table class="live-leaderboard-table">
+            <thead>
+              <tr>
+                <th class="pos">Pos</th>
+                <th class="player-name">Player</th>
+                <th style="text-align: center">Total</th>
+                <th style="text-align: center">Thru</th>
+                <th style="text-align: center">Rnd</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="league-details-modal" class="modal-overlay">
+      <div class="modal-content">
+        <button id="close-details-modal-btn" class="modal-close-btn">
+          &times;
+        </button>
+        <h2>League Details</h2>
+        <div class="league-details-grid">
+          <div class="detail-card">
+            <h3>Prize Details</h3>
+            <p>{{ league.prize_details or 'Not specified.' }}</p>
+          </div>
+          <div class="detail-card">
+            <h3>League Rules</h3>
+            <p>{{ league.rules or 'Standard rules apply.' }}</p>
+          </div>
+          <div class="detail-card">
+            <h3>Tournament Dates</h3>
+            <p>
+              <strong>Starts:</strong> {{ league.start_date.strftime('%d %b %Y,
+              %H:%M') }}
+            </p>
+            <p>
+              <strong>Ends:</strong> {{ league.end_date.strftime('%d %b %Y,
+              %H:%M') }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>{% include 'main/_shared_dashboard_sections.html' with context%}</div>
+</main>
+<!-- <div class="dashboard-wrapper">
+  <div class="page-wrapper">
+    <div class="league-container">
+      <div class="content-box">
+        <a
+          href="{{ url_for('main.club_dashboard') if current_user.is_club_admin else url_for('main.user_dashboard') }}"
+          class="back-to-dashboard"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            height="20px"
+            viewBox="0 -960 960 960"
+            width="20px"
+            fill="currentColor"
+          >
+            <path
+              d="M360-240 120-480l240-240 56 56-184 184 184 184-56 56Z"
+            ></path>
+          </svg>
+          Back to Dashboard
+        </a>
+        {% if not league.is_finalized and league.entry_deadline > now %}
+        <div class="countdown-container">
+          <h2>ENRTY DEADLINE</h2>
+          <div
+            id="countdown"
+            class="countdown-timer"
+            data-deadline="{{ league.entry_deadline.isoformat() }}"
+          >
+            <div class="timer-box">
+              <span id="days" class="time">00</span
+              ><span class="label">Days</span>
+            </div>
+            <div class="timer-box">
+              <span id="hours" class="time">00</span
+              ><span class="label">Hours</span>
+            </div>
+            <div class="timer-box">
+              <span id="minutes" class="time">00</span
+              ><span class="label">Minutes</span>
+            </div>
+            <div class="timer-box">
+              <span id="seconds" class="time">00</span
+              ><span class="label">Seconds</span>
+            </div>
+          </div>
+        </div>
+        {% endif %} {% if league.is_finalized and league.winners %}
+        <div class="winner-banner">
+          <h2>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="32px"
+              viewBox="0 -960 960 960"
+              width="32px"
+              fill="currentColor"
+            >
+              <path
+                d="M220-180h520v-240l-60-60 60-60v-240H220v240l60 60-60 60v240Zm60-80v-184l-36-36 36-36v-184h400v184l36 36-36 36v184H280Zm200-260q25 0 42.5-17.5T540-580q0-25-17.5-42.5T480-640q-25 0-42.5 17.5T420-580q0 25 17.5 42.5T480-520Zm0-80q-8 0-14-6t-6-14q0-8 6-14t14-6q8 0 14 6t6 14q0 8-6 14t-14 6ZM220-80v-80h520v80H220Zm0-600v-80h520v80H220Zm260 260Z"
+              ></path>
+            </svg>
+            League Winner!
+          </h2>
+          <p>
+            <a
+              href="{{ url_for('main.view_profile', user_id=league.winners[0].id) }}"
+            >
+              {{ league.winners[0].full_name }}
+            </a>
+          </p>
+        </div>
+        {% endif %}
+        <div class="league-header">
+          <h1>{{ league.name }}</h1>
+          <p>League Code: <strong>{{ league.league_code }}</strong></p>
+          {% if not user_entry and not league.has_entry_deadline_passed %}
+          <a
+            href="{{ url_for('league.add_entry', league_id=league.id) }}"
+            class="btn-join"
+            >Join This League</a
+          >
+          {% endif %}
+        </div>
+
+        {% if user_entry %}
+        <div class="picker-wrapper">
+          <div class="my-team-header">
+            <h2 class="section-title">My Team</h2>
+
+            {% if not league.has_entry_deadline_passed %}
+            <a
+              href="{{ url_for('league.edit_entry', entry_id=user_entry.entry.id) }}"
+              class="btn-edit-team"
+              title="Edit Team"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                ></path>
+                <path
+                  d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                ></path>
+              </svg>
+              <span>Edit Team</span>
+            </a>
+            {% endif %}
+          </div>
+          <div class="player-picks-container">
+            <div class="player-slot">
+              {% if user_entry.entry.player1 %}
+              <div class="player-odds-bubble">
+                {{ user_entry.entry.player1.odds }}
+              </div>
+              <div class="player-info">
+                <a
+                  href="#"
+                  class="player-name-link"
+                  data-player-id="{{ user_entry.entry.player1.dg_id }}"
+                >
+                  <img
+                    src="{{ url_for('static', filename='images/headshots/' + user_entry.entry.player1.dg_id|string + '.png') }}"
+                    alt="Headshot of {{ user_entry.entry.player1.full_name() }}"
+                    class="player-headshot-icon"
+                  />
+                </a>
+                <span class="player-name-label"
+                  >{{ user_entry.entry.player1.full_name() }}</span
+                >
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="player-slot">
+              {% if user_entry.entry.player2 %}
+              <div class="player-odds-bubble">
+                {{ user_entry.entry.player2.odds }}
+              </div>
+              <div class="player-info">
+                <a
+                  href="#"
+                  class="player-name-link"
+                  data-player-id="{{ user_entry.entry.player2.dg_id }}"
+                >
+                  <img
+                    src="{{ url_for('static', filename='images/headshots/' + user_entry.entry.player2.dg_id|string + '.png') }}"
+                    alt="Headshot of {{ user_entry.entry.player2.full_name() }}"
+                    class="player-headshot-icon"
+                  />
+                </a>
+                <span class="player-name-label"
+                  >{{ user_entry.entry.player2.full_name() }}</span
+                >
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="player-slot">
+              {% if user_entry.entry.player3 %}
+              <div class="player-odds-bubble">
+                {{ user_entry.entry.player3.odds }}
+              </div>
+              <div class="player-info">
+                <a
+                  href="#"
+                  class="player-name-link"
+                  data-player-id="{{ user_entry.entry.player3.dg_id }}"
+                >
+                  <img
+                    src="{{ url_for('static', filename='images/headshots/' + user_entry.entry.player3.dg_id|string + '.png') }}"
+                    alt="Headshot of {{ user_entry.entry.player3.full_name() }}"
+                    class="player-headshot-icon"
+                  />
+                </a>
+                <span class="player-name-label"
+                  >{{ user_entry.entry.player3.full_name() }}</span
+                >
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          {% endif %}
+
+          <div class="collapsible-container">
+            <button class="collapsible-toggle" id="details-toggle">
+              <span>View league details</span>
+              <svg class="arrow" width="16" height="16" viewBox="0 0 24 24">
+                <path d="m7 10 5 5 5-5z" />
+              </svg>
+            </button>
+            <div class="collapsible-content" id="details-content">
+              <div class="league-details-grid">
+                <div class="detail-card">
+                  <h3>Prize Details</h3>
+                  <p>{{ league.prize_details or 'Not specified.' }}</p>
+                </div>
+                <div class="detail-card">
+                  <h3>League Rules</h3>
+                  <p>{{ league.rules or 'Standard rules apply.' }}</p>
+                </div>
+                <div class="detail-card">
+                  <h3>Tournament Dates</h3>
+                  <p>
+                    <strong>Starts:</strong> {{ league.start_date.strftime('%d
+                    %b %Y, %H:%M') }}
+                  </p>
+                  <p>
+                    <strong>Ends:</strong> {{ league.end_date.strftime('%d %b
+                    %Y, %H:%M') }}
+                  </p>
+                </div>
+              </div>
+            </div>
+            {% if league.has_entry_deadline_passed %}
+            <div class="leaderboard-container">
+              <div class="leaderboard-header">
+                {% if now >= league.start_date and not league.is_finalized %}
+                <button
+                  class="btn"
+                  id="view-live-leaderboard-btn"
+                  data-tour="{{ league.tour }}"
+                >
+                  View live leaderboard
+                </button>
+                {% endif %}
+              </div>
+              <table class="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th class="rank">Rank</th>
+                    <th>Entry Name</th>
+                    <th class="score">Total Score</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                  {% for item in leaderboard %}
+                  <tr
+                    class="leaderboard-main-row {% if item.entry.user_id == current_user.id %}my-entry{% endif %}"
+                    data-target="#details-{{ loop.index }}"
+                  >
+                    <td class="rank" data-label="Rank">{{ item.rank }}</td>
+                    <td data-label="Entry Name">{{ item.user_name }}</td>
+                    <td
+                      class="score {% if item.total_score > 0 %}score-positive{% elif item.total_score < 0 %}score-negative{% else %}score-even{% endif %}"
+                      data-label="Total Score"
+                    >
+                      {{ item.total_score }}
+                      <span class="toggle-arrow">▼</span>
+                    </td>
+                  </tr>
+                  <tr
+                    class="leaderboard-details-row"
+                    id="details-{{ loop.index }}"
+                  >
+                    <td colspan="3">
+                      <div class="details-wrapper">
+                        <div class="player-details-grid">
+                          <div class="player-detail">
+                            <div class="player-detail-info">
+                              <div class="player-detail-name">
+                                <a
+                                  href="#"
+                                  class="player-name-link"
+                                  data-player-id="{{ item.entry.player1.dg_id }}"
+                                >
+                                  {{ item.player1_name }}
+                                </a>
+                              </div>
+                              <div
+                                class="player-detail-score {% if item.player1_score > 0 %}score-positive{% elif item.player1_score < 0 %}score-negative{% else %}score-even{% endif %}"
+                              >
+                                {{ item.player1_score }}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="player-detail">
+                            <div class="player-detail-info">
+                              <div class="player-detail-name">
+                                <a
+                                  href="#"
+                                  class="player-name-link"
+                                  data-player-id="{{ item.entry.player2.dg_id }}"
+                                >
+                                  {{ item.player2_name }}
+                                </a>
+                              </div>
+                              <div
+                                class="player-detail-score {% if item.player2_score > 0 %}score-positive{% elif item.player2_score < 0 %}score-negative{% else %}score-even{% endif %}"
+                              >
+                                {{ item.player2_score }}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="player-detail">
+                            <div class="player-detail-info">
+                              <div class="player-detail-name">
+                                <a
+                                  href="#"
+                                  class="player-name-link"
+                                  data-player-id="{{ item.entry.player3.dg_id }}"
+                                >
+                                  {{ item.player3_name }}
+                                </a>
+                              </div>
+                              <div
+                                class="player-detail-score {% if item.player3_score > 0 %}score-positive{% elif item.player3_score < 0 %}score-negative{% else %}score-even{% endif %}"
+                              >
+                                {{ item.player3_score }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  {% else %}
+                  <tr>
+                    <td colspan="3" style="text-align: center; padding: 2rem">
+                      No entries in this league yet.
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="leaderboard-locked">
+              <h3>Leaderboard Locked</h3>
+              <p>
+                The leaderboard will be revealed after the entry deadline has
+                passed.
+              </p>
+              <p>
+                <strong>Deadline:</strong>
+                {{ league.entry_deadline.strftime('%A, %d %B %Y at %H:%M') }}
+                (UTC)
+              </p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="popup-overlay" id="live-leaderboard-overlay">
+          <div class="popup-container">
+            <div class="popup-header">
+              <h3>Live Tournament Leaderboard</h3>
+              <button class="popup-close" id="popup-close-btn">&times;</button>
+            </div>
+            <div class="popup-body" id="live-leaderboard-body">
+              <table class="live-leaderboard-table">
+                <thead>
+                  <tr>
+                    <th class="pos">Pos</th>
+                    <th class="player-name">Player</th>
+                    <th style="text-align: center">Total</th>
+                    <th style="text-align: center">Thru</th>
+                    <th style="text-align: center">Rnd</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="playerStatsModal" class="modal">
+        <div class="modal-content">
+          <span class="close-btn">&times;</span>
+          <h2 id="modalPlayerName"></h2>
+          <div id="modalPlayerStats"></div>
+        </div>
+      </div>
+
+      <div class="profile-slide-in" id="player-profile-panel">
+        <div class="profile-panel-header">
+          <h3>Player Profile</h3>
+          <button class="panel-close-btn" id="panel-close-btn">&times;</button>
+        </div>
+        <div class="profile-panel-body" id="profile-panel-body"></div>
+      </div>
+      <div class="slide-in-overlay" id="slide-in-overlay"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded. Starting all scripts.");
+
+        const countdownElement = document.getElementById("countdown");
+        if (countdownElement) {
+          const deadline = new Date(
+            countdownElement.dataset.deadline + "Z"
+          ).getTime();
+          const timer = setInterval(function () {
+            const now = new Date().getTime();
+            const distance = deadline - now;
+            if (distance < 0) {
+              clearInterval(timer);
+              countdownElement.innerHTML =
+                "<h3>The entry deadline has passed.</h3>";
+              return;
+            }
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor(
+              (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+            );
+            const minutes = Math.floor(
+              (distance % (1000 * 60 * 60)) / (1000 * 60)
+            );
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            document.getElementById("days").innerText = String(days).padStart(
+              2,
+              "0"
+            );
+            document.getElementById("hours").innerText = String(hours).padStart(
+              2,
+              "0"
+            );
+            document.getElementById("minutes").innerText = String(
+              minutes
+            ).padStart(2, "0");
+            document.getElementById("seconds").innerText = String(
+              seconds
+            ).padStart(2, "0");
+          }, 1000);
+        }
+
+        const profilePanel = document.getElementById("player-profile-panel");
+        if (profilePanel) {
+          const panelBody = document.getElementById("profile-panel-body");
+          const panelCloseBtn = document.getElementById("panel-close-btn");
+          const slideInOverlay = document.getElementById("slide-in-overlay");
+
+          const openProfilePanel = () => {
+            profilePanel.classList.add("is-open");
+            slideInOverlay.classList.add("is-open");
+            document.body.style.overflow = "hidden";
+          };
+          const closeProfilePanel = () => {
+            profilePanel.classList.remove("is-open");
+            slideInOverlay.classList.remove("is-open");
+            document.body.style.overflow = "";
+          };
+
+          document.querySelectorAll(".player-name-link").forEach((link) => {
+            link.addEventListener("click", async (e) => {
+              e.preventDefault();
+              const playerId = link.dataset.playerId;
+
+              panelBody.innerHTML = "<p>Loading player data...</p>";
+              openProfilePanel();
+
+              try {
+                const response = await fetch(
+                  `/player/api/sportradar_profile_by_name/${playerId}`
+                );
+                if (!response.ok) {
+                  throw new Error("Player data not found.");
+                }
+                const data = await response.json();
+
+                panelBody.innerHTML = `
+        <div class="profile-card">
+          <img src="${data.headshot_url}" alt="Headshot of ${
+                  data.full_name
+                }" class="profile-headshot">
+          <h2>${data.full_name}</h2>
+          <p class="country">${data.country}</p>
+          <div class="profile-stats-grid">
+            <div class="stat-item">
+              <span class="label">Birthday</span>
+              <span class="value">${data.birthday || "N/A"}</span>
+            </div>
+            <div class="stat-item">
+              <span class="label">Turned Pro</span>
+              <span class="value">${data.turned_pro || "N/A"}</span>
+            </div>
+            <div class="stat-item">
+              <span class="label">Height</span>
+              <span class="value">${data.height || "N/A"} in</span>
+            </div>
+            <div class="stat-item">
+              <span class="label">Weight</span>
+              <span class="value">${data.weight || "N/A"} lbs</span>
+            </div>
+          </div>
+        </div>
+      `;
+              } catch (error) {
+                panelBody.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+              }
+            });
+          });
+          panelCloseBtn.addEventListener("click", closeProfilePanel);
+          slideInOverlay.addEventListener("click", closeProfilePanel);
+        }
+
+        const viewBtn = document.getElementById("view-live-leaderboard-btn");
+        if (viewBtn) {
+          const overlay = document.getElementById("live-leaderboard-overlay");
+          const closeBtn = document.getElementById("popup-close-btn");
+          const leaderboardBody = document.querySelector(
+            "#live-leaderboard-body .live-leaderboard-table tbody"
+          );
+
+          const openPopup = () => {
+            if (overlay) overlay.classList.add("active");
+          };
+          const closePopup = () => {
+            if (overlay) overlay.classList.remove("active");
+          };
+
+          viewBtn.addEventListener("click", async () => {
+            if (!leaderboardBody) return;
+
+            leaderboardBody.innerHTML =
+              '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
+            openPopup();
+
+            try {
+              const tour = viewBtn.dataset.tour;
+              const response = await fetch(`/api/live-leaderboard/${tour}`);
+              if (!response.ok) throw new Error("Network response was not ok");
+
+              const players = await response.json();
+              leaderboardBody.innerHTML = "";
+
+              if (players.length === 0) {
+                leaderboardBody.innerHTML =
+                  '<tr><td colspan="5" style="text-align:center;">Live data not available for this tour.</td></tr>';
+                return;
+              }
+
+              players.forEach((player) => {
+                let scoreText = player.total;
+                let rndScore = player.today;
+                let scoreClass = "score-negative";
+
+                if (player.total === 0) {
+                  scoreText = "E";
+                  scoreClass = "score-even";
+                } else if (player.total > 0) {
+                  scoreText = `+${player.total}`;
+                  scoreClass = "score-positive";
+                }
+
+                rndScore = player.today === 0 ? "E" : player.today;
+
+                const thruText = player.thru === 18 ? "F" : player.thru;
+
+                const row = `
+                            <tr>
+                                <td class="pos">${player.current_pos}</td>
+                                <td class="player-name">${player.player_name}</td>
+
+                                <td style="text-align:center"> <span class="live-score ${scoreClass}">${player.current_score}</span></td>
+                                <td style="text-align:center; font-weight:bold">${thruText}</td>
+                                <td style="text-align:center; font-weight:bold; padding-right:8px">${rndScore}</td>
+                            </tr>
+                        `;
+                leaderboardBody.insertAdjacentHTML("beforeend", row);
+              });
+            } catch (error) {
+              console.error("Failed to fetch live leaderboard:", error);
+              leaderboardBody.innerHTML =
+                '<tr><td colspan="5" style="text-align:center;">Could not load live data.</td></tr>';
+            }
+          });
+
+          if (closeBtn) closeBtn.addEventListener("click", closePopup);
+          if (overlay)
+            overlay.addEventListener("click", (e) => {
+              if (e.target === overlay) closePopup();
+            });
+        }
+
+        const mainRows = document.querySelectorAll(".leaderboard-main-row");
+        mainRows.forEach((row) => {
+          row.addEventListener("click", () => {
+            const targetId = row.dataset.target;
+            const detailsRow = document.querySelector(targetId);
+            if (detailsRow) {
+              row.classList.toggle("is-open");
+              detailsRow.classList.toggle("is-open");
+            }
+          });
+        });
+
+        var socket = io();
+        socket.on("connect", function () {
+          console.log("Socket.IO connected!");
+        });
+        socket.on("scores_updated", function (data) {
+          var currentLeagueTour = "{{ league.tour }}";
+          if (data.updated_tours.includes(currentLeagueTour)) {
+            location.reload();
+          }
+        });
+
+        console.log("Setting up collapsible details...");
+        const toggleButton = document.getElementById("details-toggle");
+        const content = document.getElementById("details-content");
+
+        console.log("Toggle Button element:", toggleButton);
+        console.log("Content Div element:", content);
+        const buttonText = toggleButton.querySelector("span");
+        const buttonArrow = toggleButton.querySelector(".arrow");
+
+        if (toggleButton && content) {
+          console.log("Button and content found. Attaching click listener...");
+
+          toggleButton.addEventListener("click", function () {
+            console.log("Details button CLICKED!");
+
+            const isExpanded =
+              toggleButton.getAttribute("aria-expanded") === "true";
+            toggleButton.setAttribute("aria-expanded", !isExpanded);
+            content.hidden = isExpanded;
+
+            console.log(`Content is now hidden: ${isExpanded}`);
+          });
+        } else {
+          console.error(
+            "CRITICAL: Could not find the toggle button or the content div."
+          );
+        }
+
+        if (toggleButton) {
+          toggleButton.addEventListener("click", function () {
+            const isOpen =
+              content.style.maxHeight && content.style.maxHeight !== "0px";
+
+            if (isOpen) {
+              content.style.maxHeight = "0px";
+              buttonText.textContent = "View league details";
+              buttonArrow.style.transform = "rotate(0deg)";
+            } else {
+              content.style.maxHeight = content.scrollHeight + "px";
+              buttonText.textContent = "Hide league details";
+              buttonArrow.style.transform = "rotate(180deg)";
+            }
+          });
+        }
+      });
+    </script>
+  </div>
+</div> -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("--- Modal Debugger Initialized ---");
+
+    const openBtn = document.getElementById("open-details-modal-btn");
+    const closeBtn = document.getElementById("close-details-modal-btn");
+    const modalOverlay = document.getElementById("league-details-modal");
+
+    // --- Step 1: Check if elements are found ---
+    console.log("Open Button found:", openBtn);
+    console.log("Close Button found:", closeBtn);
+    console.log("Modal Overlay found:", modalOverlay);
+
+    if (openBtn && modalOverlay) {
+      console.log("Attaching OPEN event listener...");
+      openBtn.addEventListener("click", () => {
+        console.log("OPEN button clicked!"); // Check if this fires
+        modalOverlay.classList.add("active");
+      });
+    } else {
+      console.error(
+        "Could not attach OPEN listener: Button or Modal not found."
+      );
+    }
+
+    if (closeBtn && modalOverlay) {
+      console.log("Attaching CLOSE event listener...");
+      closeBtn.addEventListener("click", () => {
+        console.log("CLOSE button clicked!"); // Check if this fires
+        modalOverlay.classList.remove("active");
+      });
+    } else {
+      console.error(
+        "Could not attach CLOSE listener: Button or Modal not found."
+      );
+    }
+
+    if (modalOverlay) {
+      console.log("Attaching OVERLAY click listener...");
+      modalOverlay.addEventListener("click", (event) => {
+        if (event.target === modalOverlay) {
+          console.log("Overlay background clicked!"); // Check if this fires
+          modalOverlay.classList.remove("active");
+        }
+      });
+    } else {
+      console.error("Could not attach OVERLAY listener: Modal not found.");
+    }
+  });
+</script>
+
+{% endblock %}

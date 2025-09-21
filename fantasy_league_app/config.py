@@ -2,6 +2,7 @@ import os
 from celery.schedules import crontab
 
 class Config:
+    """Base configuration class with common settings"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your_super_secret_key_change_in_production'
     WTF_CSRF_SECRET_KEY = os.environ.get('WTF_CSRF_SECRET_KEY') or 'a-different-super-secret-key'
 
@@ -21,30 +22,22 @@ class Config:
     UPLOAD_FOLDER = 'uploads'
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-    # FIXED: Celery/Redis Configuration
-    # Use REDISCLOUD_URL if available (Heroku Redis add-on), otherwise fallback
+    # Redis URL (used by production and some other configs)
     redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
 
-    # Celery Configuration
+    # Celery Configuration (common for all environments)
     broker_url = redis_url
     result_backend = redis_url
-
-    # FIXED: Use new-style Celery configuration names
-    # These are the correct names for modern Celery
-    result_backend = result_backend  # Already correct
-
-    # IMPORTANT: RedBeat specific configuration
-    REDBEAT_REDIS_URL = redis_url  # Explicit RedBeat Redis URL
-    REDBEAT_KEY_PREFIX = 'redbeat'  # Redis key prefix for RedBeat
-    redbeat_redis_url = redis_url  # Lowercase version for modern Celery
-    redis_url = redis_url  # This is what redbeat needs
-
-    # Additional Celery settings for better reliability (new style)
     task_serializer = 'json'
     result_serializer = 'json'
     accept_content = ['json']
     timezone = 'UTC'
     enable_utc = True
+
+    # RedBeat specific configuration
+    REDBEAT_REDIS_URL = redis_url
+    REDBEAT_KEY_PREFIX = 'redbeat'
+    redbeat_redis_url = redis_url
 
     # Broker connection retry settings
     CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
@@ -69,12 +62,15 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', 'wehh kfob ejkj isfm')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', MAIL_USERNAME)
 
-    # Cache Configuration (using same Redis instance)
-    CACHE_TYPE = 'RedisCache'
-    CACHE_REDIS_URL = redis_url
-    CACHE_DEFAULT_TIMEOUT = 300
+    # VAPID Keys for Push Notifications
+    VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY') or 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMikeN4Y56qUl9NKtb6vvneJs+0BC7DfKXJlCQGCY23qRKl5uJS36c3SWJqVVvv6eo+5rvgnNOb8Rv1dUKcdEZQ=='
+    VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY') or 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgJEK++bJ3qsf4NV4jkIHX/RHFlzs0ZlaBe7AK8F865T6hRANCAAQyKR43hjnqpSX00q1vq++d4mz7QELsN8pcmUJAYJjbepEqXm4lLfpzdJYmpVW+/p6j7mu+Cc05vxG/V1Qpx0Rl'
+    VAPID_CLAIM_EMAIL = os.environ.get('VAPID_CLAIM_EMAIL', 'mailto:rmalone7@gmail.com')
+
+    TESTING_MODE_FLAG = 'testing_mode.flag'
+
+    # Default cache key prefix and timeouts (common for all environments)
     CACHE_KEY_PREFIX = 'ff_'
-    # Different timeouts for different data types
     CACHE_TIMEOUTS = {
         'player_scores': 180,      # 3 minutes - frequent updates during tournaments
         'league_data': 300,        # 5 minutes - moderate updates
@@ -84,14 +80,7 @@ class Config:
         'leaderboards': 120,       # 2 minutes - tournament leaderboards
     }
 
-    # VAPID Keys for Push Notifications
-    VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY') or 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMikeN4Y56qUl9NKtb6vvneJs+0BC7DfKXJlCQGCY23qRKl5uJS36c3SWJqVVvv6eo+5rvgnNOb8Rv1dUKcdEZQ=='
-    VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY') or 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgJEK++bJ3qsf4NV4jkIHX/RHFlzs0ZlaBe7AK8F865T6hRANCAAQyKR43hjnqpSX00q1vq++d4mz7QELsN8pcmUJAYJjbepEqXm4lLfpzdJYmpVW+/p6j7mu+Cc05vxG/V1Qpx0Rl'
-    VAPID_CLAIM_EMAIL = os.environ.get('VAPID_CLAIM_EMAIL', 'mailto:rmalone7@gmail.com')
-
-    TESTING_MODE_FLAG = 'testing_mode.flag'
-
-    # Celery Beat Schedule (Flask requires UPPERCASE for config loading)
+    # Celery Beat Schedule (common for all environments)
     BEAT_SCHEDULE = {
         'schedule-live-score-updates': {
             'task': 'fantasy_league_app.tasks.schedule_score_updates_for_the_week',
@@ -122,7 +111,62 @@ class Config:
             'schedule': crontab(minute='*/1'),
         },
         'warm-caches-early-morning': {
-        'task': 'fantasy_league_app.tasks.warm_critical_caches',
-        'schedule': crontab(hour=5, minute=30),  # 5:30 AM daily
-    },
+            'task': 'fantasy_league_app.tasks.warm_critical_caches',
+            'schedule': crontab(hour=5, minute=30),  # 5:30 AM daily
+        },
     }
+
+
+class DevelopmentConfig(Config):
+    """Development configuration - uses simple cache for local development"""
+    DEBUG = True
+
+    # Use simple cache for local development (no Redis required)
+    CACHE_TYPE = 'SimpleCache'
+    CACHE_DEFAULT_TIMEOUT = 300
+
+    # Override any production-specific settings here if needed
+    # For example, you might want shorter cache timeouts in development:
+    CACHE_TIMEOUTS = {
+        'player_scores': 60,       # 1 minute in dev
+        'league_data': 120,        # 2 minutes in dev
+        'user_data': 300,          # 5 minutes in dev
+        'static_data': 600,        # 10 minutes in dev
+        'api_data': 300,           # 5 minutes in dev
+        'leaderboards': 60,        # 1 minute in dev
+    }
+
+
+class ProductionConfig(Config):
+    """Production configuration - uses Redis for caching"""
+    DEBUG = False
+
+    # Use Redis for production caching
+    CACHE_TYPE = 'RedisCache'
+    CACHE_REDIS_URL = Config.redis_url
+    CACHE_DEFAULT_TIMEOUT = 300
+
+
+class TestingConfig(Config):
+    """Testing configuration - for running tests"""
+    TESTING = True
+    DEBUG = True
+
+    # Use simple cache for testing (fast and isolated)
+    CACHE_TYPE = 'SimpleCache'
+    CACHE_DEFAULT_TIMEOUT = 60
+
+    # Use in-memory SQLite for testing
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+
+    # Disable CSRF for testing
+    WTF_CSRF_ENABLED = False
+
+
+# Configuration dictionary for easy selection
+config = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'testing': TestingConfig,
+    'default': DevelopmentConfig
+}

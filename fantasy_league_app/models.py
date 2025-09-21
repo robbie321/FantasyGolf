@@ -5,6 +5,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from fantasy_league_app import db
 import random
 
+from fantasy_league_app.cache_utils import CacheManager, cache_result
+from fantasy_league_app import cache
+
 # Association table for Player and PlayerBucket (Many-to-Many)
 player_bucket_association = db.Table(
     'player_bucket_association',
@@ -314,6 +317,111 @@ class League(db.Model):
     def has_entry_deadline_passed(self):
         """Checks if the current time is past the entry deadline."""
         return datetime.utcnow() >= self.entry_deadline
+
+    @property
+    @cache_result('league_data', lambda self: CacheManager.cache_key_for_league_entries(self.id))
+    def entry_count(self):
+        """Cached entry count to avoid repeated queries"""
+        return LeagueEntry.query.filter_by(league_id=self.id).count()
+
+    @property
+    @cache_result('league_data')
+    def total_prize_pool(self):
+        """Cached prize pool calculation"""
+        return self.entry_fee * self.entry_count
+
+    # @cache_result('leaderboards', lambda self: CacheManager.cache_key_for_leaderboard(self.id))
+    def get_leaderboard_(self):
+        """Cached leaderboard calculation - handles both live and finalized leagues"""
+        print("=== INSIDE GET_LEADERBOARD METHOD ===")
+        print(f"DEBUG: get_leaderboard() called for league {self.id}")
+        entries = self.entries
+        print(f"DEBUG: Found {len(entries)} entries")
+
+        # Add this debug for each entry
+        for entry in entries:
+            print(f"DEBUG: Entry {entry.id}: user_id={entry.user_id}, user.id={entry.user.id}")
+
+        leaderboard_data = []
+
+        if self.is_finalized:
+            # --- LOGIC FOR FINALIZED LEAGUES - Use historical scores ---
+            print("League is finalized. Fetching historical scores.")
+            historical_scores = {
+                hs.player_id: hs.score
+                for hs in PlayerScore.query.filter_by(league_id=self.id).all()
+            }
+            print(f"DEBUG: Found {len(entries)} entries")
+            for entry in entries:
+                p1_score = historical_scores.get(entry.player1_id, 0)
+                p2_score = historical_scores.get(entry.player2_id, 0)
+                p3_score = historical_scores.get(entry.player3_id, 0)
+                total_score = p1_score + p2_score + p3_score
+
+                leaderboard_data.append({
+                    'entry_id': entry.id,
+                    'user_id': entry.user_id,
+                    'user_name': entry.user.full_name,
+                    'total_score': total_score,
+                    'players': [
+                        {
+                            'name': f"{entry.player1.surname} {entry.player1.name}",
+                            'score': p1_score
+                        },
+                        {
+                            'name': f"{entry.player2.surname} {entry.player2.name}",
+                            'score': p2_score
+                        },
+                        {
+                            'name': f"{entry.player3.surname} {entry.player3.name}",
+                            'score': p3_score
+                        }
+                    ]
+                })
+        else:
+            # --- LOGIC FOR LIVE LEAGUES - Use current scores ---
+            print("League is active. Calculating live scores.")
+            print(f"DEBUG: Found {len(entries)} entries")
+            for entry in entries:
+                score1 = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
+                score2 = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
+                score3 = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
+                total_score = score1 + score2 + score3
+
+                leaderboard_data.append({
+                    'entry_id': entry.id,
+                    'user_id': entry.user_id,
+                    'user_name': entry.user.full_name,
+                    'total_score': total_score,
+                    'players': [
+                        {
+                            'name': f"{entry.player1.surname} {entry.player1.name}",
+                            'score': score1
+                        },
+                        {
+                            'name': f"{entry.player2.surname} {entry.player2.name}",
+                            'score': score2
+                        },
+                        {
+                            'name': f"{entry.player3.surname} {entry.player3.name}",
+                            'score': score3
+                        }
+                    ]
+                })
+
+        # Sort by total score (lowest first in golf)
+        leaderboard_data.sort(key=lambda x: x['total_score'])
+
+        # Add positions
+        for i, entry in enumerate(leaderboard_data):
+            entry['position'] = i + 1
+
+        return leaderboard_data
+
+    def invalidate_cache(self):
+        """Invalidate all cached data for this league"""
+        cache.delete(CacheManager.cache_key_for_league_entries(self.id))
+        cache.delete(CacheManager.cache_key_for_leaderboard(self.id))
 
     # --- NEW PROPERTY TO ADD ---
     @property
