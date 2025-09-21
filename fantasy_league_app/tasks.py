@@ -5,7 +5,7 @@ import requests
 import os
 from sqlalchemy import func
 
-from . import db, mail, socketio, create_app  # Make sure mail is imported if you use it in other tasks
+from . import db, mail, socketio, get_app  # Make sure mail is imported if you use it in other tasks
 from flask_mail import Message
 from flask import current_app
 
@@ -21,13 +21,17 @@ from .utils import send_winner_notification_email, send_push_notification, send_
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@shared_task(bind=True)
+@shared_task(bind=True,
+    autoretry_for=(Exception,),
+    retry_kwargs={'max_retries': 3, 'countdown': 60},
+    soft_time_limit=300,  # 5 minute soft limit
+    time_limit=360)
 def update_player_scores(self, tour, end_time_iso):
     """
     Fetches live scores for a tour, updates the database, calculates rank changes,
     and reschedules itself to run again every 3 minutes until the end_time is reached.
     """
-    app = create_app()
+    app = get_app()
     with app.app_context():
         print(f"--- Running score update for tour '{tour}' at {datetime.now()} ---")
 
@@ -138,8 +142,8 @@ def ensure_live_updates_are_running():
     logger.info("SUPERVISOR TASK STARTED")
     logger.info(f"UTC Time: {datetime.utcnow()}")
     logger.info("=" * 60)
-    from fantasy_league_app import create_app
-    app = create_app()
+
+    app = get_app()
     with app.app_context():
         try:
             today = date.today()
@@ -230,7 +234,7 @@ def schedule_score_updates_for_the_week():
     Runs daily (Thu-Sun) at 5 AM. Finds today's tee times and kicks off
     the first self-repeating update_player_scores task for each active tour.
     """
-    app = create_app()
+    app = get_app()
     with app.app_context():
         today = date.today()
         task_tracker = DailyTaskTracker.query.filter_by(run_date=today, task_name='schedule_score_updates').first()
@@ -295,8 +299,8 @@ def reset_player_scores():
     This prepares the database for the new week of tournaments.
     """
     print(f"--- Running weekly player score reset at {datetime.now()} ---")
-    from fantasy_league_app import create_app
-    app = create_app()
+
+    app = get_app()
     with app.app_context():
         try:
             # This is a bulk update, which is very efficient
@@ -416,7 +420,7 @@ def collect_league_fees(self, league_id):
     Calculates and collects the application fees for all entries in a league
     by creating a direct charge on the club's Stripe account.
     """
-    app = create_app()
+    app = get_app()
     with app.app_context():
         try:
             league = League.query.get(league_id)
@@ -490,7 +494,7 @@ def check_and_queue_fee_collection(self):
     Runs daily. Finds leagues that have started and for which fees have not
     yet been processed, then queues the collection task for each.
     """
-    app = create_app()
+    app = get_app()
     with app.app_context():
         logging.info("Scheduler starting: Checking for leagues to process fees...")
         today = date.today()
@@ -529,8 +533,7 @@ def update_player_buckets():
 
 
 
-    from fantasy_league_app import create_app
-    app = create_app()
+    app = get_app()
     with app.app_context():
         tours = ['pga', 'euro']
         data_golf_client = DataGolfClient()
@@ -608,8 +611,7 @@ def finalize_finished_leagues():
     Finds all leagues that have ended but are not yet finalized, calculates
     winners for each, and sends email notifications.
     """
-    from fantasy_league_app import create_app
-    app = create_app()
+    app = get_app()
     with app.app_context():
         now = datetime.utcnow()
 
@@ -805,7 +807,7 @@ def broadcast_notification_task(title, body):
     """
     print(f"--- Starting broadcast task: '{title}' ---")
     # Fetch all active users who might have subscriptions
-    all_users = User.query.filter_by(is_active=True).all()
+    all_users = User.query.filter_by(is_active=True).yield_per(100)
     user_ids = [user.id for user in all_users]
 
     # Send a notification to each user

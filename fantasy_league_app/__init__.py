@@ -95,6 +95,11 @@ login_manager.login_view = 'auth.login_choice'
 login_manager.session_protection = "strong"
 
 
+_app_instance = None
+
+
+
+
 def create_app(config_class=Config):
     """
     Application factory function. Configures and returns the Flask app.
@@ -175,3 +180,10 @@ def create_app(config_class=Config):
     app.register_blueprint(api_bp, url_prefix='/api')
 
     return app
+
+
+def get_app():
+    global _app_instance
+    if _app_instance is None:
+        _app_instance = create_app()
+    return _app_instance

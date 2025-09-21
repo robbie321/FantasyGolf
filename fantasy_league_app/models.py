@@ -20,6 +20,11 @@ league_winners_association = db.Table('league_winners',
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
+    __table_args__ = (
+        db.Index('idx_user_email', 'email'),  # For login queries
+        db.Index('idx_user_active', 'is_active'),  # For filtering active users
+        db.Index('idx_user_admin_flags', 'is_club_admin', 'is_site_admin'),  # For admin checks
+    )
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(150), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -51,6 +56,11 @@ class User(db.Model, UserMixin):
 
 class Club(db.Model, UserMixin):
     __tablename__ = 'clubs'
+    __table_args__ = (
+        db.Index('idx_club_email', 'email'),  # For login queries
+        db.Index('idx_club_active', 'is_active'),  # For filtering active clubs
+        db.Index('idx_club_name', 'club_name'),  # For club name searches
+    )
     id = db.Column(db.Integer, primary_key=True)
     club_name = db.Column(db.String(150), unique=True, nullable=False)
     contact_person = db.Column(db.String(150), nullable=False)
@@ -92,6 +102,9 @@ class Club(db.Model, UserMixin):
 
 class SiteAdmin(db.Model, UserMixin):
     __tablename__ = 'site_admins'
+    __table_args__ = (
+        db.Index('idx_admin_username', 'username'),
+    )
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
@@ -116,6 +129,11 @@ class SiteAdmin(db.Model, UserMixin):
 
 class PlayerBucket(db.Model):
     __tablename__ = 'player_buckets'
+    __table_args__ = (
+        db.Index('idx_bucket_tour', 'tour'),  # For filtering by tour
+        db.Index('idx_bucket_created', 'created_at'),  # For date-based queries
+        db.Index('idx_bucket_event', 'event_id'),  # For event-specific lookups
+    )
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text, nullable=True)
@@ -138,6 +156,12 @@ class PlayerBucket(db.Model):
 
 class Player(db.Model):
     __tablename__ = 'players'
+    __table_args__ = (
+        db.Index('idx_player_dg_id', 'dg_id'),  # For API data updates
+        db.Index('idx_player_name_search', 'name', 'surname'),  # For player searches
+        db.Index('idx_player_odds', 'odds'),  # For odds-based filtering
+        db.Index('idx_player_score', 'current_score'),  # For leaderboard queries
+    )
     id = db.Column(db.Integer, primary_key=True)
     dg_id = db.Column(db.Integer, unique=True, nullable=True) # Nullable for manually added players
     name = db.Column(db.String(100), nullable=False)
@@ -158,6 +182,10 @@ class Player(db.Model):
 # --- Model to store historical player scores for finalized leagues ---
 class PlayerScore(db.Model):
     __tablename__ = 'player_scores'
+    __table_args__ = (
+        db.Index('idx_score_league_player', 'league_id', 'player_id'),  # For score lookups
+        db.Index('idx_score_league', 'league_id'),  # For league-specific queries
+    )
     id = db.Column(db.Integer, primary_key=True)
     score = db.Column(db.Integer, nullable=False)
 
@@ -172,6 +200,18 @@ class PlayerScore(db.Model):
 
 class League(db.Model):
     __tablename__ = 'leagues'
+    __table_args__ = (
+        db.Index('idx_league_dates', 'start_date', 'end_date'),  # For date-based filtering
+        db.Index('idx_league_status', 'is_finalized'),  # For status filtering
+        db.Index('idx_league_public', 'is_public'),  # For public/private filtering
+        db.Index('idx_league_creator', 'creator_id'),  # For creator queries
+        db.Index('idx_league_club', 'club_id'),  # For club queries
+        db.Index('idx_league_tour', 'tour'),  # For tour-based filtering
+        db.Index('idx_league_code', 'league_code'),  # For league code lookups
+        db.Index('idx_league_fees', 'fees_processed'),  # For fee processing queries
+        db.Index('idx_league_payout', 'payout_status'),  # For payout tracking
+        db.Index('idx_league_active', 'start_date', 'end_date', 'is_finalized'),  # Composite for active leagues
+    )
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
     league_code = db.Column(db.String(10), unique=True, nullable=False)
@@ -275,8 +315,19 @@ class League(db.Model):
 
 
 
+
 class LeagueEntry(db.Model):
     __tablename__ = 'league_entries'
+
+    __table_args__ = (
+        db.Index('idx_entry_league_user', 'league_id', 'user_id'),  # For user entries in league
+        db.Index('idx_entry_league', 'league_id'),  # For league-specific queries
+        db.Index('idx_entry_user', 'user_id'),  # For user-specific queries
+        db.Index('idx_entry_fee_status', 'fee_collected'),  # For fee processing
+        db.Index('idx_entry_created', 'created_at'),  # For time-based queries
+        db.Index('idx_entry_players', 'player1_id', 'player2_id', 'player3_id'),  # For player queries
+    )
+
     id = db.Column(db.Integer, primary_key=True)
 
     entry_name = db.Column(db.String(150), nullable=False)
@@ -323,7 +374,15 @@ class LeagueEntry(db.Model):
 
 
 
+
 class PushSubscription(db.Model):
+    __tablename__ = 'push_subscriptions'
+
+    # Index for user lookups
+    __table_args__ = (
+        db.Index('idx_push_user', 'user_id'),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     subscription_json = db.Column(db.Text, nullable=False)
@@ -336,6 +395,12 @@ class PushSubscription(db.Model):
 
 class DailyTaskTracker(db.Model):
     """Tracks whether a daily scheduled task has been successfully run."""
+
+    __table_args__ = (
+        db.Index('idx_task_date', 'task_name', 'run_date'),  # For daily task checks
+        db.Index('idx_task_created', 'created_at'),  # For cleanup queries
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     task_name = db.Column(db.String(100), nullable=False)
     run_date = db.Column(db.Date, nullable=False, unique=True)
