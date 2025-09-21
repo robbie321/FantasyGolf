@@ -758,6 +758,79 @@ def check_task_status(task_id):
 
     return f"<pre>{json.dumps(status_info, indent=2)}</pre>"
 
+@admin_bp.route('/check-task-result/<task_id>')
+@admin_required
+def check_task_result(task_id):
+    """Get detailed task result information"""
+    from .. import celery
+    import json
+
+    result = celery.AsyncResult(task_id)
+
+    # Get detailed status
+    status_info = {
+        'task_id': task_id,
+        'status': result.status,
+        'successful': result.successful() if result.ready() else None,
+        'failed': result.failed() if result.ready() else None,
+        'ready': result.ready(),
+        'result': str(result.result) if result.result else None,
+        'traceback': result.traceback if result.traceback else None,
+        'date_done': str(result.date_done) if result.date_done else None,
+        'task_name': result.name if hasattr(result, 'name') else None,
+    }
+
+    # If failed, get more info
+    if result.failed():
+        status_info['failure_info'] = {
+            'exception': str(result.result),
+            'traceback': result.traceback
+        }
+
+    return f"<pre>{json.dumps(status_info, indent=2, default=str)}</pre>"
+
+@admin_bp.route('/trigger-score-update-now', methods=['POST'])
+@admin_required
+def trigger_score_update_now():
+    """Manually trigger a score update for testing"""
+    from ..tasks import update_player_scores
+    from datetime import datetime, timezone, timedelta
+
+    # Set end time to 1 hour from now for testing
+    end_time = datetime.now(timezone.utc) + timedelta(hours=1)
+
+    # Trigger for PGA tour
+    result = update_player_scores.delay('pga', end_time.isoformat())
+
+    flash(f'Score update task triggered for PGA tour: {result.id}', 'info')
+    flash(f'End time set to: {end_time}', 'info')
+    flash(f'Check task result at: /admin/check-task-result/{result.id}', 'info')
+
+    return redirect(url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/get-recent-task-results')
+@admin_required
+def get_recent_task_results():
+    """Get results of recent tasks"""
+    from .. import celery
+    import json
+
+    # Get inspect object
+    inspect = celery.control.inspect()
+    active = inspect.active()
+    reserved = inspect.reserved()
+
+    # Get stats to see recent task execution
+    stats = inspect.stats()
+
+    results = {
+        'active_tasks': active,
+        'reserved_tasks': reserved,
+        'worker_stats': stats
+    }
+
+    return f"<pre>{json.dumps(results, indent=2, default=str)}</pre>"
+
 @admin_bp.route('/celery-inspect')
 @admin_required
 def celery_inspect():

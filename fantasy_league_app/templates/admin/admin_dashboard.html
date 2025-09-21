@@ -108,7 +108,7 @@
   }
   .debug-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 1rem;
     margin-bottom: 2rem;
   }
@@ -288,6 +288,26 @@
         </div>
 
         <div style="text-align: center">
+          <form
+            method="POST"
+            action="{{ url_for('admin.trigger_score_update_now') }}"
+            class="d-inline"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button
+              type="submit"
+              class="debug-btn"
+              style="background-color: #e74c3c; color: white"
+            >
+              Test Score Update
+            </button>
+          </form>
+          <small class="d-block text-muted mt-1"
+            >Direct score update test</small
+          >
+        </div>
+
+        <div style="text-align: center">
           <a
             href="{{ url_for('admin.celery_inspect') }}"
             class="debug-btn btn-secondary"
@@ -296,6 +316,19 @@
             Inspect Workers
           </a>
           <small class="d-block text-muted mt-1">Check worker status</small>
+        </div>
+
+        <div style="text-align: center">
+          <a
+            href="{{ url_for('admin.get_recent_task_results') }}"
+            class="debug-btn btn-secondary"
+            target="_blank"
+          >
+            Recent Results
+          </a>
+          <small class="d-block text-muted mt-1"
+            >Check recent task results</small
+          >
         </div>
       </div>
 
