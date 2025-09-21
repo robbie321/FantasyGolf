@@ -16,6 +16,7 @@ from .models import League, Player, PlayerBucket, LeagueEntry, PlayerScore, User
 from celery import shared_task
 from .stripe_client import process_payouts,  create_payout
 from .utils import send_winner_notification_email, send_push_notification, send_email
+from requests.exceptions import RequestException, Timeout, ConnectionError
 
 # Custom exceptions for better error handling
 class TemporaryAPIError(Exception):
@@ -459,67 +460,6 @@ def send_deadline_reminders():
                     f"Your entry is incomplete! The deadline is in {hours} hours."
                 )
 
-
-#redundant
-# def settle_finished_leagues(app):
-#     """
-#     This job runs periodically to perform a final score update for leagues
-#     that have just ended.
-#     """
-#     with app.app_context():
-#         now = datetime.utcnow()
-#         # Look for leagues that ended in the last 15 minutes and are not yet finalized
-#         recently_finished = now - timedelta(minutes=15)
-
-#         leagues_to_settle = League.query.filter(
-#             League.end_date.between(recently_finished, now),
-#             League.is_finalized == False
-#         ).all()
-
-#         if not leagues_to_settle:
-#             print(f"--- No leagues to settle at {datetime.now()} ---")
-#             return
-
-#         print(f"--- Found {len(leagues_to_settle)} league(s) to settle. Performing final score update. ---")
-
-#         API_KEY = app.config['DATA_GOLF_API_KEY']
-#         # The pre-tournament endpoint also contains the final results after an event.
-#         url = f"https://feeds.datagolf.com/preds/pre-tournament?tour=pga&odds_format=decimal&key={API_KEY}"
-
-#         try:
-#             response = requests.get(url)
-#             response.raise_for_status()
-#             data = response.json()
-
-#             # We create a dictionary of player scores for quick lookup
-#             player_scores = {}
-#             for api_player in data.get('field', []):
-#                 player_name_parts = api_player.get('player_name', '').split(', ')
-#                 if len(player_name_parts) == 2:
-#                     surname, name = player_name_parts[0].strip(), player_name_parts[1].strip()
-#                     # Create a unique key for the dictionary
-#                     player_key = f"{name.lower()} {surname.lower()}"
-#                     player_scores[player_key] = api_player.get('to_par', 0)
-
-#             if not player_scores:
-#                 print("Could not fetch final player scores from API.")
-#                 return
-
-#             # Get all players from our database
-#             all_db_players = Player.query.all()
-#             updated_count = 0
-#             for player in all_db_players:
-#                 player_key = f"{player.name.lower()} {player.surname.lower()}"
-#                 if player_key in player_scores:
-#                     player.current_score = player_scores[player_key]
-#                     updated_count += 1
-
-#             db.session.commit()
-#             print(f"Final scores updated for {updated_count} players.")
-
-#         except requests.exceptions.RequestException as e:
-#             print(f"Error fetching final scores from API: {e}")
-
 @shared_task(bind=True)
 def collect_league_fees(self, league_id):
     """
@@ -883,112 +823,6 @@ def finalize_finished_leagues(self):
         logger.error(f"FINALIZE: Unexpected error: {e}")
         raise
 
-# @shared_task
-# def finalize_finished_leagues():
-#     """
-#     This task is triggered when a league's tournament is over. It calculates the
-#     final scores, determines the winner(s) using tie-breaker logic, and sends an
-#     email notification to the club that hosted the league.
-#     """
-#     # --- 1. Get the League and its Entries ---
-#     leagues_to_finalize = League.query.filter(
-#             League.end_date <= now,
-#             League.is_finalized == False
-#         ).all()
-#     if not league or not league.is_finalized:
-#         print(f"League {league_id} not found or not ready for finalization.")
-#         return
-
-#     entries = LeagueEntry.query.filter_by(league_id=league.id).all()
-#     if not entries:
-#         print(f"No entries found for League {league_id}. Nothing to do.")
-#         return
-
-#     # --- 2. Calculate Final Scores ---
-#     historical_scores = {score.player_id: score.score for score in PlayerScore.query.filter_by(league_id=league.id).all()}
-
-#     for entry in entries:
-#         score1 = historical_scores.get(entry.player1_id, 0)
-#         score2 = historical_scores.get(entry.player2_id, 0)
-#         score3 = historical_scores.get(entry.player3_id, 0)
-#         entry.total_score = score1 + score2 + score3
-
-#     # --- 3. Determine the Winner(s) with Tie-Breaker Logic ---
-
-#     # In golf, the lowest score wins.
-#     min_score = min(entry.total_score for entry in entries if entry.total_score is not None)
-#     top_entries = [entry for entry in entries if entry.total_score == min_score]
-
-#     winners = []
-#     if len(top_entries) == 1:
-#         # A single, clear winner
-#         winners = [top_entries[0].user]
-#     else:
-#         # Multiple entries are tied, use the tie-breaker
-#         actual_answer = league.tie_breaker_actual_answer
-#         if actual_answer is not None:
-#             # Find the entry with the smallest difference to the actual answer
-#             min_diff = float('inf')
-#             for e in top_entries:
-#                 if e.tie_breaker_answer is not None:
-#                     diff = abs(e.tie_breaker_answer - actual_answer)
-#                     if diff < min_diff:
-#                         min_diff = diff
-
-#             # Find all entries that match this minimum difference
-#             winners = [e.user for e in top_entries if e.tie_breaker_answer is not None and abs(e.tie_breaker_answer - actual_answer) == min_diff]
-
-#             # If no one submitted a tie-breaker answer, all are winners
-#             if not winners:
-#                 winners = [e.user for e in top_entries]
-#         else:
-#             # If no actual answer was set, all tied entries are winners
-#             winners = [e.user for e in top_entries]
-
-#     # Assign the list of winners to the league's winner relationship
-#     league.winners = winners
-#     db.session.commit()
-
-#     # --- 4. Notify the Club Owner ---
-#     club_owner = league.club_host
-#     if club_owner and club_owner.email and winners:
-#         subject = f"Winner(s) Declared for Your League: {league.name}"
-
-#         # Format the winner details for the email
-#         winner_details_html = "<ul>"
-#         for winner_user in winners:
-#             winner_entry = next((e for e in top_entries if e.user_id == winner_user.id), None)
-#             winner_details_html += f"""
-#                 <li>
-#                     <strong>Winner's Name:</strong> {winner_user.full_name} <br>
-#                     <strong>Winning Score:</strong> {winner_entry.total_score if winner_entry else 'N/A'} <br>
-#                     <strong>Winner's Email:</strong> {winner_user.email}
-#                 </li>
-#             """
-#         winner_details_html += "</ul>"
-
-#         html_body = f"""
-#         <p>Hello {club_owner.club_name},</p>
-#         <p>Your fantasy league, <strong>{league.name}</strong>, has now concluded and the winner(s) have been determined.</p>
-#         <hr>
-#         <h3>Winner Details:</h3>
-#         {winner_details_html}
-#         <hr>
-#         <p>You are now responsible for arranging the prize payout to the winner(s) directly.</p>
-#         <p>Thank you for using Fantasy Fairways.</p>
-#         """
-
-#         send_email(
-#             subject=subject,
-#             recipients=[club_owner.email],
-#             html_body=html_body
-#         )
-
-#         print(f"Successfully sent winner notification email to {club_owner.email} for League {league.id}.")
-#     else:
-#         print(f"Could not send notification for League {league.id}: Club owner, email, or winner not found.")
-
-#     return f"League {league.id} finalized. Winners determined. Notification sent to club."
 
 @shared_task
 def broadcast_notification_task(title, body):
