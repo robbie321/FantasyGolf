@@ -1,64 +1,379 @@
-{% extends 'base.html' %} {% block content %}
-<main id="login-page" class="auth-container">
-  <div class="auth-card">
+{% extends 'base.html' %} {% block head %}
+<!-- Professional Login Styles -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/auth/professional_login.css') }}"
+/>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+  rel="stylesheet"
+/>
+{% endblock %} {% block content %}
+<div class="auth-container">
+  <div class="auth-card fade-in">
+    <!-- Professional Logo -->
+    <div class="auth-logo">
+      <img
+        src="{{ url_for('static', filename='images/logo/club_logo.png') }}"
+        alt="Fantasy Fairways Logo"
+      />
+    </div>
+
+    <!-- Professional Header -->
     <h1>Welcome Back</h1>
     <p class="subtitle">Sign in to your account to continue</p>
 
+    <!-- Professional Login Tabs -->
     <div class="login-tabs">
-      <button class="login-tab-button active" data-tab-target="#user-form">
-        <i class="fa-solid fa-user"></i> User
+      <button class="login-tab-button active" data-tab-target="#user-login">
+        <i class="fa-solid fa-user"></i>
+        <span>User</span>
       </button>
-      <button class="login-tab-button" data-tab-target="#club-form">
-        <i class="fa-solid fa-table-cells-large"></i> Club
+      <button class="login-tab-button" data-tab-target="#club-login">
+        <i class="fa-solid fa-building"></i>
+        <span>Club</span>
       </button>
     </div>
 
-    <div id="user-form" class="login-tab-content active">
-      <form method="POST" action="{{ url_for('auth.login_user_account') }}">
+    <!-- User Login Tab -->
+    <div class="login-tab-content active fade-in" id="user-login">
+      <form
+        method="POST"
+        action="{{ url_for('auth.login_user_account') }}"
+        id="user-login-form"
+      >
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        {% if league_code %}
-        <input type="hidden" name="league_code" value="{{ league_code }}" />
-        {% endif %}
-        <div class="input-group">
-          <label for="user-email">User Email</label>
-          <input type="email" id="user-email" name="email" required />
+
+        <div class="form-group">
+          <label for="user-email">
+            <i class="fa-solid fa-envelope"></i>
+            Email Address
+          </label>
+          <input
+            type="email"
+            id="user-email"
+            name="email"
+            placeholder="Enter your email address"
+            required
+            autocomplete="email"
+          />
         </div>
-        <div class="input-group">
-          <label for="user-password">Password</label>
-          <input type="password" id="user-password" name="password" required />
+
+        <div class="form-group">
+          <label for="user-password">
+            <i class="fa-solid fa-lock"></i>
+            Password
+          </label>
+          <input
+            type="password"
+            id="user-password"
+            name="password"
+            placeholder="Enter your password"
+            required
+            autocomplete="current-password"
+          />
         </div>
-        <button type="submit" class="btn btn-primary">Sign In</button>
+
+        <button type="submit" class="btn btn-primary" id="user-login-btn">
+          <i class="fa-solid fa-sign-in-alt"></i>
+          <span>Sign In</span>
+        </button>
+
+        <!-- Display any flash messages for user login -->
+        {% with messages =
+        get_flashed_messages(category_filter=['user_login_error']) %} {% if
+        messages %} {% for message in messages %}
+        <div class="error-message">{{ message }}</div>
+        {% endfor %} {% endif %} {% endwith %}
       </form>
     </div>
 
-    <div id="club-form" class="login-tab-content">
-      <form method="POST" action="{{ url_for('auth.login_club_account') }}">
+    <!-- Club Login Tab -->
+    <div class="login-tab-content" id="club-login">
+      <form
+        method="POST"
+        action="{{ url_for('auth.login_club_account') }}"
+        id="club-login-form"
+      >
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        {% if league_code %}
-        <input type="hidden" name="league_code" value="{{ league_code }}" />
-        {% endif %}
-        <div class="input-group">
-          <label for="club-email">Club Email</label>
-          <input type="email" id="club-email" name="email" required />
+
+        <div class="form-group">
+          <label for="club-email">
+            <i class="fa-solid fa-building"></i>
+            Club Email
+          </label>
+          <input
+            type="email"
+            id="club-email"
+            name="email"
+            placeholder="Enter your club email"
+            required
+            autocomplete="email"
+          />
         </div>
-        <div class="input-group">
-          <label for="club-password">Password</label>
-          <input type="password" id="club-password" name="password" required />
+
+        <div class="form-group">
+          <label for="club-password">
+            <i class="fa-solid fa-key"></i>
+            Password
+          </label>
+          <input
+            type="password"
+            id="club-password"
+            name="password"
+            placeholder="Enter your password"
+            required
+            autocomplete="current-password"
+          />
         </div>
-        <button type="submit" class="btn btn-primary">Sign In</button>
+
+        <button type="submit" class="btn btn-primary" id="club-login-btn">
+          <i class="fa-solid fa-sign-in-alt"></i>
+          <span>Sign In</span>
+        </button>
+
+        <!-- Display any flash messages for club login -->
+        {% with messages =
+        get_flashed_messages(category_filter=['club_login_error']) %} {% if
+        messages %} {% for message in messages %}
+        <div class="error-message">{{ message }}</div>
+        {% endfor %} {% endif %} {% endwith %}
       </form>
     </div>
 
+    <!-- Professional Links Section -->
     <div class="auth-links">
-      <a href="{{ url_for('auth.reset_request') }}">Forgot your password?</a>
+      <p>
+        <a href="{{ url_for('auth.reset_request') }}">
+          <i class="fa-solid fa-question-circle"></i>
+          Forgot your password?
+        </a>
+      </p>
       <p>
         Don't have an account?
-        <a href="{{ url_for('auth.register') }}">Register here</a>
+        <a href="{{ url_for('auth.register') }}">
+          <strong>Register here</strong>
+        </a>
       </p>
+
+      {% if current_user.is_authenticated and current_user.is_site_admin %}
+      <a href="{{ url_for('admin.admin_dashboard') }}" class="site-admin-link">
+        <i class="fa-solid fa-shield-halved"></i>
+        Site Admin Login
+      </a>
+      {% else %}
       <a href="{{ url_for('auth.login_site_admin') }}" class="site-admin-link"
         ><i class="fa-solid fa-shield-halved"></i>Site Admin Login</a
       >
+      {% endif %}
     </div>
   </div>
-</main>
+</div>
+
+<!-- Professional JavaScript -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("Professional login system initialized");
+
+    // Professional tab switching
+    const tabButtons = document.querySelectorAll(".login-tab-button");
+    const tabContents = document.querySelectorAll(".login-tab-content");
+
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        // Remove active class from all tabs and content
+        tabButtons.forEach((btn) => btn.classList.remove("active"));
+        tabContents.forEach((content) => content.classList.remove("active"));
+
+        // Add active class to clicked tab
+        button.classList.add("active");
+
+        // Show corresponding content with animation
+        const targetId = button.dataset.tabTarget;
+        const targetContent = document.querySelector(targetId);
+        if (targetContent) {
+          targetContent.classList.add("active", "fade-in");
+        }
+      });
+    });
+
+    // Professional form handling
+    const userForm = document.getElementById("user-login-form");
+    const clubForm = document.getElementById("club-login-form");
+
+    function handleFormSubmit(form, buttonId) {
+      if (!form) return;
+
+      form.addEventListener("submit", function (e) {
+        const submitBtn = document.getElementById(buttonId);
+        if (submitBtn) {
+          // Add loading state
+          submitBtn.classList.add("btn-loading");
+          submitBtn.disabled = true;
+
+          // Re-enable after 5 seconds as fallback
+          setTimeout(() => {
+            submitBtn.classList.remove("btn-loading");
+            submitBtn.disabled = false;
+          }, 5000);
+        }
+      });
+    }
+
+    handleFormSubmit(userForm, "user-login-btn");
+    handleFormSubmit(clubForm, "club-login-btn");
+
+    // Professional form validation
+    function addValidation(formId) {
+      const form = document.getElementById(formId);
+      if (!form) return;
+
+      const inputs = form.querySelectorAll("input[required]");
+
+      inputs.forEach((input) => {
+        // Real-time validation
+        input.addEventListener("blur", function () {
+          const formGroup = this.closest(".form-group");
+
+          if (this.validity.valid && this.value.trim()) {
+            formGroup.classList.remove("has-error");
+            formGroup.classList.add("has-success");
+          } else {
+            formGroup.classList.remove("has-success");
+            formGroup.classList.add("has-error");
+          }
+        });
+
+        // Clear validation on focus
+        input.addEventListener("focus", function () {
+          const formGroup = this.closest(".form-group");
+          formGroup.classList.remove("has-error", "has-success");
+        });
+      });
+    }
+
+    addValidation("user-login-form");
+    addValidation("club-login-form");
+
+    // Handle pre-filled league code (if coming from landing page)
+    const urlParams = new URLSearchParams(window.location.search);
+    const leagueCode = urlParams.get("code");
+    if (leagueCode) {
+      // Store league code to use after login
+      sessionStorage.setItem("pendingLeagueCode", leagueCode);
+
+      // Show a helpful message
+      const authCard = document.querySelector(".auth-card");
+      const notice = document.createElement("div");
+      notice.className = "success-message";
+      notice.innerHTML = `
+            <i class="fa-solid fa-info-circle"></i>
+            Ready to join league with code: <strong>${leagueCode}</strong>
+        `;
+      authCard.insertBefore(notice, authCard.querySelector(".login-tabs"));
+    }
+
+    // Enhanced keyboard navigation
+    document.addEventListener("keydown", function (e) {
+      // Ctrl/Cmd + Tab to switch between login types
+      if ((e.ctrlKey || e.metaKey) && e.key === "Tab") {
+        e.preventDefault();
+        const activeTab = document.querySelector(".login-tab-button.active");
+        const tabs = document.querySelectorAll(".login-tab-button");
+        const currentIndex = Array.from(tabs).indexOf(activeTab);
+        const nextIndex = (currentIndex + 1) % tabs.length;
+        tabs[nextIndex].click();
+      }
+    });
+
+    // Auto-focus first input
+    const activeTabContent = document.querySelector(
+      ".login-tab-content.active"
+    );
+    if (activeTabContent) {
+      const firstInput = activeTabContent.querySelector("input");
+      if (firstInput) {
+        firstInput.focus();
+      }
+    }
+
+    console.log("Professional login interactions ready");
+  });
+</script>
+
+<style>
+  /* Additional inline styles for immediate improvements */
+  .auth-card {
+    animation: slideUp 0.6s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Professional loading button animation */
+  .btn-loading {
+    position: relative;
+    color: transparent !important;
+  }
+
+  .btn-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Professional focus states */
+  .form-group input:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 4px rgba(0, 106, 78, 0.1), 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Professional hover effects */
+  .login-tab-button:hover {
+    transform: translateY(-1px);
+  }
+
+  .btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
+
+  /* Professional error and success states */
+  .has-error input {
+    border-color: #dc2626 !important;
+    background: #fef2f2 !important;
+  }
+
+  .has-success input {
+    border-color: #16a34a !important;
+    background: #f0fdf4 !important;
+  }
+</style>
+
 {% endblock %}

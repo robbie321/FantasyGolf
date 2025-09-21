@@ -1,509 +1,880 @@
 {% extends 'base.html' %} {% block content %}
 <style>
-  .page-wrapper {
-    padding: 4rem 1rem;
-    background-color: #f7f7f7;
+  :root {
+    --primary-green: #006a4e;
+    --light-green: #e8f5e8;
+    --accent-blue: #3498db;
+    --accent-orange: #f39c12;
+    --accent-red: #e74c3c;
+    --dark-gray: #2c3e50;
+    --light-gray: #ecf0f1;
+    --border-color: #bdc3c7;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
+
+  .admin-wrapper {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
   .admin-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
   }
+
+  /* Header */
   .admin-header {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-  .admin-header h1 {
-    font-family: "Merriweather", serif;
-  }
-
-  /* Stats Grid */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-  }
-  .stat-card {
-    background-color: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 1.5rem;
-    text-align: center;
-  }
-  .stat-card .stat-title {
-    font-size: 1rem;
-    color: #666;
-    margin: 0 0 0.5rem 0;
-  }
-  .stat-card .stat-value {
-    font-size: 2.5rem;
-    font-weight: bold;
-    color: #006a4e;
-  }
-
-  /* Management Section */
-  .management-section {
-    background-color: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
+    background: white;
+    border-radius: 15px;
     padding: 2rem;
     margin-bottom: 2rem;
-  }
-  .management-section h2 {
-    font-family: "Merriweather", serif;
-    margin-top: 0;
+    box-shadow: var(--shadow);
     text-align: center;
+    position: relative;
   }
-  .management-grid {
+
+  .admin-header h1 {
+    font-family: "Merriweather", serif;
+    color: var(--primary-green);
+    margin: 0 0 0.5rem 0;
+    font-size: 2.5rem;
+  }
+
+  .admin-header .subtitle {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .logout-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: var(--accent-red);
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .logout-btn:hover {
+    background: #c0392b;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+  }
+
+  /* Stats Dashboard */
+  .stats-dashboard {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
-    margin-top: 2rem;
+    margin-bottom: 3rem;
   }
 
-  /* UPDATED: Styling for the management cards to fix alignment */
-  .management-card {
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 1.5rem;
-    text-align: center;
-    display: flex; /* Use flexbox for alignment */
-    flex-direction: column; /* Stack content vertically */
-  }
-  .management-card h3 {
-    font-family: "Merriweather", serif;
-    margin-top: 0;
-  }
-  .management-card p {
-    color: #555;
-    flex-grow: 1; /* This pushes the button group to the bottom */
-  }
-  .management-card .btn-group {
-    margin-top: 1rem;
-  }
-  .management-card .btn {
-    display: inline-block;
-    background-color: #006a4e;
-    color: white;
-    text-decoration: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    font-weight: bold;
-    margin: 5px;
-  }
-
-  /* Debug Section Styles */
-  .debug-section {
-    background-color: #fff3cd;
-    border: 1px solid #ffeaa7;
-    border-radius: 8px;
+  .stat-card {
+    background: white;
+    border-radius: 15px;
     padding: 2rem;
-    margin-bottom: 2rem;
-  }
-  .debug-section h2 {
-    font-family: "Merriweather", serif;
-    margin-top: 0;
     text-align: center;
-    color: #856404;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
   }
-  .debug-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
+
+  .stat-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(
+      90deg,
+      var(--primary-green),
+      var(--accent-blue)
+    );
   }
-  .debug-btn {
-    background-color: #ffc107;
-    color: #212529;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
+
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .stat-icon {
+    font-size: 3rem;
+    color: var(--primary-green);
+    margin-bottom: 1rem;
+  }
+
+  .stat-value {
+    font-size: 2.5rem;
     font-weight: bold;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-block;
-    text-align: center;
-    transition: background-color 0.2s;
+    color: var(--dark-gray);
+    margin: 0.5rem 0;
   }
-  .debug-btn:hover {
-    background-color: #e0a800;
-    color: #212529;
-    text-decoration: none;
+
+  .stat-title {
+    color: #7f8c8d;
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
-  .debug-btn.btn-success {
-    background-color: #28a745;
-    color: white;
-  }
-  .debug-btn.btn-info {
-    background-color: #17a2b8;
-    color: white;
-  }
-  .debug-btn.btn-warning {
-    background-color: #ffc107;
-    color: #212529;
-  }
-  .debug-btn.btn-secondary {
-    background-color: #6c757d;
+
+  /* Revenue Card Special Styling */
+  .revenue-card {
+    grid-column: span 2;
+    background: linear-gradient(
+      135deg,
+      var(--primary-green),
+      var(--accent-blue)
+    );
     color: white;
   }
 
-  .debug-results {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 5px;
-    padding: 1rem;
-    max-height: 200px;
-    overflow-y: auto;
-    font-family: "Courier New", monospace;
+  .revenue-card .stat-value,
+  .revenue-card .stat-title {
+    color: white;
+  }
+
+  .revenue-filter {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .revenue-filter a {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    transition: all 0.3s ease;
     font-size: 0.9rem;
   }
 
-  /* Revenue Filter */
-  .revenue-filter {
-    text-align: center;
+  .revenue-filter a:hover,
+  .revenue-filter a.active {
+    background: white;
+    color: var(--primary-green);
+    text-decoration: none;
+  }
+
+  /* Debug Section */
+  .debug-section {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    box-shadow: var(--shadow);
+    border-left: 5px solid var(--accent-orange);
+  }
+
+  .debug-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .debug-header h2 {
+    color: var(--dark-gray);
+    margin: 0;
+    font-family: "Merriweather", serif;
+  }
+
+  .debug-badge {
+    background: var(--accent-orange);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-left: 1rem;
+  }
+
+  .debug-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .debug-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    min-height: 100px;
+    position: relative;
+  }
+
+  .debug-btn:hover {
+    transform: translateY(-3px);
+    text-decoration: none;
+  }
+
+  .debug-btn.btn-success {
+    background: #27ae60;
+    color: white;
+    border-color: #2ecc71;
+  }
+
+  .debug-btn.btn-info {
+    background: #3498db;
+    color: white;
+    border-color: #5dade2;
+  }
+
+  .debug-btn.btn-warning {
+    background: #f39c12;
+    color: white;
+    border-color: #f5b041;
+  }
+
+  .debug-btn.btn-danger {
+    background: #e74c3c;
+    color: white;
+    border-color: #ec7063;
+  }
+
+  .debug-btn.btn-secondary {
+    background: #95a5a6;
+    color: white;
+    border-color: #bdc3c7;
+  }
+
+  .debug-results {
+    background: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 10px;
+    padding: 1.5rem;
+    max-height: 250px;
+    overflow-y: auto;
+    font-family: "Courier New", monospace;
+    font-size: 0.9rem;
     margin-top: 1rem;
   }
-  .revenue-filter a {
-    text-decoration: none;
-    color: #333;
-    padding: 8px 12px;
-    border-radius: 5px;
-    margin: 0 5px;
-    font-weight: bold;
+
+  .debug-instructions {
+    background: var(--light-green);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
   }
-  .revenue-filter a.active {
-    background-color: #006a4e;
+
+  /* Management Sections */
+  .management-sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+  }
+
+  .management-section {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+  }
+
+  .management-section:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--light-gray);
+  }
+
+  .section-icon {
+    font-size: 2rem;
+    color: var(--primary-green);
+    margin-right: 1rem;
+  }
+
+  .section-title {
+    color: var(--dark-gray);
+    margin: 0;
+    font-family: "Merriweather", serif;
+    font-size: 1.4rem;
+  }
+
+  .management-cards {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .management-card {
+    border: 2px solid var(--light-gray);
+    border-radius: 10px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .management-card:hover {
+    border-color: var(--primary-green);
+    transform: translateX(5px);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .card-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-green);
     color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1.2rem;
+  }
+
+  .card-title {
+    font-weight: bold;
+    color: var(--dark-gray);
+    margin: 0;
+  }
+
+  .card-description {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    background: var(--primary-green);
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+  }
+
+  .action-btn:hover {
+    background: #004d3a;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+  }
+
+  .action-btn.btn-warning {
+    background: var(--accent-orange);
+  }
+
+  .action-btn.btn-danger {
+    background: var(--accent-red);
+  }
+
+  .action-btn.btn-success {
+    background: #27ae60;
+  }
+
+  /* Status Indicators */
+  .status-indicator {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #27ae60;
+  }
+
+  .status-indicator.warning {
+    background: var(--accent-orange);
+  }
+
+  .status-indicator.danger {
+    background: var(--accent-red);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .admin-wrapper {
+      padding: 1rem 0.5rem;
+    }
+
+    .revenue-card {
+      grid-column: span 1;
+    }
+
+    .management-sections {
+      grid-template-columns: 1fr;
+    }
+
+    .debug-grid {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .admin-header h1 {
+      font-size: 2rem;
+    }
+
+    .logout-btn {
+      position: static;
+      margin-top: 1rem;
+    }
+  }
+
+  /* Animation for loading states */
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  .loading {
+    animation: pulse 1.5s infinite;
   }
 </style>
 
-<div class="page-wrapper">
+<div class="admin-wrapper">
   <div class="admin-container">
+    <!-- Header -->
     <div class="admin-header">
-      <h1>Site Administration Dashboard</h1>
-      <p>Welcome, {{ current_user.username }}.</p>
-      <a href="{{ url_for('auth.logout') }}" class="logout-link"
-        ><i class="fa-solid fa-right-from-bracket"></i> Logout</a
-      >
+      <a href="{{ url_for('auth.logout') }}" class="logout-btn">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </a>
+      <h1><i class="fas fa-crown"></i> Admin Dashboard</h1>
+      <p class="subtitle">
+        Welcome back, {{ current_user.username }}! Manage your fantasy league
+        platform.
+      </p>
     </div>
 
-    <!-- Analytics Section -->
-    <div class="stats-grid">
+    <!-- Stats Dashboard -->
+    <div class="stats-dashboard">
       <div class="stat-card">
-        <h3 class="stat-title">Total Players</h3>
-        <p class="stat-value">{{ stats.total_users }}</p>
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-value">{{ stats.total_users }}</div>
+        <div class="stat-title">Total Players</div>
       </div>
+
       <div class="stat-card">
-        <h3 class="stat-title">Total Clubs</h3>
-        <p class="stat-value">{{ stats.total_clubs }}</p>
+        <div class="stat-icon"><i class="fas fa-building"></i></div>
+        <div class="stat-value">{{ stats.total_clubs }}</div>
+        <div class="stat-title">Total Clubs</div>
       </div>
+
       <div class="stat-card">
-        <h3 class="stat-title">Active Leagues</h3>
-        <p class="stat-value">{{ stats.active_leagues }}</p>
+        <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+        <div class="stat-value">{{ stats.active_leagues }}</div>
+        <div class="stat-title">Active Leagues</div>
       </div>
+
       <div class="stat-card">
-        <h3 class="stat-title">Total Entries</h3>
-        <p class="stat-value">{{ stats.total_entries }}</p>
+        <div class="stat-icon"><i class="fas fa-ticket-alt"></i></div>
+        <div class="stat-value">{{ stats.total_entries }}</div>
+        <div class="stat-title">Total Entries</div>
+      </div>
+
+      <div class="stat-card revenue-card">
+        <div class="stat-icon"><i class="fas fa-euro-sign"></i></div>
+        <div class="stat-value">€{{ "%.2f"|format(stats.total_revenue) }}</div>
+        <div class="stat-title">Total Revenue</div>
+        <div class="revenue-filter">
+          <a
+            href="{{ url_for('admin.admin_dashboard', revenue_timeframe='day') }}"
+            class="{{ 'active' if stats.selected_timeframe == 'day' }}"
+            >24 Hours</a
+          >
+          <a
+            href="{{ url_for('admin.admin_dashboard', revenue_timeframe='week') }}"
+            class="{{ 'active' if stats.selected_timeframe == 'week' }}"
+            >7 Days</a
+          >
+          <a
+            href="{{ url_for('admin.admin_dashboard', revenue_timeframe='month') }}"
+            class="{{ 'active' if stats.selected_timeframe == 'month' }}"
+            >30 Days</a
+          >
+          <a
+            href="{{ url_for('admin.admin_dashboard', revenue_timeframe='year') }}"
+            class="{{ 'active' if stats.selected_timeframe == 'year' }}"
+            >Year</a
+          >
+          <a
+            href="{{ url_for('admin.admin_dashboard', revenue_timeframe='all') }}"
+            class="{{ 'active' if stats.selected_timeframe == 'all' }}"
+            >All Time</a
+          >
+        </div>
       </div>
     </div>
 
-    <div class="stat-card">
-      <h3 class="stat-title">Total Revenue</h3>
-      <p class="stat-value">€{{ "%.2f"|format(stats.total_revenue) }}</p>
-      <div class="revenue-filter">
-        <a
-          href="{{ url_for('admin.admin_dashboard', revenue_timeframe='day') }}"
-          class="{{ 'active' if stats.selected_timeframe == 'day' }}"
-          >24 Hrs</a
-        >
-        <a
-          href="{{ url_for('admin.admin_dashboard', revenue_timeframe='week') }}"
-          class="{{ 'active' if stats.selected_timeframe == 'week' }}"
-          >7 Days</a
-        >
-        <a
-          href="{{ url_for('admin.admin_dashboard', revenue_timeframe='month') }}"
-          class="{{ 'active' if stats.selected_timeframe == 'month' }}"
-          >30 Days</a
-        >
-        <a
-          href="{{ url_for('admin.admin_dashboard', revenue_timeframe='year') }}"
-          class="{{ 'active' if stats.selected_timeframe == 'year' }}"
-          >Year</a
-        >
-        <a
-          href="{{ url_for('admin.admin_dashboard', revenue_timeframe='all') }}"
-          class="{{ 'active' if stats.selected_timeframe == 'all' }}"
-          >All Time</a
-        >
-      </div>
-    </div>
-
-    <!-- NEW: Debug & Testing Tools Section -->
+    <!-- Debug & Testing Section -->
     <div class="debug-section">
-      <h2>🔧 Debug & Testing Tools</h2>
+      <div class="debug-header">
+        <h2><i class="fas fa-bug"></i> Debug & Testing Tools</h2>
+        <span class="debug-badge">Developer Tools</span>
+      </div>
+
       <div class="debug-grid">
-        <div style="text-align: center">
-          <form
-            method="POST"
-            action="{{ url_for('admin.test_simple_task') }}"
-            class="d-inline"
-          >
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <button type="submit" class="debug-btn btn-success">
-              Simple Test Task
-            </button>
-          </form>
-          <small class="d-block text-muted mt-1">No app context needed</small>
-        </div>
+        <form method="POST" action="{{ url_for('admin.test_simple_task') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button type="submit" class="debug-btn btn-success">
+            <i class="fas fa-play-circle"></i>
+            <span>Simple Test</span>
+          </button>
+        </form>
 
-        <div style="text-align: center">
-          <form
-            method="POST"
-            action="{{ url_for('admin.test_celery') }}"
-            class="d-inline"
-          >
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <button type="submit" class="debug-btn btn-info">
-              Test Celery + DB
-            </button>
-          </form>
-          <small class="d-block text-muted mt-1">Tests app context & DB</small>
-        </div>
+        <form method="POST" action="{{ url_for('admin.test_celery') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button type="submit" class="debug-btn btn-info">
+            <i class="fas fa-database"></i>
+            <span>Celery + DB</span>
+          </button>
+        </form>
 
-        <div style="text-align: center">
-          <form
-            method="POST"
-            action="{{ url_for('admin.debug_trigger_scheduler') }}"
-            class="d-inline"
-          >
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <button type="submit" class="debug-btn btn-warning">
-              Trigger Scheduler
-            </button>
-          </form>
-          <small class="d-block text-muted mt-1"
-            >Run score update scheduler</small
-          >
-        </div>
+        <form
+          method="POST"
+          action="{{ url_for('admin.debug_trigger_scheduler') }}"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button type="submit" class="debug-btn btn-warning">
+            <i class="fas fa-clock"></i>
+            <span>Trigger Scheduler</span>
+          </button>
+        </form>
 
-        <div style="text-align: center">
-          <form
-            method="POST"
-            action="{{ url_for('admin.trigger_score_update_now') }}"
-            class="d-inline"
-          >
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <button
-              type="submit"
-              class="debug-btn"
-              style="background-color: #e74c3c; color: white"
-            >
-              Test Score Update
-            </button>
-          </form>
-          <small class="d-block text-muted mt-1"
-            >Direct score update test</small
-          >
-        </div>
+        <form
+          method="POST"
+          action="{{ url_for('admin.trigger_score_update_now') }}"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button type="submit" class="debug-btn btn-danger">
+            <i class="fas fa-golf-ball"></i>
+            <span>Score Update</span>
+          </button>
+        </form>
 
-        <div style="text-align: center">
-          <a
-            href="{{ url_for('admin.celery_inspect') }}"
-            class="debug-btn btn-secondary"
-            target="_blank"
-          >
-            Inspect Workers
-          </a>
-          <small class="d-block text-muted mt-1">Check worker status</small>
-        </div>
+        <a
+          href="{{ url_for('admin.celery_inspect') }}"
+          class="debug-btn btn-secondary"
+          target="_blank"
+        >
+          <i class="fas fa-search"></i>
+          <span>Inspect Workers</span>
+        </a>
 
-        <div style="text-align: center">
-          <a
-            href="{{ url_for('admin.get_recent_task_results') }}"
-            class="debug-btn btn-secondary"
-            target="_blank"
-          >
-            Recent Results
-          </a>
-          <small class="d-block text-muted mt-1"
-            >Check recent task results</small
-          >
-        </div>
+        <a
+          href="{{ url_for('admin.get_recent_task_results') }}"
+          class="debug-btn btn-secondary"
+          target="_blank"
+        >
+          <i class="fas fa-list-alt"></i>
+          <span>Recent Results</span>
+        </a>
       </div>
 
-      <div style="margin-top: 2rem">
-        <h6>Last Test Results:</h6>
-        <div id="task-results" class="debug-results">
-          {% with messages = get_flashed_messages() %} {% if messages %} {% for
-          message in messages %}
-          <div class="mb-1">{{ message }}</div>
-          {% endfor %} {% else %}
-          <div class="text-muted">
-            No recent test results. Click a button above to test.
-          </div>
-          {% endif %} {% endwith %}
-        </div>
+      <div class="debug-instructions">
+        <strong><i class="fas fa-info-circle"></i> Debug Steps:</strong><br />
+        1. Start with <strong>Simple Test</strong> - basic functionality
+        check<br />
+        2. Try <strong>Celery + DB</strong> - tests app context and database
+        connectivity<br />
+        3. Use <strong>Trigger Scheduler</strong> - tests the score update
+        scheduling system<br />
+        4. <strong>Inspect Workers</strong> shows real-time worker status and
+        task history
       </div>
 
-      <div style="margin-top: 1rem">
-        <small class="text-muted">
-          <strong>Debug Steps:</strong><br />
-          1. First try "Simple Test Task" - should work without any
-          dependencies<br />
-          2. Then "Test Celery + DB" - tests Flask app context and database<br />
-          3. Finally "Trigger Scheduler" - tests the actual score update
-          logic<br />
-          4. Use "Inspect Workers" to see active/scheduled tasks
-        </small>
+      <div id="task-results" class="debug-results">
+        {% with messages = get_flashed_messages() %} {% if messages %} {% for
+        message in messages %}
+        <div class="mb-1">
+          <i class="fas fa-chevron-right"></i> {{ message }}
+        </div>
+        {% endfor %} {% else %}
+        <div class="text-muted">
+          <i class="fas fa-info-circle"></i> No recent test results. Click a
+          button above to test.
+        </div>
+        {% endif %} {% endwith %}
       </div>
     </div>
 
-    <!-- Management Links Section -->
-    <div class="management-section">
-      <h2>Management Tools</h2>
-      <div class="management-grid">
-        <div class="management-card">
-          <h3>Reset Player scores</h3>
+    <!-- Management Sections -->
+    <div class="management-sections">
+      <!-- Content Management -->
+      <div class="management-section">
+        <div class="section-header">
+          <div class="section-icon"><i class="fas fa-cogs"></i></div>
+          <h3 class="section-title">Content Management</h3>
+        </div>
+        <div class="management-cards">
+          <div class="management-card">
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-redo"></i></div>
+              <h4 class="card-title">Reset Player Scores</h4>
+            </div>
+            <p class="card-description">
+              Reset all player scores to 0 for new tournament week
+            </p>
+            <div class="card-actions">
+              <a
+                href="{{ url_for('admin.reset_player_score') }}"
+                class="action-btn btn-warning"
+                >Reset Scores</a
+              >
+            </div>
+          </div>
 
-          <div class="btn-group">
-            <a
-              href="{{ url_for('admin.reset_player_score') }}"
-              class="admin-card"
-            >
-              <div class="card-icon">...</div>
-              <div class="card-title">Reset Player Score</div>
-              <div class="card-description">Reset Player Scores to 0</div>
-            </a>
+          <div class="management-card">
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-bell"></i></div>
+              <h4 class="card-title">Send Notification</h4>
+            </div>
+            <p class="card-description">
+              Broadcast push notifications to all subscribed users
+            </p>
+            <div class="card-actions">
+              <a
+                href="{{ url_for('admin.send_broadcast_notification') }}"
+                class="action-btn"
+                >Send Notification</a
+              >
+            </div>
           </div>
-        </div>
-        <div class="management-card">
-          <h3>Send Notification</h3>
 
-          <div class="btn-group">
-            <a
-              href="{{ url_for('admin.send_broadcast_notification') }}"
-              class="admin-card"
-            >
-              <div class="card-icon">...</div>
-              <div class="card-title">Send Notification</div>
-              <div class="card-description">
-                Send a push notification to all subscribed users.
-              </div>
-            </a>
+          <div class="management-card">
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-download"></i></div>
+              <h4 class="card-title">Tournament Importer</h4>
+            </div>
+            <p class="card-description">
+              Import active tournaments from API to create player buckets
+            </p>
+            <div class="card-actions">
+              <a
+                href="{{ url_for('admin.import_tournaments') }}"
+                class="action-btn"
+                >Import Tournaments</a
+              >
+            </div>
           </div>
         </div>
-        <div class="management-card">
-          <h3>User Management</h3>
-          <p>View, activate, and deactivate player and club accounts.</p>
-          <div class="btn-group">
-            <a href="{{ url_for('admin.manage_users') }}" class="btn"
-              >Manage Users</a
-            >
-          </div>
-        </div>
-        <div class="management-card">
-          <h3>Tournament Importer</h3>
-          <p>
-            Fetch active tournaments from the API to create player buckets
-            automatically.
-          </p>
-          <div class="btn-group">
-            <a href="{{ url_for('admin.import_tournaments') }}" class="btn"
-              >Import Tournaments</a
-            >
-          </div>
-        </div>
-        <div class="management-card">
-          <h3>Player Management</h3>
-          <p>
-            Add new players individually or upload them in bulk from a CSV file.
-          </p>
-          <div class="btn-group">
-            <a href="{{ url_for('admin.add_individual_player') }}" class="btn"
-              >Add Player</a
-            >
-            <a href="{{ url_for('admin.upload_players_csv') }}" class="btn"
-              >Upload CSV</a
-            >
-          </div>
-        </div>
-        <div class="management-card">
-          <h3>Player Buckets</h3>
-          <p>Create and manage player pools for leagues.</p>
-          <div class="btn-group">
-            <a href="{{ url_for('admin.manage_player_buckets') }}" class="btn"
-              >Manage Buckets</a
-            >
-          </div>
-        </div>
-        <div class="management-card">
-          <h3>League Management</h3>
-          <p>View and manage all leagues created by clubs.</p>
-          <div class="btn-group">
-            <a href="{{ url_for('admin.manage_leagues') }}" class="btn"
-              >Manage Leagues</a
-            >
-          </div>
-        </div>
+      </div>
 
-        <div class="management-card">
-          <h3>Public Leagues</h3>
-          <p>
-            Create official, site-wide public leagues for all users to join.
-          </p>
-          <div class="btn-group">
-            <a href="{{ url_for('admin.create_public_league') }}" class="btn"
-              >Create Public League</a
-            >
+      <!-- User Management -->
+      <div class="management-section">
+        <div class="section-header">
+          <div class="section-icon"><i class="fas fa-users-cog"></i></div>
+          <h3 class="section-title">User Management</h3>
+        </div>
+        <div class="management-cards">
+          <div class="management-card">
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-user-friends"></i></div>
+              <h4 class="card-title">Manage Users & Clubs</h4>
+            </div>
+            <p class="card-description">
+              View, activate, and deactivate player and club accounts
+            </p>
+            <div class="card-actions">
+              <a href="{{ url_for('admin.manage_users') }}" class="action-btn"
+                >Manage Users</a
+              >
+            </div>
+          </div>
+
+          <div class="management-card">
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-user-plus"></i></div>
+              <h4 class="card-title">Player Management</h4>
+            </div>
+            <p class="card-description">
+              Add players individually or upload from CSV files
+            </p>
+            <div class="card-actions">
+              <a
+                href="{{ url_for('admin.add_individual_player') }}"
+                class="action-btn"
+                >Add Player</a
+              >
+              <a
+                href="{{ url_for('admin.upload_players_csv') }}"
+                class="action-btn"
+                >Upload CSV</a
+              >
+            </div>
           </div>
         </div>
+      </div>
 
-        <div class="management-card">
-          <h3>Testing Mode</h3>
-          {% if stats.testing_mode_active %}
-          <p style="color: #dc3545; font-weight: bold">ACTIVE</p>
-          <p>Users can join leagues after the entry deadline has passed.</p>
-          <form
-            method="POST"
-            action="{{ url_for('admin.toggle_testing_mode') }}"
-          >
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <button type="submit" class="btn btn-warning">Deactivate</button>
-          </form>
-          {% else %}
-          <p style="font-weight: bold">INACTIVE</p>
-          <p>Entry deadlines are being enforced for all users.</p>
-          <form
-            method="POST"
-            action="{{ url_for('admin.toggle_testing_mode') }}"
-          >
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <button type="submit" class="btn btn-success">Activate</button>
-          </form>
-          {% endif %}
+      <!-- League Management -->
+      <div class="management-section">
+        <div class="section-header">
+          <div class="section-icon"><i class="fas fa-trophy"></i></div>
+          <h3 class="section-title">League Management</h3>
         </div>
+        <div class="management-cards">
+          <div class="management-card">
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-list"></i></div>
+              <h4 class="card-title">Manage Leagues</h4>
+            </div>
+            <p class="card-description">
+              View and manage all leagues created by clubs
+            </p>
+            <div class="card-actions">
+              <a href="{{ url_for('admin.manage_leagues') }}" class="action-btn"
+                >View Leagues</a
+              >
+            </div>
+          </div>
 
-        <!-- Manual Task Runner Card -->
-        <div class="management-card">
-          <h3>Manual Task Runner</h3>
-          <p>
-            Manually trigger the weekly task to finalize leagues. This will
-            calculate winners and process payouts for all finished leagues.
-          </p>
-          <div class="btn-group">
-            <form
-              method="POST"
-              action="{{ url_for('admin.manual_finalize_leagues') }}"
-            >
-              <input
-                type="hidden"
-                name="csrf_token"
-                value="{{ csrf_token() }}"
-              />
+          <div class="management-card">
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-plus-circle"></i></div>
+              <h4 class="card-title">Create Public League</h4>
+            </div>
+            <p class="card-description">
+              Create official site-wide public leagues for all users
+            </p>
+            <div class="card-actions">
+              <a
+                href="{{ url_for('admin.create_public_league') }}"
+                class="action-btn btn-success"
+                >Create League</a
+              >
+            </div>
+          </div>
 
-              <button type="submit" class="btn">Run Finalization Task</button>
-            </form>
+          <div class="management-card">
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-layer-group"></i></div>
+              <h4 class="card-title">Player Buckets</h4>
+            </div>
+            <p class="card-description">
+              Create and manage player pools for leagues
+            </p>
+            <div class="card-actions">
+              <a
+                href="{{ url_for('admin.manage_player_buckets') }}"
+                class="action-btn"
+                >Manage Buckets</a
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- System Management -->
+      <div class="management-section">
+        <div class="section-header">
+          <div class="section-icon"><i class="fas fa-server"></i></div>
+          <h3 class="section-title">System Management</h3>
+        </div>
+        <div class="management-cards">
+          <div class="management-card">
+            <div
+              class="status-indicator {{ 'danger' if stats.testing_mode_active else 'success' }}"
+            ></div>
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-flask"></i></div>
+              <h4 class="card-title">Testing Mode</h4>
+            </div>
+            <p class="card-description">
+              {% if stats.testing_mode_active %}
+              <strong style="color: #e74c3c">ACTIVE</strong> - Users can join
+              leagues after deadline {% else %}
+              <strong style="color: #27ae60">INACTIVE</strong> - Entry deadlines
+              are enforced {% endif %}
+            </p>
+            <div class="card-actions">
+              <form
+                method="POST"
+                action="{{ url_for('admin.toggle_testing_mode') }}"
+                class="d-inline"
+              >
+                <input
+                  type="hidden"
+                  name="csrf_token"
+                  value="{{ csrf_token() }}"
+                />
+                {% if stats.testing_mode_active %}
+                <button type="submit" class="action-btn btn-danger">
+                  Deactivate
+                </button>
+                {% else %}
+                <button type="submit" class="action-btn btn-success">
+                  Activate
+                </button>
+                {% endif %}
+              </form>
+            </div>
+          </div>
+
+          <div class="management-card">
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-play"></i></div>
+              <h4 class="card-title">Manual Task Runner</h4>
+            </div>
+            <p class="card-description">
+              Manually trigger league finalization and payout processing
+            </p>
+            <div class="card-actions">
+              <form
+                method="POST"
+                action="{{ url_for('admin.manual_finalize_leagues') }}"
+                class="d-inline"
+              >
+                <input
+                  type="hidden"
+                  name="csrf_token"
+                  value="{{ csrf_token() }}"
+                />
+                <button type="submit" class="action-btn btn-warning">
+                  Run Finalization
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
@@ -511,48 +882,89 @@
   </div>
 </div>
 
-<!-- JavaScript for auto-checking task status -->
+<!-- Enhanced JavaScript -->
 <script>
+  // Auto-check task status functionality
   function checkTaskStatus(taskId) {
-    fetch(`/admin/check-task-status/${taskId}`)
+    fetch(`/admin/check-task-result/${taskId}`)
       .then((response) => response.text())
       .then((data) => {
         const resultsDiv = document.getElementById("task-results");
         const timestamp = new Date().toLocaleTimeString();
         resultsDiv.innerHTML =
-          `<strong>[${timestamp}] Task ${taskId}:</strong><br>${data}<hr>` +
+          `<div><strong>[${timestamp}] Task ${taskId}:</strong><br>${data}</div><hr>` +
           resultsDiv.innerHTML;
       })
       .catch((error) => {
         console.error("Error checking task status:", error);
         const resultsDiv = document.getElementById("task-results");
         resultsDiv.innerHTML =
-          `<strong>Error checking task ${taskId}:</strong> ${error}<hr>` +
+          `<div><strong>Error:</strong> ${error}</div><hr>` +
           resultsDiv.innerHTML;
       });
   }
 
-  // Auto-check task status after clicks
+  // Enhanced form submission handling
   document.addEventListener("DOMContentLoaded", function () {
-    const forms = document.querySelectorAll(
-      'form[action*="test"], form[action*="debug"]'
-    );
-    forms.forEach((form) => {
+    const debugForms = document.querySelectorAll(".debug-section form");
+
+    debugForms.forEach((form) => {
       form.addEventListener("submit", function (e) {
-        // Small delay to let task be created
+        const button = form.querySelector("button");
+        const originalText = button.innerHTML;
+
+        // Add loading state
+        button.innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i> <span>Running...</span>';
+        button.disabled = true;
+        button.classList.add("loading");
+
+        // Reset button after 3 seconds
         setTimeout(() => {
-          // Look for task IDs in flash messages
-          const resultsDiv = document.getElementById("task-results");
-          const flashText = resultsDiv.innerHTML;
-          const match = flashText.match(/([a-f0-9-]{36})/);
-          if (match) {
-            // Wait a bit more for task to be processed
-            setTimeout(() => {
-              checkTaskStatus(match[1]);
-            }, 2000);
-          }
-        }, 1000);
+          button.innerHTML = originalText;
+          button.disabled = false;
+          button.classList.remove("loading");
+
+          // Check for task ID in results and auto-check status
+          setTimeout(() => {
+            const resultsDiv = document.getElementById("task-results");
+            const flashText = resultsDiv.innerHTML;
+            const match = flashText.match(/([a-f0-9-]{36})/);
+            if (match) {
+              setTimeout(() => checkTaskStatus(match[1]), 2000);
+            }
+          }, 1000);
+        }, 3000);
       });
+    });
+
+    // Auto-refresh stats every 30 seconds
+    setInterval(() => {
+      const statValues = document.querySelectorAll(".stat-value");
+      statValues.forEach((stat) => {
+        stat.style.opacity = "0.7";
+        setTimeout(() => {
+          stat.style.opacity = "1";
+        }, 500);
+      });
+    }, 30000);
+  });
+
+  // Add tooltips for better UX
+  document.addEventListener("DOMContentLoaded", function () {
+    const tooltips = {
+      ".debug-btn.btn-success":
+        "Tests basic Celery functionality without dependencies",
+      ".debug-btn.btn-info": "Tests Celery with Flask app context and database",
+      ".debug-btn.btn-warning": "Triggers the main score update scheduler",
+      ".debug-btn.btn-danger": "Runs a live score update test for PGA tour",
+    };
+
+    Object.entries(tooltips).forEach(([selector, text]) => {
+      const element = document.querySelector(selector);
+      if (element) {
+        element.title = text;
+      }
     });
   });
 </script>

@@ -1,0 +1,504 @@
+body {
+        background: radial-gradient(circle, rgb(107, 158, 134) 0%, rgb(0, 106, 78) 100%);
+}
+
+
+/* League headers. Top of the view */
+.league-header-card {
+    background-color: #2c3e50; /* Dark blue-gray */
+    color: var(--white);
+    border-radius: var(--border-radius);
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--box-shadow);
+}
+
+.league-header-card.finalized {
+    padding-bottom: 0;
+}
+
+.header-main-info {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.header-icon {
+    font-size: 2rem;
+    color: #f1c40f; /* Gold color */
+    background-color: rgba(255, 255, 255, 0.1);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.header-details h1 {
+    color: var(--white);
+    margin: 0 0 0.25rem 0;
+    font-size: 1.1rem;
+}
+
+.header-details p {
+    color: var(--white);
+    opacity: 0.7;
+    margin: 0;
+    font-weight: 500;
+}
+
+.header-main-info .tag {
+    margin-left: auto;
+    align-self: flex-start;
+}
+
+.header-buttons{
+display: flex;
+flex-direction: row;
+gap: 1rem;
+}
+.btn-header{
+padding: 0.5rem 1.5rem;
+border: 1px solid transparent;
+border-radius: var(--border-radius);
+font-size: 0.9rem;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.3s;
+width: 100%;
+}
+
+
+/* --- Winner Banner Styling --- */
+.winner-info-banner {
+    background-color: #f1c40f; /* Gold color */
+    color: #76360f; /* Dark gold text */
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin: 0 -2rem; /* Extend to the edges of the parent card */
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.winner-icon {
+    font-size: 1.5rem;
+    background-color: rgba(255, 255, 255, 0.3);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.winner-details {
+    flex-grow: 1;
+}
+
+.winner-details h2 {
+    color: #76360f;
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.winner-details .stars {
+    opacity: 0.5;
+    color: #ff0000;
+}
+
+.winner-details .winner-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: block;
+    margin: 0.25rem 0;
+}
+
+.winner-name a{
+  color: #76360f;
+}
+
+.winner-details .winner-subtext {
+    font-size: 0.9rem;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.trophy-graphic {
+    font-size: 4rem;
+    opacity: 0.15;
+}
+
+
+/* --- LEAGUE SECTION --- */
+.league-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.5rem 0.5rem 60px 0.5rem;
+  }
+
+  .content-box { /* Added .content-box */
+  max-width: 1200px;
+  margin: 2rem auto 0 auto;
+  background-color: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem; /* Mobile first padding */
+  }
+
+
+.flex-align {
+  display: flex;
+  align-items: stretch;
+}
+
+.leaderboard-table .score {
+  font-weight: bold;
+  text-align: right;
+}
+
+.leaderboard-header{
+padding: 1.5rem 0 0 1rem;
+}
+
+/* --- NEW Collapsible Leaderboard Styles --- */
+.leaderboard-main-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+.leaderboard-main-row:hover {
+  background-color: var(--background-color);
+}
+.toggle-arrow {
+  display: inline-block;
+  margin-left: 10px;
+  transition: transform 0.3s ease;
+  font-size: 0.8em;
+}
+.leaderboard-main-row.is-open .toggle-arrow {
+  transform: rotate(180deg);
+}
+.leaderboard-details-row td {
+  padding: 0; /* Remove padding from the cell itself */
+}
+.details-wrapper {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+  background-color: var(--background-color);
+  padding: 0 0.75rem;
+}
+.leaderboard-details-row.is-open .details-wrapper {
+  max-height: 200px; /* Animate the wrapper */
+  padding: 0.2rem 0.75rem;
+}
+.player-details-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: row;
+}
+.player-detail {
+  display: flex; /* Use flexbox for alignment */
+  flex-direction: column; /* Keep vertical alignment for the whole card */
+  align-items: center; /* Center content horizontally */
+  gap: 0.5rem; /* Add some space between items */
+}
+
+.player-detail-info {
+  display: flex; /* A new flex container for the name and score */
+  gap: 0.75rem; /* Space between name and score */
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.player-detail-name {
+  font-weight: 500;
+  text-align: center;
+}
+.player-name-link {
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--primary-color);
+}
+.player-name-link:hover {
+  text-decoration: underline;
+}
+.player-detail-score {
+  font-size: 1em;
+}
+
+.league-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 2rem;
+}
+.detail-card {
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--background-light);
+}
+.detail-card h3 {
+  margin-top: 0;
+  color: var(--primary-color);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+  font-size: 1.2rem;
+}
+
+/* --- Collapsible League Details --- */
+.collapsible-container {
+    margin-bottom: 2rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 2rem;
+}
+
+.collapsible-toggle {
+    background-color: var(--background-light);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    width: 100%;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--dark-text);
+    margin-bottom: 1.5rem;
+}
+
+.collapsible-toggle .arrow {
+    transition: transform 0.3s ease;
+}
+
+.collapsible-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out;
+    background-color: var(--background-color);
+}
+
+/* Make sure the nested details grid has some padding when visible */
+.collapsible-content .league-details-grid {
+    padding: 2rem 0 0 0;
+    border-top: none;
+    margin-bottom: 0;
+}
+
+.leaderboard-container {
+  /* margin-top: 2rem; */
+}
+.leaderboard-container h2 {
+  font-size: 1.8rem;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--primary-color);
+}
+.leaderboard-table .rank {
+  font-weight: bold;
+}
+.leaderboard-table .score {
+  font-weight: bold;
+  text-align: right;
+}
+
+.score-value {
+  color: var(--dark-text);
+  margin-left: 0.75rem;
+  font-weight: 800;
+}
+.score-positive {
+  color: var(--primary-color);
+}
+.score-negative {
+  color: var(--text-red);
+}
+.my-entry {
+  background-color: #e8f5e9;
+  border-left: 4px solid var(--primary-color);
+}
+.leaderboard-locked {
+  text-align: center;
+  padding: 2rem;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  margin-top: 2rem;
+}
+
+.modal-close-btn{
+  padding: 0.5rem;
+  background-color: red;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  float: right;
+}
+
+
+.modal-content {
+  background-color: var(--background-light);
+  margin: 10% auto;
+  padding: 2rem;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 600px;
+  border-radius: 8px;
+  position: relative;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+
+}
+.close-btn {
+  color: #aaa;
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.close-btn:hover,
+.close-btn:focus {
+  color: black;
+}
+.player-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+.player-stat:last-child {
+  border-bottom: none;
+}
+.player-stat-label {
+  font-weight: bold;
+  color: var(--dark-text);
+}
+.player-stat-value {
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.my-team-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem; /* Add space below the header */
+}
+
+.my-team-section .section-title {
+    margin-bottom: 0; /* Remove default margin from the title */
+}
+
+.btn-edit-team {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--background-color);
+    color: #475569;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-edit-team:hover {
+    background-color:var(--border-color);
+    color: #1e293b;
+    border-color: #cbd5e1;
+}
+
+.btn-edit-team svg {
+    width: 18px;
+    height: 18px;
+}
+
+
+
+
+/* Modal overlays */
+.container {
+    margin-bottom: 1.5rem;
+}
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: none; /* Use flexbox to center the modal */
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    padding: 1rem;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.3s ease;
+    pointer-events: none; /* Prevents clicks when hidden */
+}
+
+
+/* ~~~~~~~~~~~~~~~~~~ */
+/* MEDIA QUERIES      */
+/* ~~~~~~~~~~~~~~~~~~ */
+@media (min-width: 768px) {
+.league-container {
+    margin: 2rem auto;
+    padding: 2rem;
+    border-radius: 2rem;
+}
+
+.header-actions { flex-direction: row; margin: 0; }
+.dashboard-header { flex-direction: row; align-items: center; }
+
+.team-selection-grid, .team-display-grid {
+grid-template-columns: repeat(3, 1fr);
+}
+
+.auth-card{
+padding: 2.5rem;
+margin-bottom:none;
+}
+
+.league-header-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+}
+
+  /* Stack "My Team" player cards vertically */
+  /* .my-team-grid {
+    grid-template-columns: 1fr;
+  } */
+
+.leaderboard-table th,
+.leaderboard-table td {
+    /* padding: 0.75rem 0.5rem;  */
+    font-size: 0.9rem;      /* Make the font slightly smaller */
+    white-space: nowrap;      /* Prevent player names from wrapping */
+}
+
+  /* Make the player name column flexible */
+.leaderboard-table th:nth-child(2),
+.leaderboard-table td:nth-child(2) {
+      width: 100%; /* Allows the name column to take up remaining space */
+}
+}

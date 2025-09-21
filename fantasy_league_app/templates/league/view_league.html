@@ -1,18 +1,25 @@
 {% extends 'base.html' %} {% block head %}
-<!-- Link to the form-specific stylesheet -->
+<!-- Link to the professional stylesheet -->
 <link
   rel="stylesheet"
   href="{{ url_for('static', filename='css/LeaguesView/league_view.css') }}"
 />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+  rel="stylesheet"
+/>
 {% endblock %} {% block content %}
 <main class="dashboard-content">
-  <div
-    class="league-container"
-    style="background-color: var(--background-light)"
-  >
-    <div class="container">
-      {% if league.is_finalized and league.winners %}
-      <div class="winner-banner">
+  <div class="league-container">
+    <!-- Winner Banner (Top Priority Display) -->
+    {% if league.is_finalized and league.winners %}
+    <div class="winner-banner">
+      <div class="winner-icon">
+        <i class="fa-solid fa-crown"></i>
+      </div>
+      <div class="winner-details">
         <h2>
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -25,101 +32,150 @@
               d="M220-180h520v-240l-60-60 60-60v-240H220v240l60 60-60 60v240Zm60-80v-184l-36-36 36-36v-184h400v184l36 36-36 36v184H280Zm200-260q25 0 42.5-17.5T540-580q0-25-17.5-42.5T480-640q-25 0-42.5 17.5T420-580q0 25 17.5 42.5T480-520Zm0-80q-8 0-14-6t-6-14q0-8 6-14t14-6q8 0 14 6t6 14q0 8-6 14t-14 6ZM220-80v-80h520v80H220Zm0-600v-80h520v80H220Zm260 260Z"
             ></path>
           </svg>
-          League Winner!
+          League Champion!
         </h2>
-        <p>
+        <div class="winner-name">
           <a
             href="{{ url_for('main.view_profile', user_id=league.winners[0].id) }}"
           >
             {{ league.winners[0].full_name }}
           </a>
+        </div>
+        <p class="winner-subtext">
+          Congratulations on your outstanding performance!
         </p>
       </div>
-      {% else %}
-      <div
-        class="league-header-card {% if league.is_finalized %}finalized{% endif %}"
-      >
-        <div class="header-main-info">
-          <div class="header-icon">
-            <i class="fa-solid fa-trophy"></i>
+      <div class="trophy-graphic">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+    </div>
+    {% else %}
+
+    <!-- Professional League Header (when not finalized) -->
+    <div
+      class="league-header-card {% if league.is_finalized %}finalized{% endif %}"
+    >
+      <div class="header-main-info">
+        <div class="header-icon">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+        <div class="header-details">
+          <div>
+            <h1>{{ league.name }}</h1>
+            <p class="dashboard-subheading">
+              Hosted by {{ league.club.club_name if league.club else 'Fantasy
+              Fairways' }}
+            </p>
           </div>
-          <div class="header-details">
-            <div>
-              <h1 class="">{{ league.name }}</h1>
-              <p class="dashboard-subheading">
-                Hosted by {{ league.club.club_name if league.club else 'Fantasy
-                Fairways' }}
-              </p>
-            </div>
+          <div class="tag-container">
             {% if league.is_finalized %}
-            <span class="tag tag-past">Completed</span>
+            <span class="tag tag-past">
+              <i class="fa-solid fa-check-circle"></i>
+              Completed
+            </span>
             {% else %}
-            <span class="tag tag-live">Live</span>
+            <span class="tag tag-live">
+              <i class="fa-solid fa-circle"></i>
+              Live
+            </span>
             {% endif %}
           </div>
         </div>
-        <div class="header-buttons">
-          <!-- Step 1: The new button is now here -->
-          <button id="open-details-modal-btn" class="btn-header btn-outline">
-            League Details
-          </button>
-          {% if now >= league.start_date and not league.is_finalized %}
-          <button
-            class="btn btn-primary"
-            id="view-live-leaderboard-btn"
-            data-tour="{{ league.tour }}"
-          >
-            Live leaderboard
-          </button>
-          {% endif %}
-        </div>
       </div>
-      {%endif%}
-    </div>
 
+      <div class="header-buttons">
+        <button id="open-details-modal-btn" class="btn-header btn-outline">
+          <i class="fa-solid fa-info-circle"></i>
+          League Details
+        </button>
+        {% if now >= league.start_date and not league.is_finalized %}
+        <button
+          class="btn-header btn-primary"
+          id="view-live-leaderboard-btn"
+          data-tour="{{ league.tour }}"
+        >
+          <i class="fa-solid fa-chart-line"></i>
+          Live Leaderboard
+        </button>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Entry Deadline Countdown -->
     {% if not league.is_finalized and league.entry_deadline > now %}
     <div class="countdown-container">
-      <h2>ENRTY DEADLINE</h2>
+      <h2>
+        <i class="fa-solid fa-clock"></i>
+        Entry Deadline
+      </h2>
       <div
         id="countdown"
         class="countdown-timer"
         data-deadline="{{ league.entry_deadline.isoformat() }}"
       >
         <div class="timer-box">
-          <span id="days" class="time">00</span><span class="label">Days</span>
+          <span id="days" class="time">00</span>
+          <span class="label">Days</span>
         </div>
         <div class="timer-box">
-          <span id="hours" class="time">00</span
-          ><span class="label">Hours</span>
+          <span id="hours" class="time">00</span>
+          <span class="label">Hours</span>
         </div>
         <div class="timer-box">
-          <span id="minutes" class="time">00</span
-          ><span class="label">Minutes</span>
+          <span id="minutes" class="time">00</span>
+          <span class="label">Minutes</span>
         </div>
         <div class="timer-box">
-          <span id="seconds" class="time">00</span
-          ><span class="label">Seconds</span>
+          <span id="seconds" class="time">00</span>
+          <span class="label">Seconds</span>
         </div>
       </div>
     </div>
     {% endif %}
+
+    <!-- League Action Section -->
     <div class="league-header">
       {% if not user_entry and not league.has_entry_deadline_passed %}
-      <a
-        href="{{ url_for('league.add_entry', league_id=league.id) }}"
-        class="btn-join"
-        >Join This League</a
-      >
+      <div class="join-league-section">
+        <div class="join-content">
+          <h3>Ready to Compete?</h3>
+          <p>
+            Join this league and test your fantasy golf skills against other
+            players!
+          </p>
+          <a
+            href="{{ url_for('league.add_entry', league_id=league.id) }}"
+            class="btn-join"
+          >
+            <i class="fa-solid fa-plus-circle"></i>
+            Join This League
+          </a>
+        </div>
+      </div>
       {% endif %}
     </div>
+
+    <!-- My Team Section -->
     {% if user_entry %}
     <section class="my-team-section">
       <div class="my-team-header">
-        <h2 style="font-size: 1rem">My Team</h2>
+        <h2>
+          <i class="fa-solid fa-users"></i>
+          My Team
+        </h2>
         <div class="total-score">
-          Total Score: <strong>{{ user_entry['total_score'] }}</strong>
+          <span class="score-label">Total Score:</span>
+          <span
+            class="score-value {% if user_entry['total_score'] > 0 %}score-positive{% elif user_entry['total_score'] < 0 %}score-negative{% else %}score-even{% endif %}"
+          >
+            {% if user_entry['total_score'] == 0 %} E {% elif
+            user_entry['total_score'] > 0 %} +{{ user_entry['total_score'] }} {%
+            else %} {{ user_entry['total_score'] }} {% endif %}
+          </span>
         </div>
       </div>
+
       <div class="my-team-grid">
         {% if user_entry['entry'].player1 %}
         <div class="player-card">
@@ -130,8 +186,16 @@
               class="player-headshot-icon"
             />
           </div>
-          <p>{{ user_entry['entry'].player1.full_name() }}</p>
-          <span class="player-badge">{{ user_entry['player1_score'] }}</span>
+          <p class="player-name">
+            {{ user_entry['entry'].player1.full_name() }}
+          </p>
+          <span
+            class="player-badge {% if user_entry['player1_score'] > 0 %}score-positive{% elif user_entry['player1_score'] < 0 %}score-negative{% else %}score-even{% endif %}"
+          >
+            {% if user_entry['player1_score'] == 0 %}E{% elif
+            user_entry['player1_score'] > 0 %}+{{ user_entry['player1_score']
+            }}{% else %}{{ user_entry['player1_score'] }}{% endif %}
+          </span>
         </div>
         {% endif %} {% if user_entry['entry'].player2 %}
         <div class="player-card">
@@ -142,8 +206,16 @@
               class="player-headshot-icon"
             />
           </div>
-          <p>{{ user_entry['entry'].player2.full_name() }}</p>
-          <span class="player-badge">{{ user_entry['player2_score'] }}</span>
+          <p class="player-name">
+            {{ user_entry['entry'].player2.full_name() }}
+          </p>
+          <span
+            class="player-badge {% if user_entry['player2_score'] > 0 %}score-positive{% elif user_entry['player2_score'] < 0 %}score-negative{% else %}score-even{% endif %}"
+          >
+            {% if user_entry['player2_score'] == 0 %}E{% elif
+            user_entry['player2_score'] > 0 %}+{{ user_entry['player2_score']
+            }}{% else %}{{ user_entry['player2_score'] }}{% endif %}
+          </span>
         </div>
         {% endif %} {% if user_entry['entry'].player3 %}
         <div class="player-card">
@@ -154,115 +226,159 @@
               class="player-headshot-icon"
             />
           </div>
-          <p>{{ user_entry['entry'].player3.full_name() }}</p>
-          <span class="player-badge">{{ user_entry['player3_score'] }}</span>
+          <p class="player-name">
+            {{ user_entry['entry'].player3.full_name() }}
+          </p>
+          <span
+            class="player-badge {% if user_entry['player3_score'] > 0 %}score-positive{% elif user_entry['player3_score'] < 0 %}score-negative{% else %}score-even{% endif %}"
+          >
+            {% if user_entry['player3_score'] == 0 %}E{% elif
+            user_entry['player3_score'] > 0 %}+{{ user_entry['player3_score']
+            }}{% else %}{{ user_entry['player3_score'] }}{% endif %}
+          </span>
         </div>
         {% endif %}
       </div>
     </section>
     {% else %}
-    <div class="form-card text-center" style="margin-bottom: 2rem">
-      <p>You have not joined this league yet.</p>
+
+    <!-- Not Joined State -->
+    <div class="form-card">
+      <div class="status-icon">
+        <i class="fa-solid fa-user-plus"></i>
+      </div>
+      <h3>Join the Competition</h3>
+      <p>
+        You haven't joined this league yet. Create your team and start
+        competing!
+      </p>
       <a
         href="{{ url_for('league.add_entry', league_id=league.id) }}"
         class="btn btn-primary"
-        style="max-width: 250px; margin: auto"
-        >Join Now</a
       >
+        <i class="fa-solid fa-rocket"></i>
+        Join Now
+      </a>
     </div>
-    {% endif %} {% if league.has_entry_deadline_passed %}
+    {% endif %}
+
+    <!-- Leaderboard Section -->
+    {% if league.has_entry_deadline_passed %}
     <div class="leaderboard-container">
-      <div class="leaderboard-header"></div>
+      <div class="leaderboard-header">
+        <h4>
+          {% if league.is_finalized %}
+          <i class="fa-solid fa-flag-checkered"></i>
+          Final Results {% else %}
+          <i class="fa-solid fa-chart-bar"></i>
+          Live Standings {% endif %}
+        </h4>
+        <div class="leaderboard-meta">
+          <span class="participant-count">
+            <i class="fa-solid fa-users"></i>
+            {{ leaderboard|length }} Participants
+          </span>
+        </div>
+      </div>
+
       <table class="leaderboard-table">
         <thead>
           <tr>
-            <th class="rank">Rank</th>
-            <th>Entry Name</th>
-            <th class="score">Total Score</th>
+            <th class="rank">
+              <i class="fa-solid fa-hashtag"></i>
+              Rank
+            </th>
+            <th>
+              <i class="fa-solid fa-user"></i>
+              Entry Name
+            </th>
+            <th class="score">
+              <i class="fa-solid fa-target"></i>
+              Total Score
+            </th>
           </tr>
         </thead>
         <tbody id="leaderboard-body">
           {% for item in leaderboard %}
           <tr
-            class="leaderboard-main-row {% if item.user_id == current_user.id %}my-entry{% endif %}"
+            class="leaderboard-main-row {% if item.user_id == current_user.id %}my-entry{% endif %} {% if loop.first and league.is_finalized %}winner-row{% endif %}"
             data-target="#details-{{ loop.index }}"
           >
-            <td class="rank" data-label="Rank">{{ item.position }}</td>
-            <td data-label="Entry Name">{{ item.user_name }}</td>
+            <td class="rank" data-label="Rank">
+              {% if loop.first and league.is_finalized %}
+              <span class="position-badge winner">
+                <i class="fa-solid fa-crown"></i>
+                {{ item.position }}
+              </span>
+              {% elif loop.index <= 3 %}
+              <span class="position-badge podium">{{ item.position }}</span>
+              {% else %}
+              <span class="position-badge">{{ item.position }}</span>
+              {% endif %}
+            </td>
+            <td data-label="Entry Name">
+              <div class="name-container">
+                <div class="avatar-placeholder">
+                  {{ item.user_name[0]|upper }}
+                </div>
+                <span class="name">{{ item.user_name }}</span>
+              </div>
+            </td>
             <td
               class="score {% if item.total_score > 0 %}score-positive{% elif item.total_score < 0 %}score-negative{% else %}score-even{% endif %}"
               data-label="Total Score"
             >
-              {{ item.total_score }}
-              <span class="toggle-arrow">▼</span>
+              <span class="score-value">
+                {% if item.total_score == 0 %} E {% elif item.total_score > 0 %}
+                +{{ item.total_score }} {% else %} {{ item.total_score }} {%
+                endif %}
+              </span>
+              <span class="toggle-arrow">
+                <i class="fa-solid fa-chevron-down"></i>
+              </span>
             </td>
           </tr>
+
+          <!-- Expandable Details Row -->
           <tr class="leaderboard-details-row" id="details-{{ loop.index }}">
             <td colspan="3">
               <div class="details-wrapper">
                 <div class="player-details-grid">
+                  {% for player in item.players %}
                   <div class="player-detail">
                     <div class="player-detail-info">
                       <div class="player-detail-name">
                         <a
                           href="#"
                           class="player-name-link"
-                          data-player-id="{{ item.players[0].dg_id if item.players[0].dg_id is defined else '' }}"
+                          data-player-id="{{ player.dg_id if player.dg_id is defined else '' }}"
                         >
-                          {{ item.players[0].name }}
+                          <i class="fa-solid fa-user"></i>
+                          {{ player.name }}
                         </a>
                       </div>
                       <div
-                        class="player-detail-score {% if item.players[0].score > 0 %}score-positive{% elif item.players[0].score < 0 %}score-negative{% else %}score-even{% endif %}"
+                        class="player-detail-score {% if player.score > 0 %}score-positive{% elif player.score < 0 %}score-negative{% else %}score-even{% endif %}"
                       >
-                        {{ item.players[0].score }}
+                        {% if player.score == 0 %} E {% elif player.score > 0 %}
+                        +{{ player.score }} {% else %} {{ player.score }} {%
+                        endif %}
                       </div>
                     </div>
                   </div>
-                  <div class="player-detail">
-                    <div class="player-detail-info">
-                      <div class="player-detail-name">
-                        <a
-                          href="#"
-                          class="player-name-link"
-                          data-player-id="{{ item.players[1].dg_id if item.players[1].dg_id is defined else '' }}"
-                        >
-                          {{ item.players[1].name }}
-                        </a>
-                      </div>
-                      <div
-                        class="player-detail-score {% if item.players[1].score > 0 %}score-positive{% elif item.players[1].score < 0 %}score-negative{% else %}score-even{% endif %}"
-                      >
-                        {{ item.players[1].score }}
-                      </div>
-                    </div>
-                  </div>
-                  <div class="player-detail">
-                    <div class="player-detail-info">
-                      <div class="player-detail-name">
-                        <a
-                          href="#"
-                          class="player-name-link"
-                          data-player-id="{{ item.players[2].dg_id if item.players[2].dg_id is defined else '' }}"
-                        >
-                          {{ item.players[2].name }}
-                        </a>
-                      </div>
-                      <div
-                        class="player-detail-score {% if item.players[2].score > 0 %}score-positive{% elif item.players[2].score < 0 %}score-negative{% else %}score-even{% endif %}"
-                      >
-                        {{ item.players[2].score }}
-                      </div>
-                    </div>
-                  </div>
+                  {% endfor %}
                 </div>
               </div>
             </td>
           </tr>
           {% else %}
-          <tr>
-            <td colspan="3" style="text-align: center; padding: 2rem">
-              No entries in this league yet.
+          <tr class="empty-state">
+            <td colspan="3">
+              <div class="empty-content">
+                <i class="fa-solid fa-users-slash"></i>
+                <h4>No Entries Yet</h4>
+                <p>Be the first to join this exciting league!</p>
+              </div>
             </td>
           </tr>
           {% endfor %}
@@ -270,33 +386,51 @@
       </table>
     </div>
     {% else %}
+
+    <!-- Leaderboard Locked State -->
     <div class="leaderboard-locked">
+      <div class="lock-icon">
+        <i class="fa-solid fa-lock"></i>
+      </div>
       <h3>Leaderboard Locked</h3>
       <p>
         The leaderboard will be revealed after the entry deadline has passed.
       </p>
-      <p>
-        <strong>Deadline:</strong>
-        {{ league.entry_deadline.strftime('%A, %d %B %Y at %H:%M') }} (UTC)
-      </p>
+      <div class="deadline-info">
+        <strong>
+          <i class="fa-solid fa-calendar-alt"></i>
+          Deadline:
+        </strong>
+        {{ league.entry_deadline.strftime('%A, %B %d, %Y at %I:%M %p') }} (UTC)
+      </div>
     </div>
     {% endif %}
 
+    <!-- Live Leaderboard Popup -->
     <div class="popup-overlay" id="live-leaderboard-overlay">
       <div class="popup-container">
         <div class="popup-header">
-          <h3>Live Tournament Leaderboard</h3>
-          <button class="popup-close" id="popup-close-btn">&times;</button>
+          <h3>
+            <i class="fa-solid fa-satellite-dish"></i>
+            Live Tournament Leaderboard
+          </h3>
+          <button class="popup-close" id="popup-close-btn">
+            <i class="fa-solid fa-times"></i>
+          </button>
         </div>
         <div class="popup-body" id="live-leaderboard-body">
-          <table class="live-leaderboard-table">
+          <div class="loading-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <p>Loading live data...</p>
+          </div>
+          <table class="live-leaderboard-table" style="display: none">
             <thead>
               <tr>
                 <th class="pos">Pos</th>
                 <th class="player-name">Player</th>
                 <th style="text-align: center">Total</th>
                 <th style="text-align: center">Thru</th>
-                <th style="text-align: center">Rnd</th>
+                <th style="text-align: center">Today</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -305,111 +439,155 @@
       </div>
     </div>
 
+    <!-- League Details Modal -->
     <div id="league-details-modal" class="modal-overlay">
       <div class="modal-content">
         <button id="close-details-modal-btn" class="modal-close-btn">
-          &times;
+          <i class="fa-solid fa-times"></i>
         </button>
-        <h2>League Details</h2>
+
+        <div class="modal-header">
+          <h2>
+            <i class="fa-solid fa-info-circle"></i>
+            League Information
+          </h2>
+        </div>
+
         <div class="league-details-grid">
           <div class="detail-card">
+            <div class="detail-icon">
+              <i class="fa-solid fa-gift"></i>
+            </div>
             <h3>Prize Details</h3>
-            <p>{{ league.prize_details or 'Not specified.' }}</p>
+            <p>
+              {{ league.prize_details or 'Prize information will be announced
+              soon.' }}
+            </p>
           </div>
+
           <div class="detail-card">
+            <div class="detail-icon">
+              <i class="fa-solid fa-gavel"></i>
+            </div>
             <h3>League Rules</h3>
-            <p>{{ league.rules or 'Standard rules apply.' }}</p>
+            <p>
+              {{ league.rules or 'Standard fantasy golf rules apply. Pick your
+              best team and compete!' }}
+            </p>
           </div>
+
           <div class="detail-card">
-            <h3>Tournament Dates</h3>
-            <p>
-              <strong>Starts:</strong> {{ league.start_date.strftime('%d %b %Y,
-              %H:%M') }}
-            </p>
-            <p>
-              <strong>Ends:</strong> {{ league.end_date.strftime('%d %b %Y,
-              %H:%M') }}
-            </p>
+            <div class="detail-icon">
+              <i class="fa-solid fa-calendar"></i>
+            </div>
+            <h3>Tournament Schedule</h3>
+            <div class="schedule-details">
+              <div class="schedule-item">
+                <span class="schedule-label">Starts:</span>
+                <span class="schedule-value"
+                  >{{ league.start_date.strftime('%B %d, %Y at %I:%M %p')
+                  }}</span
+                >
+              </div>
+              <div class="schedule-item">
+                <span class="schedule-label">Ends:</span>
+                <span class="schedule-value"
+                  >{{ league.end_date.strftime('%B %d, %Y at %I:%M %p') }}</span
+                >
+              </div>
+              <div class="schedule-item">
+                <span class="schedule-label">Entry Deadline:</span>
+                <span class="schedule-value"
+                  >{{ league.entry_deadline.strftime('%B %d, %Y at %I:%M %p')
+                  }}</span
+                >
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Player Profile Panel -->
+    <div id="player-profile-panel" class="profile-panel">
+      <div class="profile-panel-header">
+        <h3>Player Profile</h3>
+        <button id="panel-close-btn" class="panel-close">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      <div id="profile-panel-body" class="profile-panel-body">
+        <!-- Dynamic content loaded here -->
+      </div>
+    </div>
+    <div id="slide-in-overlay" class="slide-in-overlay"></div>
   </div>
 
-  <div>{% include 'main/_shared_dashboard_sections.html' with context%}</div>
+  <!-- Shared Dashboard Sections -->
+  <div>{% include 'main/_shared_dashboard_sections.html' with context %}</div>
 </main>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    console.log("--- Modal Debugger Initialized ---");
+    console.log("Professional League View Initialized");
 
+    // Professional Modal Handling
     const openBtn = document.getElementById("open-details-modal-btn");
     const closeBtn = document.getElementById("close-details-modal-btn");
     const modalOverlay = document.getElementById("league-details-modal");
 
-    // --- Step 1: Check if elements are found ---
-    console.log("Open Button found:", openBtn);
-    console.log("Close Button found:", closeBtn);
-    console.log("Modal Overlay found:", modalOverlay);
-
     if (openBtn && modalOverlay) {
-      console.log("Attaching OPEN event listener...");
       openBtn.addEventListener("click", () => {
-        console.log("OPEN button clicked!"); // Check if this fires
         modalOverlay.classList.add("active");
+        document.body.style.overflow = "hidden";
       });
-    } else {
-      console.error(
-        "Could not attach OPEN listener: Button or Modal not found."
-      );
     }
 
     if (closeBtn && modalOverlay) {
-      console.log("Attaching CLOSE event listener...");
       closeBtn.addEventListener("click", () => {
-        console.log("CLOSE button clicked!"); // Check if this fires
         modalOverlay.classList.remove("active");
+        document.body.style.overflow = "";
       });
-    } else {
-      console.error(
-        "Could not attach CLOSE listener: Button or Modal not found."
-      );
     }
 
     if (modalOverlay) {
-      console.log("Attaching OVERLAY click listener...");
       modalOverlay.addEventListener("click", (event) => {
         if (event.target === modalOverlay) {
-          console.log("Overlay background clicked!"); // Check if this fires
           modalOverlay.classList.remove("active");
+          document.body.style.overflow = "";
         }
       });
-    } else {
-      console.error("Could not attach OVERLAY listener: Modal not found.");
     }
 
-    console.log("DOM fully loaded. Starting all scripts.");
-
+    // Enhanced Countdown Timer
     const countdownElement = document.getElementById("countdown");
     if (countdownElement) {
       const deadline = new Date(
         countdownElement.dataset.deadline + "Z"
       ).getTime();
-      const timer = setInterval(function () {
+
+      const updateCountdown = () => {
         const now = new Date().getTime();
         const distance = deadline - now;
+
         if (distance < 0) {
           clearInterval(timer);
-          countdownElement.innerHTML =
-            "<h3>The entry deadline has passed.</h3>";
+          countdownElement.innerHTML = `
+                    <div class="countdown-expired">
+                        <i class="fa-solid fa-clock"></i>
+                        <h3>Entry Deadline Has Passed</h3>
+                    </div>
+                `;
           return;
         }
+
         const days = Math.floor(distance / (1000 * 60 * 60 * 24));
         const hours = Math.floor(
           (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
         );
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
         document.getElementById("days").innerText = String(days).padStart(
           2,
           "0"
@@ -426,9 +604,13 @@
           2,
           "0"
         );
-      }, 1000);
+      };
+
+      const timer = setInterval(updateCountdown, 1000);
+      updateCountdown(); // Initial call
     }
 
+    // Professional Player Profile Panel
     const profilePanel = document.getElementById("player-profile-panel");
     if (profilePanel) {
       const panelBody = document.getElementById("profile-panel-body");
@@ -440,6 +622,7 @@
         slideInOverlay.classList.add("is-open");
         document.body.style.overflow = "hidden";
       };
+
       const closeProfilePanel = () => {
         profilePanel.classList.remove("is-open");
         slideInOverlay.classList.remove("is-open");
@@ -451,79 +634,130 @@
           e.preventDefault();
           const playerId = link.dataset.playerId;
 
-          // Skip if no player ID
           if (!playerId) return;
 
-          panelBody.innerHTML = "<p>Loading player data...</p>";
+          panelBody.innerHTML = `
+                    <div class="loading-profile">
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <p>Loading player data...</p>
+                    </div>
+                `;
           openProfilePanel();
 
           try {
             const response = await fetch(
               `/player/api/sportradar_profile_by_name/${playerId}`
             );
-            if (!response.ok) {
-              throw new Error("Player data not found.");
-            }
+            if (!response.ok) throw new Error("Player data not found.");
+
             const data = await response.json();
 
             panelBody.innerHTML = `
-        <div class="profile-card">
-          <img src="${data.headshot_url}" alt="Headshot of ${
+                        <div class="profile-card">
+                            <div class="profile-header">
+                                <img src="${
+                                  data.headshot_url
+                                }" alt="Headshot of ${
               data.full_name
             }" class="profile-headshot">
-          <h2>${data.full_name}</h2>
-          <p class="country">${data.country}</p>
-          <div class="profile-stats-grid">
-            <div class="stat-item">
-              <span class="label">Birthday</span>
-              <span class="value">${data.birthday || "N/A"}</span>
-            </div>
-            <div class="stat-item">
-              <span class="label">Turned Pro</span>
-              <span class="value">${data.turned_pro || "N/A"}</span>
-            </div>
-            <div class="stat-item">
-              <span class="label">Height</span>
-              <span class="value">${data.height || "N/A"} in</span>
-            </div>
-            <div class="stat-item">
-              <span class="label">Weight</span>
-              <span class="value">${data.weight || "N/A"} lbs</span>
-            </div>
-          </div>
-        </div>
-      `;
+                                <div class="profile-info">
+                                    <h2>${data.full_name}</h2>
+                                    <p class="country">
+                                        <i class="fa-solid fa-flag"></i>
+                                        ${data.country}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="profile-stats-grid">
+                                <div class="stat-item">
+                                    <span class="label">
+                                        <i class="fa-solid fa-birthday-cake"></i>
+                                        Birthday
+                                    </span>
+                                    <span class="value">${
+                                      data.birthday || "N/A"
+                                    }</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="label">
+                                        <i class="fa-solid fa-golf-ball"></i>
+                                        Turned Pro
+                                    </span>
+                                    <span class="value">${
+                                      data.turned_pro || "N/A"
+                                    }</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="label">
+                                        <i class="fa-solid fa-ruler-vertical"></i>
+                                        Height
+                                    </span>
+                                    <span class="value">${
+                                      data.height || "N/A"
+                                    } in</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="label">
+                                        <i class="fa-solid fa-weight"></i>
+                                        Weight
+                                    </span>
+                                    <span class="value">${
+                                      data.weight || "N/A"
+                                    } lbs</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
           } catch (error) {
-            panelBody.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            panelBody.innerHTML = `
+                        <div class="error-state">
+                            <i class="fa-solid fa-exclamation-triangle"></i>
+                            <h3>Unable to Load Profile</h3>
+                            <p>${error.message}</p>
+                        </div>
+                    `;
           }
         });
       });
+
       if (panelCloseBtn)
         panelCloseBtn.addEventListener("click", closeProfilePanel);
       if (slideInOverlay)
         slideInOverlay.addEventListener("click", closeProfilePanel);
     }
 
+    // Enhanced Live Leaderboard
     const viewBtn = document.getElementById("view-live-leaderboard-btn");
     if (viewBtn) {
       const overlay = document.getElementById("live-leaderboard-overlay");
       const closeBtn = document.getElementById("popup-close-btn");
-      const leaderboardBody = document.querySelector(
-        "#live-leaderboard-body .live-leaderboard-table tbody"
+      const leaderboardTable = document.querySelector(
+        ".live-leaderboard-table"
       );
+      const leaderboardBody = document.querySelector(
+        ".live-leaderboard-table tbody"
+      );
+      const loadingState = document.querySelector(".loading-state");
 
       const openPopup = () => {
-        if (overlay) overlay.classList.add("active");
+        if (overlay) {
+          overlay.classList.add("active");
+          document.body.style.overflow = "hidden";
+        }
       };
+
       const closePopup = () => {
-        if (overlay) overlay.classList.remove("active");
+        if (overlay) {
+          overlay.classList.remove("active");
+          document.body.style.overflow = "";
+        }
       };
 
       viewBtn.addEventListener("click", async () => {
         if (!leaderboardBody) return;
 
-        leaderboardBody.innerHTML =
-          '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
+        loadingState.style.display = "block";
+        leaderboardTable.style.display = "none";
         openPopup();
 
         try {
@@ -535,75 +769,143 @@
           leaderboardBody.innerHTML = "";
 
           if (players.length === 0) {
-            leaderboardBody.innerHTML =
-              '<tr><td colspan="5" style="text-align:center;">Live data not available for this tour.</td></tr>';
-            return;
-          }
+            leaderboardBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="empty-message">
+                                <i class="fa-solid fa-satellite-dish"></i>
+                                Live data not available for this tournament.
+                            </td>
+                        </tr>
+                    `;
+          } else {
+            players.forEach((player, index) => {
+              let scoreText = player.current_score || "E";
+              let scoreClass = "score-even";
 
-          players.forEach((player) => {
-            let scoreText = player.total;
-            let rndScore = player.today;
-            let scoreClass = "score-negative";
+              if (player.current_score > 0) {
+                scoreText = `+${player.current_score}`;
+                scoreClass = "score-positive";
+              } else if (player.current_score < 0) {
+                scoreClass = "score-negative";
+              }
 
-            if (player.total === 0) {
-              scoreText = "E";
-              scoreClass = "score-even";
-            } else if (player.total > 0) {
-              scoreText = `+${player.total}`;
-              scoreClass = "score-positive";
-            }
+              const thruText = player.thru === 18 ? "F" : player.thru || "-";
+              const todayScore = player.today === 0 ? "E" : player.today || "-";
 
-            rndScore = player.today === 0 ? "E" : player.today;
-
-            const thruText = player.thru === 18 ? "F" : player.thru;
-
-            const row = `
+              const row = `
                             <tr>
-                                <td class="pos">${player.current_pos}</td>
-                                <td class="player-name">${player.player_name}</td>
-
-                                <td style="text-align:center"> <span class="live-score ${scoreClass}">${player.current_score}</span></td>
-                                <td style="text-align:center; font-weight:bold">${thruText}</td>
-                                <td style="text-align:center; font-weight:bold; padding-right:8px">${rndScore}</td>
+                                <td class="pos">${
+                                  player.current_pos || index + 1
+                                }</td>
+                                <td class="player-name">${
+                                  player.player_name
+                                }</td>
+                                <td style="text-align:center">
+                                    <span class="live-score ${scoreClass}">${scoreText}</span>
+                                </td>
+                                <td style="text-align:center; font-weight:600">${thruText}</td>
+                                <td style="text-align:center; font-weight:600">${todayScore}</td>
                             </tr>
                         `;
-            leaderboardBody.insertAdjacentHTML("beforeend", row);
-          });
+              leaderboardBody.insertAdjacentHTML("beforeend", row);
+            });
+          }
+
+          loadingState.style.display = "none";
+          leaderboardTable.style.display = "table";
         } catch (error) {
           console.error("Failed to fetch live leaderboard:", error);
-          leaderboardBody.innerHTML =
-            '<tr><td colspan="5" style="text-align:center;">Could not load live data.</td></tr>';
+          leaderboardBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="error-message">
+                            <i class="fa-solid fa-exclamation-triangle"></i>
+                            Unable to load live data. Please try again later.
+                        </td>
+                    </tr>
+                `;
+          loadingState.style.display = "none";
+          leaderboardTable.style.display = "table";
         }
       });
 
       if (closeBtn) closeBtn.addEventListener("click", closePopup);
-      if (overlay)
+      if (overlay) {
         overlay.addEventListener("click", (e) => {
           if (e.target === overlay) closePopup();
         });
+      }
     }
 
+    // Enhanced Collapsible Leaderboard
     const mainRows = document.querySelectorAll(".leaderboard-main-row");
     mainRows.forEach((row) => {
       row.addEventListener("click", () => {
         const targetId = row.dataset.target;
         const detailsRow = document.querySelector(targetId);
         if (detailsRow) {
+          const isOpen = row.classList.contains("is-open");
+
+          // Close all other open rows
+          document
+            .querySelectorAll(".leaderboard-main-row.is-open")
+            .forEach((openRow) => {
+              if (openRow !== row) {
+                openRow.classList.remove("is-open");
+                const openTargetId = openRow.dataset.target;
+                const openDetailsRow = document.querySelector(openTargetId);
+                if (openDetailsRow) {
+                  openDetailsRow.classList.remove("is-open");
+                }
+              }
+            });
+
+          // Toggle current row
           row.classList.toggle("is-open");
           detailsRow.classList.toggle("is-open");
         }
       });
     });
 
-    var socket = io();
-    socket.on("connect", function () {
-      console.log("Socket.IO connected!");
+    // Socket.IO for real-time updates (if available)
+    if (typeof io !== "undefined") {
+      var socket = io();
+      socket.on("connect", function () {
+        console.log("Socket.IO connected for real-time updates!");
+      });
+
+      socket.on("scores_updated", function (data) {
+        var currentLeagueTour = "{{ league.tour }}";
+        if (data.updated_tours.includes(currentLeagueTour)) {
+          // Show update notification
+          const notification = document.createElement("div");
+          notification.className = "update-notification";
+          notification.innerHTML = `
+                    <i class="fa-solid fa-sync-alt"></i>
+                    Scores updated! Refreshing...
+                `;
+          document.body.appendChild(notification);
+
+          setTimeout(() => {
+            location.reload();
+          }, 1500);
+        }
+      });
+    }
+
+    // Add smooth animations on load
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.style.animation = "fadeInUp 0.6s ease-out forwards";
+        }
+      });
     });
-    socket.on("scores_updated", function (data) {
-      var currentLeagueTour = "{{ league.tour }}";
-      if (data.updated_tours.includes(currentLeagueTour)) {
-        location.reload();
-      }
+
+    document.querySelectorAll(".league-container > *").forEach((el, index) => {
+      el.style.opacity = "0";
+      el.style.transform = "translateY(20px)";
+      el.style.animationDelay = `${index * 0.1}s`;
+      observer.observe(el);
     });
   });
 </script>
