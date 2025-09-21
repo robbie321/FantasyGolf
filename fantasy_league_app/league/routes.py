@@ -120,7 +120,7 @@ def _create_new_league(name, player_bucket_id, entry_fee_str,
     # else:
     #     return None, "Invalid user type for league creation."
 
-# 1. Generate a unique league code BEFORE creating the league object.
+    # 1. Generate a unique league code BEFORE creating the league object.
     while True:
         alphabet = string.ascii_uppercase + string.digits
         # Using 8 characters for better uniqueness

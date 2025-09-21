@@ -1,0 +1,407 @@
+{% extends 'base.html' %} {% block content %} {% block head %}
+<!-- This script block now runs first, making the data available to all other scripts -->
+<script>
+  window.serverTimeNow = new Date({{ now | tojson }});
+  window.liveLeaguesData = {{ live_leagues | tojson }};
+  window.upcomingLeaguesData = {{ upcoming_leagues | tojson }};
+  window.pastLeaguesData = {{ past_leagues | tojson }};
+</script>
+
+{% endblock %}
+
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!--      MAIN CONTENT       -->
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~ -->
+<div class="dashboard-wrapper">
+  {% include 'main/_shared_side_navbar.html' with context %}
+  <div>{% include 'main/_shared_bottom_navbar.html' with context %}</div>
+
+  <main class="dashboard-content">
+    <header class="dashboard-hero">
+      <div class="user-info">
+        <div class="avatar">{{ current_user.full_name[0] }}</div>
+
+        <div class="user-details">
+          <div class="welcome-message">
+            <h1 class="dashboard-h1">
+              Welcome back, {{ current_user.full_name.split(' ')[0] }}!
+            </h1>
+            <p class="dashboard-subheading">
+              Here's a look at your current leagues and entries.
+            </p>
+          </div>
+
+          <div class="join-league-box">
+            <a
+              href="#"
+              class="btn btn-primary join-league-hero-btn"
+              id="join-league-btn"
+            >
+              <i class="fa-solid fa-plus"></i> Join a League
+            </a>
+          </div>
+        </div>
+        <!-- <div class="user-level">
+          <span>⭐ Level 15</span>
+          <div class="xp-bar">
+            <div class="xp-progress" style="width: 75%"></div>
+          </div>
+          <small>Next level: 250 XP</small>
+        </div> -->
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="value"
+            >{{ live_leagues|length + upcoming_leagues|length }}</span
+          >
+          <span class="label">Active Leagues</span>
+        </div>
+        <div class="stat-card">
+          <span class="value">{{ stats.leagues_played }}</span>
+          <span class="label">Leagues Entered</span>
+        </div>
+        <div class="stat-card">
+          <span class="value">{{ stats.leagues_won }}</span>
+          <span class="label">Leagues Won</span>
+        </div>
+      </div>
+    </header>
+    <div class="content-container">
+      <!-- 1. Dashboard Section (My Leagues) -->
+      <section id="dashboard-section" class="page-section">
+        <div class="leagues-section">
+          <h2>My Leagues</h2>
+          <div class="tabs-container">
+            <div class="tabs capsule-tabs league-tabs">
+              <button class="tab-button active">Live</button>
+              <button class="tab-button">Upcoming</button>
+              <button class="tab-button">Past</button>
+            </div>
+          </div>
+          <div class="leagues-grid">
+            <!-- League cards injected by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Settings Section -->
+      <section id="settings-section" class="page-section hidden">
+        <header class="dashboard-header">
+          <div>
+            <h1>Settings</h1>
+            <p class="subtitle">
+              Manage your account preferences and app settings
+            </p>
+          </div>
+        </header>
+        <form class="settings-form">
+          <div class="form-card">
+            <h4>Profile Information</h4>
+            <div class="profile-header">
+              <div class="avatar-placeholder">UN</div>
+              <button class="btn btn-outline-sm">Change Photo</button>
+            </div>
+            <div class="form-row">
+              <div class="input-group">
+                <label for="first-name">First Name</label>
+                <input type="text" id="first-name" value="Max" />
+              </div>
+              <div class="input-group">
+                <label for="last-name">Last Name</label>
+                <input type="text" id="last-name" value="Johnson" />
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="username">Username</label>
+              <input type="text" id="username" value="maxjohnson" />
+            </div>
+          </div>
+          <div class="form-card">
+            <h4>Notification Preferences</h4>
+            <div class="toggle-group">
+              <div>
+                <h5>Tournament Updates</h5>
+                <p>
+                  Get notified about tournament starts, results, and leaderboard
+                  changes.
+                </p>
+              </div>
+              <label class="switch"
+                ><input type="checkbox" checked /><span
+                  class="slider round"
+                ></span
+              ></label>
+            </div>
+            <div class="toggle-group">
+              <div>
+                <h5>Push Notifications</h5>
+                <p>Receive push notifications on your mobile device.</p>
+              </div>
+              <label class="switch"
+                ><input type="checkbox" /><span class="slider round"></span
+              ></label>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </section>
+      <div>
+        {% include 'main/_shared_dashboard_sections.html' with context%}
+      </div>
+    </div>
+
+    <!-- 2. Player Profiles Section -->
+
+    <!-- 3. Tour Schedule Section -->
+
+    <!-- 4. Tour Leaderboards Section -->
+
+    <!-- 5. Wallet Section -->
+    <!-- <section id="wallet-section" class="page-section hidden">
+        <header class="dashboard-header">
+          <div>
+            <h1>Wallet & Payments</h1>
+            <p class="subtitle">
+              Manage your payment details and tournament winnings
+            </p>
+          </div>
+        </header>
+        <div class="wallet-grid">
+          <div class="info-card">
+            <h4>Payment Account Status</h4>
+            <div class="alert warning">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <div>
+                <strong>Setup Required</strong>
+                <span>Connect your payment account to receive winnings.</span>
+              </div>
+            </div>
+            <h5>Why connect Stripe?</h5>
+            <ul class="feature-list">
+              <li>Secure, encrypted payment processing</li>
+              <li>Fast tournament winnings deposits</li>
+              <li>Automatic tax document generation</li>
+              <li>24/7 fraud protection and monitoring</li>
+            </ul>
+          </div>
+          <div class="info-card">
+            <h4>Security & Privacy</h4>
+            <div class="alert info">
+              <i class="fa-solid fa-shield-halved"></i>
+              <div>
+                <strong>Your data is protected</strong>
+                <span
+                  >We use Stripe's enterprise-grade security to protect your
+                  financial information.</span
+                >
+              </div>
+            </div>
+            <h5>Security Features</h5>
+            <ul class="feature-list">
+              <li>PCI DSS Level 1 compliance</li>
+              <li>256-bit SSL encryption</li>
+              <li>Two-factor authentication</li>
+              <li>Real-time fraud detection</li>
+            </ul>
+          </div>
+        </div>
+        <div class="form-card earnings-overview">
+          <h4>Earnings Overview</h4>
+          <div class="earnings-grid">
+            <div class="earnings-stat">
+              <i class="fa-solid fa-dollar-sign icon"></i>
+              <strong>$0.00</strong>
+              <span>Total Earnings</span>
+            </div>
+            <div class="earnings-stat">
+              <i class="fa-regular fa-clock icon"></i>
+              <strong>$0.00</strong>
+              <span>Pending Winnings</span>
+            </div>
+            <div class="earnings-stat">
+              <i class="fa-solid fa-trophy icon"></i>
+              <strong>0</strong>
+              <span>Tournaments Won</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-card text-center">
+          <h4>Ready to receive your winnings?</h4>
+          <p>
+            Connect your Stripe account to start receiving tournament winnings
+            directly to your bank account. The setup process takes just a few
+            minutes and is completely secure.
+          </p>
+          <button
+            class="btn btn-primary"
+            style="max-width: 250px; margin: 1rem auto 0"
+          >
+            <i class="fa-brands fa-stripe-s"></i> Connect Stripe Account
+          </button>
+        </div>
+      </section> -->
+  </main>
+</div>
+
+<!-- <script>
+  const serverTimeNow = new Date({{ now | tojson }});
+  const upcomingLeaguesData = {{ upcoming_leagues | tojson }};
+  const pastLeaguesData = {{ past_leagues | tojson  }};
+  const liveLeaguesData = {{ live_leagues | tojson }};
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("DEBUG: 1.LIVE LEAGUES: ",liveLeaguesData)
+    const tabs = document.querySelectorAll(".tab");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        tabs.forEach((t) => t.classList.remove("active"));
+        tabContents.forEach((c) => c.classList.remove("active"));
+
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.tab).classList.add("active");
+      });
+    });
+
+    const enableBtn = document.getElementById("enable-notifications-btn");
+    const statusEl = document.getElementById("notification-status");
+    if ("serviceWorker" in navigator && "PushManager" in window) {
+      enableBtn.addEventListener("click", () => {
+        askPermissionAndSubscribe();
+      });
+    } else {
+      statusEl.textContent =
+        "Push notifications are not supported on this browser.";
+      enableBtn.disabled = true;
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding)
+        .replace(/-/g, "+")
+        .replace(/_/g, "/");
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+
+    async function askPermissionAndSubscribe() {
+      console.log("DEBUG: 'Enable Notifications' button clicked.");
+      statusEl.textContent = "Requesting permission...";
+
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          statusEl.textContent = "Permission was not granted.";
+          console.log("DEBUG: Notification permission denied.");
+          return;
+        }
+
+        console.log("DEBUG: Notification permission granted.");
+        statusEl.textContent = "Permission granted. Subscribing...";
+
+        console.log("DEBUG: Waiting for service worker to be ready...");
+        const registration = await navigator.serviceWorker.ready;
+        console.log("DEBUG: Service worker is ready.");
+
+        console.log(
+          "DEBUG: Fetching VAPID public key from /api/vapid_public_key..."
+        );
+        const response = await fetch("/api/vapid_public_key");
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `Failed to fetch VAPID public key. Server responded with ${response.status}: ${errorText}`
+          );
+        }
+
+        const data = await response.json();
+        const vapidPublicKey = data.public_key;
+
+        console.log(
+          "DEBUG: Received VAPID public key from server:",
+          vapidPublicKey
+        );
+
+        console.log(
+          "DEBUG: 1. Raw VAPID public key from server:",
+          vapidPublicKey
+        );
+
+        if (!vapidPublicKey) {
+          throw new Error("VAPID public key from server was empty.");
+        }
+
+        try {
+          const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+          console.log(
+            "DEBUG: 2. VAPID key after conversion (Uint8Array):",
+            applicationServerKey
+          );
+          console.log("DEBUG: VAPID key converted successfully.");
+
+          console.log("DEBUG: Subscribing with push manager...");
+          const options = {
+            userVisibleOnly: true,
+            applicationServerKey: applicationServerKey,
+          };
+          const subscription = await registration.pushManager.subscribe(
+            options
+          );
+          console.log(JSON.stringify(subscription));
+        } catch (err) {
+          console.log("Error", err);
+        }
+
+
+        console.log(
+          "DEBUG: Successfully subscribed with push service. Sending to server..."
+        );
+        statusEl.textContent = "Saving subscription...";
+
+        const subscribeResponse = await fetch("/api/subscribe", {
+          method: "POST",
+          body: JSON.stringify(subscription),
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token() }}",
+          },
+        });
+
+        if (subscribeResponse.ok) {
+          console.log("DEBUG: User is successfully subscribed on the server.");
+          statusEl.textContent = "✅ Notifications Enabled!";
+          enableBtn.disabled = true;
+        } else {
+          const errorText = await subscribeResponse.text();
+          throw new Error(
+            "Failed to save subscription on server. Response: " + errorText
+          );
+        }
+
+      } catch (error) {
+        console.error("!!! PUSH NOTIFICATION ERROR:", error);
+        statusEl.textContent =
+          "Error: Could not subscribe. See console for details.";
+      }
+    }
+  });
+</script> -->
+{{ super() }}
+<script type="module">
+  import { initialiseLeagueView } from "{{ url_for('static', filename='js/leaderboard.js') }}";
+
+  // This code will only run on the view_league page
+  document.addEventListener("DOMContentLoaded", () => {
+    initialiseLeagueView();
+  });
+</script>
+{% endblock %}

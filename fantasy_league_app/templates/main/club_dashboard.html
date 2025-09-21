@@ -1,5 +1,13 @@
 {% extends 'base.html' %} {% block head %}
-<!-- This data is now loaded first and available to all JS files -->
+<!-- Enhanced fonts for professional look -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+  rel="stylesheet"
+/>
+
+<!-- Club dashboard data for JavaScript -->
 <script>
   window.clubData = {{ club_data_for_js|tojson }};
   window.clubLeagues = {{ club_leagues_for_js|tojson }};
@@ -7,100 +15,36 @@
   const serverTimeNow = new Date('{{ now.isoformat() }}Z');
 </script>
 {% endblock %} {% block content %}
-<style>
-  /* --- Club Dashboard League List Styling --- */
-  .leagues-section {
-    margin-top: 2rem;
-  }
-
-  .leagues-section h2 {
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-  }
-
-  /* Override default table container styles for a card-based layout */
-  .leaderboard-table-container {
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
-  }
-
-  .leaderboard-table {
-    border-collapse: separate;
-    border-spacing: 0 0.75rem; /* This creates the vertical space between rows (cards) */
-  }
-
-  .leaderboard-table thead {
-    display: none; /* Hide the traditional table header as per the design */
-  }
-
-  .leaderboard-table tbody tr {
-    background-color: var(--white);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .leaderboard-table tbody tr:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.07);
-  }
-
-  .leaderboard-table td {
-    padding: 1.25rem;
-    vertical-align: middle;
-    border: none;
-    border-bottom: 1px solid var(--border-color); /* Subtle line inside the card */
-  }
-
-  /* Apply border radius to the first and last cells to create the card shape */
-  .leaderboard-table tr td:first-child {
-    border-top-left-radius: var(--border-radius);
-    border-bottom-left-radius: var(--border-radius);
-  }
-  .leaderboard-table tr td:last-child {
-    border-top-right-radius: var(--border-radius);
-    border-bottom-right-radius: var(--border-radius);
-  }
-
-  /* These are needed to complete the card border effect with border-spacing */
-  .leaderboard-table tbody tr td {
-    border-top: 1px solid var(--border-color);
-  }
-  .leaderboard-table tbody tr td:first-child {
-    border-left: 1px solid var(--border-color);
-  }
-  .leaderboard-table tbody tr td:last-child {
-    border-right: 1px solid var(--border-color);
-  }
-
-  .leaderboard-table td small {
-    display: block;
-    color: var(--text-light);
-    font-size: 0.8rem;
-    margin-top: 0.25rem;
-  }
-</style>
 <div class="dashboard-wrapper">
+  <!-- Professional Sidebar -->
   {% include 'main/_shared_side_navbar.html' with context %}
-  <div>{% include 'main/_shared_bottom_navbar.html' with context %}</div>
+
+  <!-- Mobile Navigation -->
+  {% include 'main/_shared_bottom_navbar.html' with context %}
+
+  <!-- Main Dashboard Content -->
   <main class="dashboard-content">
+    <!-- Professional Club Hero Section -->
     <header class="dashboard-hero">
       <div class="user-info">
-        <div class="avatar">{{ current_user.club_name[0] }}</div>
+        <div class="avatar">{{ current_user.club_name[0]|upper }}</div>
+
         <div class="club-details">
-          <h1>Welcome back, {{ current_user.club_name.split(' ')[0] }}!</h1>
-          <a
-            href="{{ url_for('league.create_league') }}"
-            class="nav-item nav-item-club"
-            id="create-league-btn-mobile"
-          >
-            <i class="fa-solid fa-plus"></i> Create League
+          <div>
+            <h1>Welcome back, {{ current_user.club_name.split(' ')[0] }}!</h1>
+            <p class="subtitle">
+              Manage your leagues and grow your club's revenue.
+            </p>
+          </div>
+
+          <a href="{{ url_for('league.create_league') }}" class="nav-item-club">
+            <i class="fa-solid fa-plus"></i>
+            Create League
           </a>
         </div>
-        <p class="subtitle">Ready to raise some money?</p>
       </div>
 
+      <!-- Professional Club Stats Grid -->
       <div class="stats-grid">
         <div class="stat-card">
           <span class="value">{{ active_leagues_count }}</span>
@@ -116,124 +60,216 @@
         </div>
       </div>
     </header>
-    <div class="content-container">
-      <section id="dashboard-section" class="page-section">
-        <!-- Leagues Table -->
-        <div class="leagues-section">
-          <div class="leaderboard-table-container">
-            <h2>My Leagues</h2>
-            <div class="tabs-container">
-              <div class="tabs capsule-tabs" id="club-league-tabs">
-                <button class="tab-button active" data-status="Live">
-                  Live
-                </button>
-                <button class="tab-button" data-status="Upcoming">
-                  Upcoming
-                </button>
-                <button class="tab-button" data-status="Past">Past</button>
-              </div>
-            </div>
 
-            <div class="leaderboard-table-container">
-              <table class="leaderboard-table" id="club-leagues-table">
+    <!-- Main Content Container -->
+    <div class="content-container">
+      <!-- Dashboard Section - Club Leagues -->
+      <section id="dashboard-section" class="page-section">
+        <div class="leagues-section">
+          <h2>
+            <i class="fa-solid fa-building"></i>
+            My Leagues
+          </h2>
+
+          <!-- Professional Tab Navigation -->
+          <div class="tabs-container">
+            <div class="tabs capsule-tabs" id="club-league-tabs">
+              <button class="tab-button active" data-status="Live">
+                <i class="fa-solid fa-circle"></i>
+                Live
+              </button>
+              <button class="tab-button" data-status="Upcoming">
+                <i class="fa-solid fa-clock"></i>
+                Upcoming
+              </button>
+              <button class="tab-button" data-status="Past">
+                <i class="fa-solid fa-flag-checkered"></i>
+                Past
+              </button>
+            </div>
+          </div>
+
+          <!-- Professional Club Leagues Table -->
+          <div class="club-leagues-container">
+            <div class="club-leagues-table-wrapper">
+              <table class="club-leagues-table" id="club-leagues-table">
                 <thead>
                   <tr>
-                    <th>League Name</th>
-                    <th class="text-center">Entries</th>
-                    <th class="text-center">Status</th>
-                    <th></th>
+                    <th>
+                      <i class="fa-solid fa-trophy"></i>
+                      League Details
+                    </th>
+                    <th class="text-center">
+                      <i class="fa-solid fa-users"></i>
+                      Entries
+                    </th>
+                    <th class="text-center">
+                      <i class="fa-solid fa-chart-line"></i>
+                      Status
+                    </th>
+                    <th class="text-center">
+                      <i class="fa-solid fa-cog"></i>
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {% for league in club_leagues %}
-                  <tr>
-                    <td>
-                      <strong>{{ league['name'] }}</strong><br />
-                      <small>Code: {{ league['league_code'] }}</small>
-                    </td>
-                    <td class="text-center">{{ league['entries'] }}</td>
-                    <td class="text-center">
-                      <span class="tag tag-{{ league['status']|lower }}"
-                        >{{ league['status'] }}</span
-                      >
+                  <tr class="league-row" data-status="{{ league['status'] }}">
+                    <td class="league-details-cell">
+                      <div class="league-info">
+                        <h4 class="league-title">{{ league['name'] }}</h4>
+                        <div class="league-meta">
+                          <span class="league-code">
+                            <i class="fa-solid fa-key"></i>
+                            Code: {{ league['league_code'] }}
+                          </span>
+                          <span class="tour-indicator">
+                            <i class="fa-solid fa-golf-ball"></i>
+                            {{ league.get('tour', 'PGA').upper() }}
+                          </span>
+                        </div>
+                      </div>
                     </td>
 
-                    <td class="text-right">
-                      {% set league_start_date = league['start_date'] %} {% if
-                      league_start_date and not league.get('is_finalized',
-                      false) and league_start_date > now.isoformat() %}
-                      <div class="share-box">
-                        {% if league['league_code'] %}
-                        <label>Access Code</label>
-                        <div class="input-group">
-                          <input
-                            type="text"
-                            class="form-control"
-                            value="{{ league['league_code'] }}"
-                            readonly
-                            id="access-code-{{ league['id'] }}"
-                          />
-                          <div class="input-group-append">
-                            <button
-                              class="btn btn-outline-secondary copy-btn"
-                              data-target="#access-code-{{ league['id'] }}"
-                            >
-                              Copy
-                            </button>
-                          </div>
-                        </div>
+                    <td class="text-center entries-cell">
+                      <div class="entries-display">
+                        <span class="entries-count"
+                          >{{ league['entries'] }}</span
+                        >
+                        <span class="entries-label">participants</span>
+                      </div>
+                    </td>
+
+                    <td class="text-center status-cell">
+                      <span
+                        class="status-badge status-{{ league['status']|lower }}"
+                      >
+                        {% if league['status'] == 'Live' %}
+                        <i class="fa-solid fa-circle"></i>
+                        {% elif league['status'] == 'Upcoming' %}
+                        <i class="fa-solid fa-clock"></i>
                         {% else %}
-                        <label>Share Link</label>
-                        <div class="input-group">
-                          <input
-                            type="text"
-                            class="form-control"
-                            value="{{ url_for('league.view_league', league_id=league['id'], _external=True) }}"
-                            readonly
-                            id="share-link-{{ league['id'] }}"
-                          />
-                          <div class="input-group-append">
-                            <button
-                              class="btn btn-outline-secondary copy-btn"
-                              data-target="#share-link-{{ league['id'] }}"
-                            >
-                              Copy
-                            </button>
+                        <i class="fa-solid fa-flag-checkered"></i>
+                        {% endif %} {{ league['status'] }}
+                      </span>
+                    </td>
+
+                    <td class="actions-cell">
+                      <div class="action-buttons">
+                        <!-- View Button (always available) -->
+                        <a
+                          href="{{ url_for('league.club_league_view', league_id=league['id']) }}"
+                          class="btn btn-outline btn-sm"
+                          title="View League"
+                        >
+                          <i class="fa-solid fa-eye"></i>
+                          View
+                        </a>
+
+                        {% set league_start_date = league.get('start_date') %}
+                        {% if league_start_date and not
+                        league.get('is_finalized', false) and league_start_date
+                        > now.isoformat() %}
+
+                        <!-- Share/Copy Section for upcoming leagues -->
+                        <div class="share-section">
+                          {% if league['league_code'] %}
+                          <div class="share-item">
+                            <label class="share-label">Access Code</label>
+                            <div class="copy-group">
+                              <input
+                                type="text"
+                                class="copy-input"
+                                value="{{ league['league_code'] }}"
+                                readonly
+                                id="access-code-{{ league['id'] }}"
+                              />
+                              <button
+                                class="btn btn-secondary btn-sm copy-btn"
+                                data-target="#access-code-{{ league['id'] }}"
+                                title="Copy Access Code"
+                              >
+                                <i class="fa-solid fa-copy"></i>
+                              </button>
+                            </div>
                           </div>
+                          {% else %}
+                          <div class="share-item">
+                            <label class="share-label">Share Link</label>
+                            <div class="copy-group">
+                              <input
+                                type="text"
+                                class="copy-input"
+                                value="{{ url_for('league.view_league', league_id=league['id'], _external=True) }}"
+                                readonly
+                                id="share-link-{{ league['id'] }}"
+                              />
+                              <button
+                                class="btn btn-secondary btn-sm copy-btn"
+                                data-target="#share-link-{{ league['id'] }}"
+                                title="Copy Share Link"
+                              >
+                                <i class="fa-solid fa-copy"></i>
+                              </button>
+                            </div>
+                          </div>
+                          {% endif %}
                         </div>
+
+                        <!-- Edit Button -->
+                        <a
+                          href="{{ url_for('league.edit_league', league_id=league['id']) }}"
+                          class="btn btn-primary btn-sm"
+                          title="Edit League"
+                        >
+                          <i class="fa-solid fa-edit"></i>
+                          Edit
+                        </a>
+
+                        <!-- Cancel Button -->
+                        <form
+                          action="{{ url_for('league.cancel_league', league_id=league['id']) }}"
+                          method="POST"
+                          style="display: inline"
+                          onsubmit="return confirm('Are you sure you want to cancel this league? All entry fees will be refunded and this action cannot be undone.');"
+                        >
+                          <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="{{ csrf_token() }}"
+                          />
+                          <button
+                            type="submit"
+                            class="btn btn-danger btn-sm"
+                            title="Cancel League"
+                          >
+                            <i class="fa-solid fa-times"></i>
+                            Cancel
+                          </button>
+                        </form>
                         {% endif %}
                       </div>
-                      {% endif %}
-                      <a
-                        href="{{ url_for('league.club_league_view', league_id=league['id']) }}"
-                        class="btn btn-outline"
-                        >View</a
-                      >
-                      {% if league_start_date and not league.get('is_finalized',
-                      false) and league_start_date > now.isoformat() %}
-                      <a
-                        href="{{ url_for('league.edit_league', league_id=league['id']) }}"
-                        class="btn btn-sm btn-info"
-                        >Edit</a
-                      >
-
-                      <form
-                        action="{{ url_for('league.cancel_league', league_id=league['id']) }}"
-                        method="POST"
-                        style="display: inline"
-                        onsubmit="return confirm('Are you sure you want to cancel this league? All entry fees will be refunded and this action cannot be undone.');"
-                      >
-                        <button type="submit" class="btn btn-sm btn-danger">
-                          Cancel
-                        </button>
-                      </form>
-                      {% endif %}
                     </td>
                   </tr>
                   {% else %}
-                  <tr>
-                    <td colspan="4" class="text-center" style="padding: 2rem">
-                      You haven't created any leagues yet.
+                  <tr class="empty-leagues-row">
+                    <td colspan="4">
+                      <div class="empty-leagues-content">
+                        <i class="fa-solid fa-plus-circle"></i>
+                        <h4>No leagues created yet</h4>
+                        <p>
+                          Start by creating your first league to engage your
+                          club members.
+                        </p>
+                        <a
+                          href="{{ url_for('league.create_league') }}"
+                          class="btn btn-primary"
+                        >
+                          <i class="fa-solid fa-plus"></i>
+                          Create Your First League
+                        </a>
+                      </div>
                     </td>
                   </tr>
                   {% endfor %}
@@ -244,92 +280,806 @@
         </div>
       </section>
 
+      <!-- Wallet Section -->
       <section id="wallet-section" class="page-section hidden">
         <header class="dashboard-header">
           <div>
-            <h1>Wallet & Payments</h1>
+            <h1>
+              <i class="fa-solid fa-wallet"></i>
+              Wallet & Payments
+            </h1>
             <p class="subtitle">
-              Manage your payment details and tournament winnings
+              Manage your payment details and revenue tracking
             </p>
           </div>
         </header>
+
         <div class="wallet-grid">
-          <div class="info-card">
-            <h4>Payment Account Status</h4>
-            {% if not current_user.stripe_account_id %}
-            <div class="alert warning">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-              <div>
-                <strong>Setup Required</strong>
-                <span>Connect your payment account to receive winnings.</span>
-              </div>
+          <!-- Payment Status Card -->
+          <div class="wallet-card">
+            <div class="wallet-card-header">
+              <h3>
+                <i class="fa-solid fa-credit-card"></i>
+                Payment Account Status
+              </h3>
             </div>
-            {% else %}
-            <div class="alert success">
-              <i class="fa-regular fa-circle-check"></i>
-              <div>
-                <strong>Setup Complete</strong>
-                <span>Stripe account connected.</span>
+            <div class="wallet-card-body">
+              {% if not current_user.stripe_account_id %}
+              <div class="alert warning">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div>
+                  <strong>Setup Required</strong>
+                  <span
+                    >Connect your payment account to receive league
+                    revenue.</span
+                  >
+                </div>
               </div>
+              {% else %}
+              <div class="alert success">
+                <i class="fa-regular fa-circle-check"></i>
+                <div>
+                  <strong>Setup Complete</strong>
+                  <span>Stripe account connected and ready.</span>
+                </div>
+              </div>
+              {% endif %}
+
+              <h5>Why connect Stripe?</h5>
+              <ul class="feature-list">
+                <li>
+                  <i class="fa-solid fa-shield-halved"></i> Secure, encrypted
+                  payment processing
+                </li>
+                <li>
+                  <i class="fa-solid fa-bolt"></i> Fast revenue deposits to your
+                  account
+                </li>
+                <li>
+                  <i class="fa-solid fa-file-invoice"></i> Automatic financial
+                  reporting
+                </li>
+                <li>
+                  <i class="fa-solid fa-lock"></i> 24/7 fraud protection and
+                  monitoring
+                </li>
+              </ul>
+
+              <form
+                action="{{ url_for('main.onboard_stripe') }}"
+                method="POST"
+                class="stripe-connect-form"
+              >
+                <input
+                  type="hidden"
+                  name="csrf_token"
+                  value="{{ csrf_token() }}"
+                />
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i class="fa-brands fa-stripe"></i>
+                  {% if current_user.stripe_account_id %} Manage Stripe Account
+                  {% else %} Connect Stripe Account {% endif %}
+                </button>
+              </form>
             </div>
-            {% endif %}
-            <h5>Why connect Stripe?</h5>
-            <ul class="feature-list">
-              <li>Secure, encrypted payment processing</li>
-              <li>Fast tournament winnings deposits</li>
-              <li>Automatic tax document generation</li>
-              <li>24/7 fraud protection and monitoring</li>
-            </ul>
           </div>
-          <div class="info-card">
-            <h4>Security & Privacy</h4>
-            <div class="alert info">
-              <i class="fa-solid fa-shield-halved"></i>
-              <div>
-                <strong>Your data is protected</strong>
-                <span
-                  >We use Stripe's enterprise-grade security to protect your
-                  financial information.</span
-                >
+
+          <!-- Revenue Overview Card -->
+          <div class="wallet-card">
+            <div class="wallet-card-header">
+              <h3>
+                <i class="fa-solid fa-chart-pie"></i>
+                Revenue Overview
+              </h3>
+            </div>
+            <div class="wallet-card-body">
+              <div class="revenue-stats">
+                <div class="revenue-stat">
+                  <div class="revenue-stat-icon">
+                    <i class="fa-solid fa-euro-sign"></i>
+                  </div>
+                  <div class="revenue-stat-info">
+                    <span class="revenue-stat-value"
+                      >€{{ "%.2f"|format(club_revenue) }}</span
+                    >
+                    <span class="revenue-stat-label">Total Revenue</span>
+                  </div>
+                </div>
+
+                <div class="revenue-stat">
+                  <div class="revenue-stat-icon">
+                    <i class="fa-solid fa-trophy"></i>
+                  </div>
+                  <div class="revenue-stat-info">
+                    <span class="revenue-stat-value"
+                      >{{ active_leagues_count + (club_leagues|length -
+                      active_leagues_count) }}</span
+                    >
+                    <span class="revenue-stat-label">Total Leagues</span>
+                  </div>
+                </div>
+
+                <div class="revenue-stat">
+                  <div class="revenue-stat-icon">
+                    <i class="fa-solid fa-users"></i>
+                  </div>
+                  <div class="revenue-stat-info">
+                    <span class="revenue-stat-value"
+                      >{{ total_entries_count }}</span
+                    >
+                    <span class="revenue-stat-label">Total Participants</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="revenue-info">
+                <h5>Revenue Model</h5>
+                <p>
+                  Your club keeps 100% of entry fees, minus a small platform fee
+                  of €2.50 per participant to cover hosting and support costs.
+                </p>
+
+                <div class="revenue-example">
+                  <strong>Example:</strong> 50 participants × €10 entry = €500
+                  total, €375 for your club
+                </div>
               </div>
             </div>
-            <h5>Security Features</h5>
-            <ul class="feature-list">
-              <li>PCI DSS Level 1 compliance</li>
-              <li>256-bit SSL encryption</li>
-              <li>Two-factor authentication</li>
-              <li>Real-time fraud detection</li>
-            </ul>
           </div>
         </div>
-        <form action="{{ url_for('main.onboard_stripe') }}" method="POST">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <button type="submit" class="btn btn-primary">
-            {% if current_user.stripe_account_id %} Edit Stripe Details {%else%}
-            Connect Stripe Account {% endif %}
-          </button>
-        </form>
       </section>
 
-      {% include 'main/_shared_dashboard_sections.html' %}
+      <!-- Include Shared Dashboard Sections -->
+      {% include 'main/_shared_dashboard_sections.html' with context %}
     </div>
   </main>
 </div>
 
-{% endblock %} {% block scripts %} {{ super() }}
+<!-- Professional JavaScript -->
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll(".copy-btn").forEach((button) => {
-      button.addEventListener("click", function () {
-        const targetInput = document.querySelector(this.dataset.target);
-        targetInput.select();
-        document.execCommand("copy");
-        this.textContent = "Copied!";
-        setTimeout(() => {
-          this.textContent = "Copy";
-        }, 2000);
+  document.addEventListener("DOMContentLoaded", function() {
+      console.log("Professional Club Dashboard Initialized");
+
+      // Tab functionality for league filtering
+      const tabButtons = document.querySelectorAll('#club-league-tabs .tab-button');
+      const leagueRows = document.querySelectorAll('.league-row');
+      const emptyRow = document.querySelector('.empty-leagues-row');
+
+      tabButtons.forEach(button => {
+          button.addEventListener('click', () => {
+              // Update active tab
+              tabButtons.forEach(btn => btn.classList.remove('active'));
+              button.classList.add('active');
+
+              // Filter leagues by status
+              const selectedStatus = button.dataset.status;
+              let visibleCount = 0;
+
+              leagueRows.forEach(row => {
+                  const rowStatus = row.dataset.status;
+                  if (rowStatus === selectedStatus) {
+                      row.style.display = '';
+                      visibleCount++;
+                  } else {
+                      row.style.display = 'none';
+                  }
+              });
+
+              // Show/hide empty state
+              if (emptyRow) {
+                  if (visibleCount === 0 && leagueRows.length > 0) {
+                      emptyRow.style.display = '';
+                      emptyRow.querySelector('h4').textContent = `No ${selectedStatus.toLowerCase()} leagues`;
+                      emptyRow.querySelector('p').textContent = `You don't have any ${selectedStatus.toLowerCase()} leagues at the moment.`;
+                  } else if (leagueRows.length === 0) {
+                      emptyRow.style.display = '';
+                  } else {
+                      emptyRow.style.display = 'none';
+                  }
+              }
+          });
       });
-    });
+
+      // Copy functionality
+      document.querySelectorAll('.copy-btn').forEach(button => {
+          button.addEventListener('click', function() {
+              const targetInput = document.querySelector(this.dataset.target);
+              if (targetInput) {
+                  targetInput.select();
+                  targetInput.setSelectionRange(0, 99999); // For mobile devices
+
+                  try {
+                      document.execCommand('copy');
+
+                      // Visual feedback
+                      const originalHTML = this.innerHTML;
+                      this.innerHTML = '<i class="fa-solid fa-check"></i>';
+                      this.classList.add('success');
+
+                      setTimeout(() => {
+                          this.innerHTML = originalHTML;
+                          this.classList.remove('success');
+                      }, 2000);
+                  } catch (err) {
+                      console.error('Failed to copy text: ', err);
+                  }
+              }
+          });
+      });
+
+      // Enhanced form handling
+      document.querySelectorAll('form').forEach(form => {
+          form.addEventListener('submit', function() {
+              const submitBtn = form.querySelector('button[type="submit"]');
+              if (submitBtn && !submitBtn.classList.contains('btn-danger')) {
+                  submitBtn.disabled = true;
+                  const originalText = submitBtn.innerHTML;
+                  submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+
+                  // Re-enable after 5 seconds as fallback
+                  setTimeout(() => {
+                      submitBtn.disabled = false;
+                      submitBtn.innerHTML = originalText;
+                  }, 5000);
+              }
+          });
+      });
+
+      // Initialize with Live tab
+      const defaultTab = document.querySelector('#club-league-tabs .tab-button[data-status="Live"]');
+      if (defaultTab) {
+          defaultTab.click();
+      }
+
+      console.log("Club dashboard loaded with", {{ club_leagues|length }}, "total leagues");
   });
 </script>
+
+<style>
+  /* Professional Club Dashboard Styles */
+  .club-leagues-container {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--surface-border);
+  }
+
+  .club-leagues-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .club-leagues-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  .club-leagues-table thead th {
+    background: var(--surface-light);
+    color: var(--text-primary);
+    font-weight: 700;
+    padding: 1.25rem 1.5rem;
+    text-align: left;
+    border-bottom: 2px solid var(--surface-border);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .club-leagues-table thead th i {
+    margin-right: 0.5rem;
+    color: var(--primary-green);
+  }
+
+  .club-leagues-table tbody tr {
+    border-bottom: 1px solid var(--surface-border);
+    transition: var(--transition);
+    background: var(--background-light);
+  }
+
+  .club-leagues-table tbody tr:hover {
+    background: var(--surface-light);
+  }
+
+  .club-leagues-table tbody td {
+    padding: 1.5rem;
+    vertical-align: middle;
+  }
+
+  .league-details-cell {
+    min-width: 250px;
+  }
+
+  .league-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .league-title {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  .league-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .league-code,
+  .tour-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .league-code i,
+  .tour-indicator i {
+    color: var(--primary-green);
+    font-size: 0.75rem;
+  }
+
+  .entries-cell {
+    min-width: 120px;
+  }
+
+  .entries-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .entries-count {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .entries-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .status-cell {
+    min-width: 120px;
+  }
+
+  .actions-cell {
+    min-width: 200px;
+  }
+
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .share-section {
+    background: var(--surface-light);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    border: 1px solid var(--surface-border);
+  }
+
+  .share-item {
+    margin-bottom: 0.75rem;
+  }
+
+  .share-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .share-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.375rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .copy-group {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .copy-input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+    background: var(--white);
+    color: var(--text-secondary);
+  }
+
+  .copy-input:focus {
+    outline: none;
+    border-color: var(--primary-green);
+  }
+
+  .btn-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    min-height: 36px;
+  }
+
+  .btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+    min-height: 52px;
+  }
+
+  .copy-btn.success {
+    background: var(--success-gradient) !important;
+    color: white !important;
+  }
+
+  .btn-danger {
+    background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%);
+    color: white;
+    border: none;
+  }
+
+  .btn-danger:hover {
+    background: linear-gradient(135deg, #c53030 0%, #e53e3e 100%);
+    transform: translateY(-1px);
+  }
+
+  /* Empty State */
+  .empty-leagues-content {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+  }
+
+  .empty-leagues-content i {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: var(--primary-green);
+    opacity: 0.7;
+  }
+
+  .empty-leagues-content h4 {
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  .empty-leagues-content p {
+    color: var(--text-secondary);
+    font-size: 1.125rem;
+    margin-bottom: 2rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Wallet Section */
+  .wallet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .wallet-card {
+    background: var(--white);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .wallet-card-header {
+    background: var(--surface-light);
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .wallet-card-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .wallet-card-body {
+    padding: 2rem;
+  }
+
+  .alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+  }
+
+  .alert.warning {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    border: 1px solid #f6e05e;
+  }
+
+  .alert.success {
+    background: #f0fff4;
+    color: #22543d;
+    border: 1px solid #9ae6b4;
+  }
+
+  .alert i {
+    font-size: 1.25rem;
+    margin-top: 0.125rem;
+    flex-shrink: 0;
+  }
+
+  .alert div strong {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+
+  .feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0;
+  }
+
+  .feature-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    color: var(--text-secondary);
+  }
+
+  .feature-list li i {
+    color: var(--primary-green);
+    font-size: 1rem;
+    width: 16px;
+  }
+
+  .stripe-connect-form {
+    margin-top: 2rem;
+  }
+
+  .revenue-stats {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .revenue-stat {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--surface-light);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--surface-border);
+  }
+
+  .revenue-stat-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--primary-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .revenue-stat-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .revenue-stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .revenue-stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-top: 0.25rem;
+  }
+
+  .revenue-info h5 {
+    color: var(--text-primary);
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  .revenue-info p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  .revenue-example {
+    background: var(--surface-light);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary-green);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 1024px) {
+    .action-buttons {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    .share-section {
+      order: -1;
+      width: 100%;
+    }
+
+    .wallet-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .club-leagues-table thead {
+      display: none;
+    }
+
+    .club-leagues-table,
+    .club-leagues-table tbody,
+    .club-leagues-table tr,
+    .club-leagues-table td {
+      display: block;
+    }
+
+    .league-row {
+      background: var(--white);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--border-radius);
+      margin-bottom: 1rem;
+      padding: 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .club-leagues-table tbody td {
+      padding: 1rem;
+      border: none;
+      position: relative;
+    }
+
+    .club-leagues-table tbody td:before {
+      content: attr(data-label);
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .league-details-cell:before {
+      content: "League";
+    }
+
+    .entries-cell:before {
+      content: "Entries";
+    }
+
+    .status-cell:before {
+      content: "Status";
+    }
+
+    .actions-cell:before {
+      content: "Actions";
+    }
+
+    .action-buttons {
+      flex-direction: column;
+    }
+
+    .copy-group {
+      flex-direction: column;
+    }
+
+    .copy-input {
+      margin-bottom: 0.5rem;
+    }
+
+    .revenue-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .wallet-card-body {
+      padding: 1.5rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .club-leagues-table tbody td {
+      padding: 0.75rem;
+    }
+
+    .league-row {
+      margin-bottom: 0.75rem;
+    }
+
+    .revenue-stat {
+      padding: 1rem;
+    }
+
+    .revenue-stat-icon {
+      width: 40px;
+      height: 40px;
+      font-size: 1rem;
+    }
+
+    .revenue-stat-value {
+      font-size: 1.5rem;
+    }
+
+    .btn-sm {
+      padding: 0.625rem 1rem;
+      font-size: 0.8rem;
+    }
+  }
+
+  /* Loading states */
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .btn:disabled:hover {
+    transform: none !important;
+  }
+
+  /* Success animations */
+  @keyframes successPulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .copy-btn.success {
+    animation: successPulse 0.3s ease-out;
+  }
+</style>
+
 {% endblock %}

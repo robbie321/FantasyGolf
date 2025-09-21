@@ -1,112 +1,469 @@
 {% extends 'base.html' %} {% block head %}
-<!-- Link to the form-specific stylesheet -->
+<!-- Link to the professional stylesheet -->
 <link
   rel="stylesheet"
   href="{{ url_for('static', filename='css/LeaguesView/league_view.css') }}"
 />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+  rel="stylesheet"
+/>
 {% endblock %} {% block content %}
 <main class="dashboard-content">
-  <div
-    class="league-container"
-    style="background-color: var(--background-light)"
-  >
+  <div class="league-container">
+    <!-- Professional Back Link -->
     <a href="{{ url_for('main.club_dashboard') }}" class="back-link">
-      <i class="fa-solid fa-arrow-left"></i> Back to Club Dashboard
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Back to Club Dashboard</span>
     </a>
 
-    <div class="container">
-      <div
-        class="league-header-card {% if league.is_finalized %}finalized{% endif %}"
-      >
-        <div class="header-main-info">
-          <div class="header-icon">
-            <i class="fa-solid fa-trophy"></i>
+    <!-- Professional League Header -->
+    <div
+      class="league-header-card {% if league.is_finalized %}finalized{% endif %}"
+    >
+      <div class="header-main-info">
+        <div class="header-icon">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+        <div class="header-details">
+          <div>
+            <h1>{{ league.name }}</h1>
+            <p class="dashboard-subheading">
+              Hosted by {{ league.club.club_name if league.club else 'Fantasy
+              Fairways' }}
+            </p>
           </div>
-          <div class="header-details">
-            <div>
-              <h1 class="">{{ league.name }}</h1>
-              <p class="dashboard-subheading">
-                Hosted by {{ league.club.club_name if league.club else 'Fantasy
-                Fairways' }}
-              </p>
-            </div>
+          <div class="tag-container">
             {% if league.is_finalized %}
-            <span class="tag tag-past">Completed</span>
+            <span class="tag tag-past">
+              <i class="fa-solid fa-check-circle"></i>
+              Completed
+            </span>
             {% else %}
-            <span class="tag tag-live">Live</span>
+            <span class="tag tag-live">
+              <i class="fa-solid fa-circle"></i>
+              Live
+            </span>
             {% endif %}
           </div>
         </div>
-        <div class="header-buttons">
-          <!-- Step 1: The new button is now here -->
-          <button id="open-details-modal-btn" class="btn-header btn-outline">
-            League Details
-          </button>
-          {% if now >= league.start_date and not league.is_finalized %}
-          <button
-            class="btn btn-primary"
-            id="view-live-leaderboard-btn"
-            data-tour="{{ league.tour }}"
-          >
-            Live leaderboard
-          </button>
-          {% endif %}
-        </div>
+      </div>
+
+      <div class="header-buttons">
+        <button id="open-details-modal-btn" class="btn-header btn-outline">
+          <i class="fa-solid fa-info-circle"></i>
+          League Details
+        </button>
+        {% if now >= league.start_date and not league.is_finalized %}
+        <button
+          class="btn-header btn-primary"
+          id="view-live-leaderboard-btn"
+          data-tour="{{ league.tour }}"
+        >
+          <i class="fa-solid fa-chart-line"></i>
+          Live Leaderboard
+        </button>
+        {% endif %}
       </div>
     </div>
 
+    <!-- Winner Banner (if applicable) -->
     {% if league.is_finalized and league.winner %}
     <div class="winner-banner">
-      <h2><i class="fa-solid fa-crown"></i> League Winner!</h2>
-      <p>{{ league.winner.full_name }}</p>
+      <div class="winner-icon">
+        <i class="fa-solid fa-crown"></i>
+      </div>
+      <div class="winner-details">
+        <h2>
+          <i class="fa-solid fa-trophy"></i>
+          League Champion!
+        </h2>
+        <div class="winner-name">
+          <a
+            href="{{ url_for('main.view_profile', user_id=league.winner.id) }}"
+          >
+            {{ league.winner.full_name }}
+          </a>
+        </div>
+        <p class="winner-subtext">Congratulations on your victory!</p>
+      </div>
+      <div class="trophy-graphic">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
     </div>
-    {% endif %} {% if not league.is_finalized and not
-    league.has_entry_deadline_passed %}
-    <div class="form-card text-center" style="margin-bottom: 2rem">
+    {% endif %}
+
+    <!-- Main Content Area -->
+    {% if not league.is_finalized and not league.has_entry_deadline_passed %}
+    <div class="form-card">
+      <div class="status-icon">
+        <i class="fa-solid fa-clock"></i>
+      </div>
+      <h3>League Starting Soon</h3>
       <p>
         This league is upcoming. The leaderboard will become active once the
         tournament starts.
       </p>
+      <div class="entry-deadline">
+        <strong>Entry Deadline:</strong>
+        {{ league.entry_deadline.strftime('%A, %B %d, %Y at %I:%M %p') }}
+      </div>
     </div>
     {% else %}
-    <div class="leaderboard-table-container">
+
+    <!-- Professional Leaderboard -->
+    <div class="leaderboard-container">
       <div class="leaderboard-header">
         <h4>
-          {% if league.is_finalized %} Final Leaderboard {% else %} Live
-          Leaderboard {% endif %}
+          {% if league.is_finalized %}
+          <i class="fa-solid fa-flag-checkered"></i>
+          Final Results {% else %}
+          <i class="fa-solid fa-chart-bar"></i>
+          Live Standings {% endif %}
         </h4>
+        <div class="leaderboard-meta">
+          <span class="participant-count">
+            <i class="fa-solid fa-users"></i>
+            {{ leaderboard|length }} Participants
+          </span>
+        </div>
       </div>
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th>POS</th>
-            <th>Participant Name</th>
-            <th class="text-right">Final Score</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for entry in leaderboard %}
-          <tr>
-            <td>{{ entry.position }}</td>
-            <td>{{ entry.user_name }}</td>
-            <td class="text-right">{{ entry.total_score }}</td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="3" class="text-center" style="padding: 2rem">
-              No entries have been made for this league yet.
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+
+      <div class="leaderboard-table-container">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th class="rank-header">
+                <i class="fa-solid fa-hashtag"></i>
+                Position
+              </th>
+              <th class="name-header">
+                <i class="fa-solid fa-user"></i>
+                Participant
+              </th>
+              <th class="score-header">
+                <i class="fa-solid fa-target"></i>
+                Total Score
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in leaderboard %}
+            <tr
+              class="leaderboard-row {% if loop.first and league.is_finalized %}winner-row{% endif %}"
+            >
+              <td class="rank">
+                {% if loop.first and league.is_finalized %}
+                <span class="position-badge winner">
+                  <i class="fa-solid fa-crown"></i>
+                  {{ entry.position }}
+                </span>
+                {% elif loop.index <= 3 %}
+                <span class="position-badge podium">{{ entry.position }}</span>
+                {% else %}
+                <span class="position-badge">{{ entry.position }}</span>
+                {% endif %}
+              </td>
+              <td class="participant-name">
+                <div class="name-container">
+                  <div class="avatar-placeholder">
+                    {{ entry.user_name[0]|upper }}
+                  </div>
+                  <span class="name">{{ entry.user_name }}</span>
+                </div>
+              </td>
+              <td class="score">
+                <span
+                  class="score-value {% if entry.total_score > 0 %}score-positive{% elif entry.total_score < 0 %}score-negative{% else %}score-even{% endif %}"
+                >
+                  {% if entry.total_score == 0 %} E {% elif entry.total_score >
+                  0 %} +{{ entry.total_score }} {% else %} {{ entry.total_score
+                  }} {% endif %}
+                </span>
+              </td>
+            </tr>
+            {% else %}
+            <tr class="empty-state">
+              <td colspan="3">
+                <div class="empty-content">
+                  <i class="fa-solid fa-users-slash"></i>
+                  <h4>No Entries Yet</h4>
+                  <p>
+                    This league is waiting for its first participants to join.
+                  </p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
     {% endif %}
+
+    <!-- League Details Modal -->
+    <div id="league-details-modal" class="modal-overlay">
+      <div class="modal-content">
+        <button id="close-details-modal-btn" class="modal-close-btn">
+          <i class="fa-solid fa-times"></i>
+        </button>
+
+        <div class="modal-header">
+          <h2>
+            <i class="fa-solid fa-info-circle"></i>
+            League Information
+          </h2>
+        </div>
+
+        <div class="league-details-grid">
+          <div class="detail-card">
+            <div class="detail-icon">
+              <i class="fa-solid fa-gift"></i>
+            </div>
+            <h3>Prize Details</h3>
+            <p>
+              {{ league.prize_details or 'Prize information will be announced
+              soon.' }}
+            </p>
+          </div>
+
+          <div class="detail-card">
+            <div class="detail-icon">
+              <i class="fa-solid fa-gavel"></i>
+            </div>
+            <h3>League Rules</h3>
+            <p>
+              {{ league.rules or 'Standard fantasy golf rules apply. Pick your
+              best team and compete!' }}
+            </p>
+          </div>
+
+          <div class="detail-card">
+            <div class="detail-icon">
+              <i class="fa-solid fa-calendar"></i>
+            </div>
+            <h3>Tournament Schedule</h3>
+            <div class="schedule-details">
+              <div class="schedule-item">
+                <span class="schedule-label">Starts:</span>
+                <span class="schedule-value"
+                  >{{ league.start_date.strftime('%B %d, %Y at %I:%M %p')
+                  }}</span
+                >
+              </div>
+              <div class="schedule-item">
+                <span class="schedule-label">Ends:</span>
+                <span class="schedule-value"
+                  >{{ league.end_date.strftime('%B %d, %Y at %I:%M %p') }}</span
+                >
+              </div>
+              <div class="schedule-item">
+                <span class="schedule-label">Entry Deadline:</span>
+                <span class="schedule-value"
+                  >{{ league.entry_deadline.strftime('%B %d, %Y at %I:%M %p')
+                  }}</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Leaderboard Popup -->
+    <div class="popup-overlay" id="live-leaderboard-overlay">
+      <div class="popup-container">
+        <div class="popup-header">
+          <h3>
+            <i class="fa-solid fa-satellite-dish"></i>
+            Live Tournament Leaderboard
+          </h3>
+          <button class="popup-close" id="popup-close-btn">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+        <div class="popup-body" id="live-leaderboard-body">
+          <div class="loading-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <p>Loading live data...</p>
+          </div>
+          <table class="live-leaderboard-table" style="display: none">
+            <thead>
+              <tr>
+                <th class="pos">Pos</th>
+                <th class="player-name">Player</th>
+                <th style="text-align: center">Total</th>
+                <th style="text-align: center">Thru</th>
+                <th style="text-align: center">Today</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </main>
 
-<!-- Live Leaderboard Popup (same as user view) -->
-<div class="popup-overlay" id="live-leaderboard-overlay">
-  <!-- ... Your existing live leaderboard popup HTML ... -->
-</div>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Professional Modal Handling
+    const openBtn = document.getElementById("open-details-modal-btn");
+    const closeBtn = document.getElementById("close-details-modal-btn");
+    const modalOverlay = document.getElementById("league-details-modal");
+
+    if (openBtn && modalOverlay) {
+      openBtn.addEventListener("click", () => {
+        modalOverlay.classList.add("active");
+        document.body.style.overflow = "hidden";
+      });
+    }
+
+    if (closeBtn && modalOverlay) {
+      closeBtn.addEventListener("click", () => {
+        modalOverlay.classList.remove("active");
+        document.body.style.overflow = "";
+      });
+    }
+
+    if (modalOverlay) {
+      modalOverlay.addEventListener("click", (event) => {
+        if (event.target === modalOverlay) {
+          modalOverlay.classList.remove("active");
+          document.body.style.overflow = "";
+        }
+      });
+    }
+
+    // Live Leaderboard Functionality
+    const viewBtn = document.getElementById("view-live-leaderboard-btn");
+    if (viewBtn) {
+      const overlay = document.getElementById("live-leaderboard-overlay");
+      const closeBtn = document.getElementById("popup-close-btn");
+      const leaderboardTable = document.querySelector(
+        ".live-leaderboard-table"
+      );
+      const leaderboardBody = document.querySelector(
+        ".live-leaderboard-table tbody"
+      );
+      const loadingState = document.querySelector(".loading-state");
+
+      const openPopup = () => {
+        if (overlay) {
+          overlay.classList.add("active");
+          document.body.style.overflow = "hidden";
+        }
+      };
+
+      const closePopup = () => {
+        if (overlay) {
+          overlay.classList.remove("active");
+          document.body.style.overflow = "";
+        }
+      };
+
+      viewBtn.addEventListener("click", async () => {
+        if (!leaderboardBody) return;
+
+        // Show loading state
+        loadingState.style.display = "block";
+        leaderboardTable.style.display = "none";
+        openPopup();
+
+        try {
+          const tour = viewBtn.dataset.tour;
+          const response = await fetch(`/api/live-leaderboard/${tour}`);
+          if (!response.ok) throw new Error("Network response was not ok");
+
+          const players = await response.json();
+          leaderboardBody.innerHTML = "";
+
+          if (players.length === 0) {
+            leaderboardBody.innerHTML =
+              '<tr><td colspan="5" class="empty-message">Live data not available for this tournament.</td></tr>';
+          } else {
+            players.forEach((player, index) => {
+              let scoreText = player.current_score || "E";
+              let scoreClass = "score-even";
+
+              if (player.current_score > 0) {
+                scoreText = `+${player.current_score}`;
+                scoreClass = "score-positive";
+              } else if (player.current_score < 0) {
+                scoreClass = "score-negative";
+              }
+
+              const thruText = player.thru === 18 ? "F" : player.thru || "-";
+              const todayScore = player.today === 0 ? "E" : player.today || "-";
+
+              const row = `
+                            <tr>
+                                <td class="pos">${
+                                  player.current_pos || index + 1
+                                }</td>
+                                <td class="player-name">${
+                                  player.player_name
+                                }</td>
+                                <td style="text-align:center">
+                                    <span class="live-score ${scoreClass}">${scoreText}</span>
+                                </td>
+                                <td style="text-align:center; font-weight:600">${thruText}</td>
+                                <td style="text-align:center; font-weight:600">${todayScore}</td>
+                            </tr>
+                        `;
+              leaderboardBody.insertAdjacentHTML("beforeend", row);
+            });
+          }
+
+          // Hide loading, show table
+          loadingState.style.display = "none";
+          leaderboardTable.style.display = "table";
+        } catch (error) {
+          console.error("Failed to fetch live leaderboard:", error);
+          leaderboardBody.innerHTML =
+            '<tr><td colspan="5" class="error-message">Unable to load live data. Please try again later.</td></tr>';
+          loadingState.style.display = "none";
+          leaderboardTable.style.display = "table";
+        }
+      });
+
+      if (closeBtn) closeBtn.addEventListener("click", closePopup);
+      if (overlay) {
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) closePopup();
+        });
+      }
+    }
+
+    // Add smooth scroll behavior for any anchor links
+    document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+      anchor.addEventListener("click", function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute("href"));
+        if (target) {
+          target.scrollIntoView({
+            behavior: "smooth",
+          });
+        }
+      });
+    });
+
+    // Add loading states for any form submissions
+    document.querySelectorAll("form").forEach((form) => {
+      form.addEventListener("submit", function () {
+        const submitBtn = form.querySelector(
+          'button[type="submit"], input[type="submit"]'
+        );
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML =
+            '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+        }
+      });
+    });
+  });
+</script>
+
 {% endblock %}

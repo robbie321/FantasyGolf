@@ -8,6 +8,10 @@ block head %}
 {% endblock %} {% block content %}
 <main class="dashboard-content">
   <div class="form-wrapper">
+    <a href="{{ url_for('main.club_dashboard') }}" class="back-link">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Back to Club Dashboard</span>
+    </a>
     <form
       method="POST"
       action="{{ url_for('league.create_league') }}"

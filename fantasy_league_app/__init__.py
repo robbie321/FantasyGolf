@@ -32,47 +32,7 @@ def make_celery(app=None):
         include=['fantasy_league_app.tasks']
     )
 
-    # Import here to avoid circular imports
-    from celery.schedules import crontab
-
-    # IMPORTANT: Set beat schedule immediately for beat process
-    beat_schedule = {
-        'ensure-live-updates-running': {
-            'task': 'fantasy_league_app.tasks.ensure_live_updates_are_running',
-            'schedule': crontab(minute='*/1'),  # Every minute
-        },
-        'schedule-live-score-updates': {
-            'task': 'fantasy_league_app.tasks.schedule_score_updates_for_the_week',
-            'schedule': crontab(hour=14, minute=50, day_of_week='thu,fri,sat,sun'),
-        },
-        'reset-player-scores-weekly': {
-            'task': 'fantasy_league_app.tasks.reset_player_scores',
-            'schedule': crontab(hour=8, minute=0, day_of_week='wed'),
-        },
-        'update-buckets-weekly': {
-            'task': 'fantasy_league_app.tasks.update_player_buckets',
-            'schedule': crontab(hour=10, minute=0, day_of_week='tuesday'),
-        },
-        'finalize-leagues-weekly': {
-            'task': 'fantasy_league_app.tasks.finalize_finished_leagues',
-            'schedule': crontab(hour=10, minute=30, day_of_week='monday'),
-        },
-        'warm-caches-early-morning': {
-            'task': 'fantasy_league_app.tasks.warm_critical_caches',
-            'schedule': crontab(hour=5, minute=30),
-        },
-        'cleanup-stale-caches': {
-            'task': 'fantasy_league_app.tasks.cleanup_expired_caches',
-            'schedule': crontab(hour=2, minute=0),
-        },
-        # ADD DEBUG TASKS FOR TESTING
-        'debug-test-every-2-minutes': {
-            'task': 'fantasy_league_app.tasks.test_celery_connection',
-            'schedule': crontab(minute='*/2'),  # Every 2 minutes for testing
-        },
-    }
-
-    # Update basic configuration
+    # Basic configuration - beat schedule will be loaded from celeryconfig.py
     celery.conf.update(
         broker_url=redis_url,
         result_backend=redis_url,
@@ -84,8 +44,7 @@ def make_celery(app=None):
         broker_connection_retry_on_startup=True,
         broker_connection_retry=True,
         broker_connection_max_retries=10,
-        beat_schedule=beat_schedule,
-        # ADD THESE FOR BETTER DEBUGGING
+        # Add debugging options
         task_track_started=True,
         task_send_sent_event=True,
     )
@@ -141,7 +100,7 @@ def create_app(config_name=None):
     cache.init_app(app)
     login_manager.init_app(app)
 
-    # FIXED: Properly configure Celery with app context
+    # Properly configure Celery with app context
     celery.conf.update(app.config)
 
     # IMPORTANT: Explicitly set the beat schedule
