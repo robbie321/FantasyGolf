@@ -1,5 +1,7 @@
 Start App:
 flask --app fantasy_league_app:create_app run
+flask --app fantasy_league_app:create_app db migrate -m "Add database indexes for performance"
+flask --app fantasy_league_app:create_app db upgrade
 source venv/Scripts/activate
 
 heroku run flask db upgrade
