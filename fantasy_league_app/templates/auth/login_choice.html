@@ -304,11 +304,114 @@
 </script>
 
 <style>
-  /* Additional inline styles for immediate improvements */
+  /* Viewport optimization for login choice */
+  .auth-container {
+    min-height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
   .auth-card {
+    padding: 1.75rem 2rem;
+    max-width: 420px;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
     animation: slideUp 0.6s ease-out;
   }
 
+  /* Compact header */
+  .auth-card h1 {
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .auth-card .subtitle {
+    font-size: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  /* Compact logo */
+  .auth-logo {
+    margin-bottom: 1rem;
+  }
+
+  .auth-logo img {
+    max-width: 100px;
+  }
+
+  /* Compact login tabs */
+  .login-tabs {
+    margin-bottom: 1.25rem;
+  }
+
+  .login-tab-button {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.9rem;
+    gap: 0.5rem;
+  }
+
+  .login-tab-button i {
+    font-size: 1rem;
+  }
+
+  /* Compact form elements */
+  .login-tab-content form {
+    gap: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 0.75rem;
+  }
+
+  .auth-card label {
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .auth-card input {
+    padding: 0.875rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .auth-card .btn {
+    padding: 0.875rem 1.5rem;
+    font-size: 0.95rem;
+    min-height: 46px;
+  }
+
+  /* Compact auth links */
+  .auth-links {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .auth-links p {
+    margin: 0.5rem 0;
+  }
+
+  .site-admin-link {
+    font-size: 0.8rem;
+    margin-top: 1rem;
+  }
+
+  /* Compact error/success messages */
+  .error-message,
+  .success-message {
+    padding: 0.625rem 0.875rem;
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .error-message::before,
+  .success-message::before {
+    font-size: 0.9rem;
+  }
+
+  /* Professional animations */
   @keyframes slideUp {
     from {
       opacity: 0;
@@ -331,9 +434,9 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
     border: 2px solid transparent;
     border-top: 2px solid white;
     border-radius: 50%;
@@ -373,6 +476,105 @@
   .has-success input {
     border-color: #16a34a !important;
     background: #f0fdf4 !important;
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 768px) {
+    .auth-container {
+      padding: 0.5rem;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .auth-card {
+      padding: 1.5rem;
+      max-height: none;
+    }
+
+    .auth-card h1 {
+      font-size: 1.5rem;
+    }
+
+    .login-tab-button {
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .auth-container {
+      padding: 0.25rem;
+    }
+
+    .auth-card {
+      padding: 1.25rem;
+    }
+
+    .auth-logo img {
+      max-width: 80px;
+    }
+
+    .auth-card h1 {
+      font-size: 1.4rem;
+    }
+
+    .auth-card .subtitle {
+      font-size: 0.9rem;
+    }
+  }
+
+  /* Height-specific optimizations */
+  @media (max-height: 700px) {
+    .auth-card {
+      padding: 1.5rem 2rem;
+    }
+
+    .auth-logo {
+      margin-bottom: 0.75rem;
+    }
+
+    .auth-logo img {
+      max-width: 90px;
+    }
+
+    .auth-card h1 {
+      font-size: 1.6rem;
+      margin-bottom: 0.375rem;
+    }
+
+    .auth-card .subtitle {
+      margin-bottom: 1rem;
+    }
+
+    .login-tabs {
+      margin-bottom: 1rem;
+    }
+
+    .auth-links {
+      margin-top: 0.75rem;
+    }
+  }
+
+  @media (max-height: 600px) {
+    .auth-card {
+      padding: 1.25rem 1.75rem;
+    }
+
+    .auth-logo img {
+      max-width: 80px;
+    }
+
+    .auth-card h1 {
+      font-size: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 0.5rem;
+    }
+
+    .login-tab-content form {
+      gap: 0.75rem;
+    }
   }
 </style>
 
