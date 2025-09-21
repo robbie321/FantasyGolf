@@ -175,11 +175,17 @@ def update_player_scores(self, tour, end_time_iso):
 
             # Self-rescheduling logic
             now_utc = datetime.now(timezone.utc)
-            if now_utc < end_time:
-                logger.info(f"Rescheduling task for tour '{tour}' in 3 minutes")
+
+            active_leagues = League.query.filter(
+            League.tour == tour,
+            League.is_finalized == False,
+            League.end_date > now_utc).count()
+
+            if active_leagues > 0 and now_utc < end_time:
+                logger.info(f"Rescheduling task for tour '{tour}' - {active_leagues} leagues still active")
                 self.apply_async(args=[tour, end_time_iso], countdown=180)
             else:
-                logger.info(f"End time reached for tour '{tour}'. Stopping updates.")
+                logger.info(f"Stopping updates for tour '{tour}' - no active leagues or past end time")
 
             return f"Score update completed for tour {tour}"
 
