@@ -1,4 +1,20 @@
-/* Tour Leaderboard Section Styling */
+/* Complete Tour Leaderboard Section Styling */
+
+/* CSS Variables - Ensure these are defined */
+/* :root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --surface-white: #ffffff;
+    --surface-light: #f8fafc;
+    --surface-border: #e2e8f0;
+    --text-primary: #1a202c;
+    --text-secondary: #4a5568;
+    --text-muted: #718096;
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --border-radius: 12px;
+    --border-radius-lg: 16px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+} */
 
 /* Section Container */
 #leaderboards-section {
@@ -162,9 +178,14 @@
     z-index: 10;
 }
 
+/* Header Column Alignment */
 .leaderboard-table.wide thead th:first-child {
     width: 60px;
-    text-align: center;
+    text-align: center !important;
+}
+
+.leaderboard-table.wide thead th:nth-child(2) {
+    text-align: left !important;
 }
 
 .leaderboard-table.wide thead th:nth-child(3), /* TOTAL */
@@ -194,49 +215,36 @@
 
 .leaderboard-table.wide tbody td {
     padding: 1rem 1.5rem;
-    /* color: var(--text-primary); */
     font-weight: 500;
-    vertical-align: middle;
+    vertical-align: middle !important;
 }
 
+/* Body Column Alignment */
 .leaderboard-table.wide tbody td:first-child {
-    text-align: center;
+    text-align: center !important;
     font-weight: 700;
     color: var(--text-secondary);
-}
-
-/* Center align the score cells in body rows */
-.leaderboard-table.wide tbody td:nth-child(3), /* TOTAL column */
-.leaderboard-table.wide tbody td:nth-child(4), /* THRU column */
-.leaderboard-table.wide tbody td:nth-child(5)  /* RND column */ {
-    text-align: center !important;
     vertical-align: middle !important;
 }
 
-/* Position column (POS) should also be centered */
-.leaderboard-table.wide thead th:nth-child(1),
-.leaderboard-table.wide tbody td:nth-child(1) {
-    text-align: center !important;
-    vertical-align: middle !important;
-}
-
-/* NAME column should be left-aligned */
-.leaderboard-table.wide thead th:nth-child(2),
 .leaderboard-table.wide tbody td:nth-child(2) {
     text-align: left !important;
     vertical-align: middle !important;
 }
 
-/* Override any JavaScript inline styles */
-.leaderboard-table.wide tbody tr td {
+.leaderboard-table.wide tbody td:nth-child(3), /* TOTAL column */
+.leaderboard-table.wide tbody td:nth-child(4), /* THRU column */
+.leaderboard-table.wide tbody td:nth-child(5)  /* RND column */ {
+    text-align: center !important;
     vertical-align: middle !important;
+    padding: 1rem 0.5rem !important;
+    white-space: nowrap;
 }
 
 /* Player Name Styling */
 .leaderboard-table.wide .player-name {
     font-weight: 600;
     color: var(--text-primary);
-    /* display: flex; */
     align-items: center;
     gap: 0.5rem;
 }
@@ -249,41 +257,91 @@
     display: inline-block;
 }
 
-/* Score Styling */
+/* UNIFORM SCORE STYLING - This is the key fix */
 .leaderboard-table.wide .score,
 .leaderboard-table.wide .score-under,
 .leaderboard-table.wide .score-over,
 .leaderboard-table.wide .score-even,
 .leaderboard-table.wide .score-positive,
 .leaderboard-table.wide .score-negative {
+    /* Consistent sizing */
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+    line-height: 1 !important;
+
+    /* Standardized spacing */
+    padding: 0.5rem 0.75rem !important;
+    margin: 0 !important;
+
+    /* Consistent appearance */
+    border-radius: 6px !important;
+    display: inline-block !important;
     text-align: center !important;
-    display: inline-block;
-    margin: 0 auto;
+    vertical-align: middle !important;
+
+    /* Fixed dimensions */
+    min-width: 45px;
+    max-width: 60px;
+    height: auto;
+
+    /* Box model */
+    box-sizing: border-box !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+
+    /* Typography */
+    font-family: inherit;
+    letter-spacing: 0.025em;
 }
 
+/* Score Colors - Standardized */
+.leaderboard-table.wide .score-negative,
+.leaderboard-table.wide .score-under,
+.score-negative,
+.score-under {
+
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+}
+
+.leaderboard-table.wide .score-positive,
+.leaderboard-table.wide .score-over,
+.score-positive,
+.score-over {
+
+    background-color: #117034 !important;
+    color: #ffffff !important;
+}
+
+
+/* Override JavaScript inline styles */
 .leaderboard-table.wide tbody td[style*="text-align: center"] {
     text-align: center !important;
 }
 
-/* Score Colors - Consistent with your existing classes */
-.score-negative,
-.score-under {
-    background-color: #dcfce7;
-    color: #16a34a;
-    border: 1px solid #bbf7d0;
+.leaderboard-table.wide tbody td:nth-child(3) *,
+.leaderboard-table.wide tbody td:nth-child(4) *,
+.leaderboard-table.wide tbody td:nth-child(5) * {
+    text-align: center !important;
+    margin: 0 auto !important;
 }
 
-.score-positive,
-.score-over {
-    background-color: #fee2e2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
+/* Special styling for leader row scores */
+.leaderboard-table.wide tbody tr.highlighted .score,
+.leaderboard-table.wide tbody tr.highlighted .score-negative,
+.leaderboard-table.wide tbody tr.highlighted .score-under,
+.leaderboard-table.wide tbody tr.leader-row .score,
+.leaderboard-table.wide tbody tr.leader-row .score-negative,
+.leaderboard-table.wide tbody tr.leader-row .score-under {
+    font-weight: 800 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
-.score-even {
-    background-color: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
+/* THRU column specific styling */
+.leaderboard-table.wide tbody td:nth-child(4) {
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    font-size: 0.9rem !important;
 }
 
 /* Position Styling */
@@ -335,6 +393,11 @@
     animation: spin 1s linear infinite;
 }
 
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 .leaderboard-table.wide .error-state {
     text-align: center;
     padding: 3rem 2rem;
@@ -382,20 +445,28 @@
         font-size: 0.7rem;
     }
 
-    /* Hide less important columns on mobile */
+    /* Hide THRU column on mobile */
     .leaderboard-table.wide thead th:nth-child(4),
     .leaderboard-table.wide tbody td:nth-child(4) {
         display: none;
     }
 
-    .leaderboard-table.wide thead th:nth-child(3),
-    .leaderboard-table.wide thead th:nth-child(4),
-    .leaderboard-table.wide thead th:nth-child(5),
+    /* Mobile score styling */
+    .leaderboard-table.wide .score,
+    .leaderboard-table.wide .score-under,
+    .leaderboard-table.wide .score-over,
+    .leaderboard-table.wide .score-even,
+    .leaderboard-table.wide .score-positive,
+    .leaderboard-table.wide .score-negative {
+        font-size: 0.8rem !important;
+        padding: 0.4rem 0.6rem !important;
+        min-width: 40px;
+        max-width: 50px;
+    }
+
     .leaderboard-table.wide tbody td:nth-child(3),
-    .leaderboard-table.wide tbody td:nth-child(4),
     .leaderboard-table.wide tbody td:nth-child(5) {
-        text-align: center !important;
-        padding: 0.75rem 0.5rem;
+        padding: 0.75rem 0.25rem !important;
     }
 }
 
