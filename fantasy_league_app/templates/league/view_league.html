@@ -13,6 +13,10 @@
 {% endblock %} {% block content %}
 <main class="dashboard-content">
   <div class="league-container">
+    <a href="{{ url_for('main.user_dashboard') }}" class="back-link">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Back to Club Dashboard</span>
+    </a>
     <!-- Winner Banner (Top Priority Display) -->
     {% if league.is_finalized and league.winners %}
     <div class="winner-banner">
@@ -529,6 +533,7 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
+    setupCollapsibleLeaderboard();
     console.log("Professional League View Initialized");
 
     // Professional Modal Handling
@@ -835,36 +840,6 @@
         });
       }
     }
-
-    // Enhanced Collapsible Leaderboard
-    const mainRows = document.querySelectorAll(".leaderboard-main-row");
-    mainRows.forEach((row) => {
-      row.addEventListener("click", () => {
-        const targetId = row.dataset.target;
-        const detailsRow = document.querySelector(targetId);
-        if (detailsRow) {
-          const isOpen = row.classList.contains("is-open");
-
-          // Close all other open rows
-          document
-            .querySelectorAll(".leaderboard-main-row.is-open")
-            .forEach((openRow) => {
-              if (openRow !== row) {
-                openRow.classList.remove("is-open");
-                const openTargetId = openRow.dataset.target;
-                const openDetailsRow = document.querySelector(openTargetId);
-                if (openDetailsRow) {
-                  openDetailsRow.classList.remove("is-open");
-                }
-              }
-            });
-
-          // Toggle current row
-          row.classList.toggle("is-open");
-          detailsRow.classList.toggle("is-open");
-        }
-      });
-    });
 
     // Socket.IO for real-time updates (if available)
     if (typeof io !== "undefined") {

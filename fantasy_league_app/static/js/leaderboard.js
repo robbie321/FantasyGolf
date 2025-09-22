@@ -268,34 +268,94 @@ function setupLiveLeaderboardPopup() {
 // PROFESSIONAL COLLAPSIBLE LEADERBOARD
 // ===================================================================
 
+// function setupCollapsibleLeaderboard() {
+//     const mainRows = document.querySelectorAll(".leaderboard-main-row");
+//     mainRows.forEach((row) => {
+//         row.addEventListener("click", () => {
+//             const targetId = row.dataset.target;
+//             const detailsRow = document.querySelector(targetId);
+//             if (detailsRow) {
+//                 const isOpen = row.classList.contains("is-open");
+
+//                 // Close all other open rows for better UX
+//                 document.querySelectorAll(".leaderboard-main-row.is-open").forEach(openRow => {
+//                     if (openRow !== row) {
+//                         openRow.classList.remove("is-open");
+//                         const openTargetId = openRow.dataset.target;
+//                         const openDetailsRow = document.querySelector(openTargetId);
+//                         if (openDetailsRow) {
+//                             openDetailsRow.classList.remove("is-open");
+//                         }
+//                     }
+//                 });
+
+//                 // Toggle current row
+//                 row.classList.toggle("is-open");
+//                 detailsRow.classList.toggle("is-open");
+//             }
+//         });
+//     });
+// }
+
+
 function setupCollapsibleLeaderboard() {
-    const mainRows = document.querySelectorAll(".leaderboard-main-row");
-    mainRows.forEach((row) => {
-        row.addEventListener("click", () => {
-            const targetId = row.dataset.target;
-            const detailsRow = document.querySelector(targetId);
-            if (detailsRow) {
-                const isOpen = row.classList.contains("is-open");
+    // Wait for leaderboard to be populated
+    const checkAndSetup = () => {
+        // Look for main leaderboard rows (not the details rows)
+        const mainRows = document.querySelectorAll('.leaderboard-main-row');
 
-                // Close all other open rows for better UX
-                document.querySelectorAll(".leaderboard-main-row.is-open").forEach(openRow => {
-                    if (openRow !== row) {
-                        openRow.classList.remove("is-open");
-                        const openTargetId = openRow.dataset.target;
-                        const openDetailsRow = document.querySelector(openTargetId);
-                        if (openDetailsRow) {
-                            openDetailsRow.classList.remove("is-open");
+        if (mainRows.length === 0) {
+            // If no main rows found, retry after a short delay
+            setTimeout(checkAndSetup, 100);
+            return;
+        }
+
+        mainRows.forEach((row) => {
+            // Skip if already set up
+            if (row.dataset.collapsibleSetup) return;
+
+            row.dataset.collapsibleSetup = 'true';
+            row.style.cursor = 'pointer';
+
+            // Add click event listener
+            row.addEventListener('click', () => {
+                const targetId = row.dataset.target;
+                const detailsRow = document.querySelector(targetId);
+
+                if (detailsRow) {
+                    const isOpen = row.classList.contains('is-open');
+
+                    // Close all other open rows for better UX
+                    document.querySelectorAll('.leaderboard-main-row.is-open').forEach(openRow => {
+                        if (openRow !== row) {
+                            openRow.classList.remove('is-open');
+                            const openTargetId = openRow.dataset.target;
+                            const openDetailsRow = document.querySelector(openTargetId);
+                            if (openDetailsRow) {
+                                openDetailsRow.classList.remove('is-open');
+                                openDetailsRow.style.display = 'none';
+                            }
                         }
-                    }
-                });
+                    });
 
-                // Toggle current row
-                row.classList.toggle("is-open");
-                detailsRow.classList.toggle("is-open");
-            }
+                    // Toggle current row
+                    row.classList.toggle('is-open');
+                    detailsRow.classList.toggle('is-open');
+
+                    // Show/hide the details row
+                    if (isOpen) {
+                        detailsRow.style.display = 'none';
+                    } else {
+                        detailsRow.style.display = 'table-row';
+                    }
+                }
+            });
         });
-    });
+    };
+
+    checkAndSetup();
 }
+
 
 // ===================================================================
 // PROFESSIONAL PLAYER PROFILE FUNCTIONS
