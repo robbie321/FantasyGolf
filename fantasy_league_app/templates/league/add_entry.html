@@ -1,4 +1,376 @@
 ﻿{% extends 'base.html' %} {% block content %}
+<style>
+  /* Add Entry Page Styles */
+  .picker-wrapper-join {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+
+  .picker-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #006a4e, #00805d);
+    color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 106, 78, 0.15);
+  }
+
+  .picker-header h2 {
+    font-family: "Merriweather", serif;
+    font-size: 2rem;
+    margin: 0 0 0.5rem 0;
+    font-weight: 700;
+  }
+
+  .picker-header p {
+    font-size: 1.1rem;
+    margin: 0;
+    opacity: 0.9;
+  }
+
+  .add-entry-league-form {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e1e8ed;
+  }
+
+  /* Player Picks Container */
+  .player-picks-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .player-slot {
+    background: #f8fffe;
+    border: 2px dashed #c1d4d0;
+    border-radius: 12px;
+    padding: 2rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .player-slot:hover {
+    border-color: #006a4e;
+    background: #f0f9f6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 106, 78, 0.1);
+  }
+
+  .player-slot.empty .player-slot-icon {
+    width: 40px;
+    height: 40px;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+  }
+
+  .player-slot.empty .player-slot-text {
+    color: #6b7280;
+    font-weight: 500;
+    font-size: 1rem;
+  }
+
+  /* Selected Player Styling */
+  .player-slot:not(.empty) {
+    background: linear-gradient(135deg, #006a4e, #00805d);
+    color: white;
+    border: 2px solid #006a4e;
+  }
+
+  .player-odds-bubble {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #ff6b35;
+    color: white;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+  }
+
+  .player-info h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  /* Summary Section */
+  .summary-section {
+    background: #f8fffe;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #006a4e;
+  }
+
+  .summary-section h3 {
+    margin: 0 0 1rem 0;
+    color: #006a4e;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  .summary-section p {
+    margin: 0 0 1rem 0;
+    color: #4b5563;
+    line-height: 1.6;
+  }
+
+  /* Form Input */
+  .form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: #006a4e;
+    box-shadow: 0 0 0 3px rgba(0, 106, 78, 0.1);
+  }
+
+  /* Odds Display */
+  .odds-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .odds-row:last-child {
+    border-bottom: none;
+    font-weight: 600;
+  }
+
+  .odds-label {
+    color: #374151;
+    font-weight: 500;
+  }
+
+  .odds-value {
+    font-weight: 700;
+    color: #006a4e;
+    font-size: 1.1rem;
+  }
+
+  .odds-value.invalid {
+    color: #dc2626;
+  }
+
+  /* Save Button */
+  .save-btn {
+    background: linear-gradient(135deg, #006a4e, #00805d);
+    color: white;
+    border: none;
+    padding: 16px 32px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(0, 106, 78, 0.2);
+  }
+
+  .save-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 106, 78, 0.3);
+  }
+
+  .save-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Popup Overlay */
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .popup-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .popup-container {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 70vh;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+  }
+
+  .popup-overlay.active .popup-container {
+    transform: scale(1);
+  }
+
+  .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    background: #006a4e;
+    color: white;
+  }
+
+  .popup-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+
+  .popup-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .popup-body {
+    max-height: 50vh;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  /* Player List Table */
+  .player-list-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .player-list-table tbody tr {
+    border-bottom: 1px solid #e5e7eb;
+    transition: background-color 0.2s ease;
+  }
+
+  .player-list-table tbody tr:hover {
+    background-color: #f9fafb;
+  }
+
+  .player-list-table td {
+    padding: 1rem 1.5rem;
+    text-align: left;
+  }
+
+  .player-list-table td:nth-child(2) {
+    text-align: center;
+    color: #006a4e;
+    font-weight: 600;
+  }
+
+  .player-list-table td:nth-child(3) {
+    text-align: center;
+    width: 60px;
+  }
+
+  .add-player-btn {
+    background: #006a4e;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    font-weight: bold;
+    transition: all 0.2s ease;
+  }
+
+  .add-player-btn:hover {
+    background: #004d3a;
+    transform: scale(1.1);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .picker-wrapper-join {
+      margin: 1rem auto;
+      padding: 0 0.5rem;
+    }
+
+    .picker-header {
+      padding: 1.5rem;
+    }
+
+    .picker-header h2 {
+      font-size: 1.5rem;
+    }
+
+    .add-entry-league-form {
+      padding: 1.5rem;
+    }
+
+    .player-picks-container {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .popup-container {
+      width: 95%;
+      margin: 1rem;
+    }
+
+    .popup-header {
+      padding: 1rem 1.5rem;
+    }
+
+    .player-list-table td {
+      padding: 0.75rem 1rem;
+    }
+  }
+</style>
+
 <div class="picker-wrapper-join">
   <div class="picker-header">
     <h2>Create Your Team</h2>
@@ -32,7 +404,7 @@
     />
 
     <div class="player-picks-container">
-      <div class="player-slot" data-slot="1">
+      <div class="player-slot empty" data-slot="1">
         <div class="player-slot-icon">
           <svg
             viewBox="0 0 24 24"
@@ -50,7 +422,7 @@
         </div>
         <span class="player-slot-text">Add Player</span>
       </div>
-      <div class="player-slot" data-slot="2">
+      <div class="player-slot empty" data-slot="2">
         <div class="player-slot-icon">
           <svg
             viewBox="0 0 24 24"
@@ -68,7 +440,7 @@
         </div>
         <span class="player-slot-text">Add Player</span>
       </div>
-      <div class="player-slot" data-slot="3">
+      <div class="player-slot empty" data-slot="3">
         <div class="player-slot-icon">
           <svg
             viewBox="0 0 24 24"
@@ -122,7 +494,7 @@
       type="submit"
       id="save-btn"
       class="btn btn-primary save-btn"
-      style="width: 100%"
+      disabled
     >
       Submit Entry
     </button>
@@ -135,24 +507,65 @@
       <h3>Select a Player</h3>
       <button class="popup-close" id="popup-close-btn">&times;</button>
     </div>
-    <div class="popup-body" id="player-list-body"></div>
+    <div class="popup-body" id="player-list-body">
+      <!-- Player list will be populated by JavaScript -->
+    </div>
   </div>
 </div>
 
 <script>
-  // This JavaScript is identical to the 'edit_entry.html' script.
-  // It handles the player selection popup, odds calculation, and button state.
-  document.addEventListener('DOMContentLoaded', () => {
-      const availablePlayers = {{ available_players|tojson }};
-      const leagueOddsLimit = {{ league.odds_limit }};
+  document.addEventListener('DOMContentLoaded', function() {
+      // Safely get data from template
+      let availablePlayers = [];
+      let leagueOddsLimit = 0;
+
+      try {
+          availablePlayers = {{ available_players|tojson|safe }};
+          leagueOddsLimit = {{ league.odds_limit }};
+      } catch (e) {
+          console.error('Error parsing player data:', e);
+          return;
+      }
+
+      // DOM elements
       const playerSlots = document.querySelectorAll('.player-slot');
       const playerListOverlay = document.getElementById('player-list-overlay');
       const playerListBody = document.getElementById('player-list-body');
       const popupCloseBtn = document.getElementById('popup-close-btn');
       const totalOddsEl = document.getElementById('total-odds');
       const saveBtn = document.getElementById('save-btn');
+
+      // State
       let activeSlot = null;
       let selectedPlayers = {};
+
+      // Initialize existing selections if any
+      function initializeExistingSelections() {
+          for (let i = 1; i <= 3; i++) {
+              const hiddenInput = document.getElementById(`player${i}_id`);
+              if (hiddenInput && hiddenInput.value) {
+                  const player = availablePlayers.find(p => p.id == hiddenInput.value);
+                  if (player) {
+                      selectedPlayers[i] = player;
+                      updatePlayerSlot(i, player);
+                  }
+              }
+          }
+          updateOdds();
+      }
+
+      function updatePlayerSlot(slot, player) {
+          const slotDiv = document.querySelector(`.player-slot[data-slot="${slot}"]`);
+          if (slotDiv) {
+              slotDiv.innerHTML = `
+                  <div class="player-odds-bubble">${player.odds}</div>
+                  <div class="player-info">
+                      <h4>${player.name} ${player.surname}</h4>
+                  </div>
+              `;
+              slotDiv.classList.remove('empty');
+          }
+      }
 
       function updateOdds() {
           let total = 0;
@@ -161,11 +574,17 @@
           }
           totalOddsEl.textContent = total;
 
-          if (total >= leagueOddsLimit) {
+          // Check if we have 3 players and meet odds requirement
+          const playerCount = Object.keys(selectedPlayers).length;
+          const meetsOddsRequirement = total >= leagueOddsLimit;
+
+          if (playerCount === 3 && meetsOddsRequirement) {
               totalOddsEl.classList.remove('invalid');
               saveBtn.disabled = false;
           } else {
-              totalOddsEl.classList.add('invalid');
+              if (!meetsOddsRequirement) {
+                  totalOddsEl.classList.add('invalid');
+              }
               saveBtn.disabled = true;
           }
       }
@@ -179,7 +598,8 @@
 
       function closePlayerList() {
           playerListOverlay.classList.remove('active');
-          document.body.style.overflow = 'auto';
+          document.body.style.overflow = '';
+          activeSlot = null;
       }
 
       function getSelectedPlayerIds() {
@@ -187,8 +607,11 @@
       }
 
       function renderPlayerList() {
+          if (!playerListBody) return;
+
           const selectedIds = getSelectedPlayerIds();
           let tableHtml = '<table class="player-list-table"><tbody>';
+
           availablePlayers.forEach(player => {
               if (!selectedIds.includes(player.id)) {
                   tableHtml += `
@@ -201,47 +624,113 @@
                       </tr>`;
               }
           });
+
+          if (availablePlayers.filter(p => !selectedIds.includes(p.id)).length === 0) {
+              tableHtml += '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #6b7280;">No available players</td></tr>';
+          }
+
           tableHtml += '</tbody></table>';
           playerListBody.innerHTML = tableHtml;
       }
 
       function selectPlayer(playerId) {
+          if (!activeSlot) return;
+
           const player = availablePlayers.find(p => p.id == playerId);
           if (!player) return;
 
+          // Update state
           selectedPlayers[activeSlot] = player;
-          document.getElementById(`player${activeSlot}_id`).value = playerId;
 
-          const slotDiv = document.querySelector(`.player-slot[data-slot="${activeSlot}"]`);
-          slotDiv.innerHTML = `
-              <div class="player-odds-bubble">${player.odds}</div>
-              <div class="player-info">
-                  <h4>${player.name} ${player.surname}</h4>
-              </div>
-          `;
-          slotDiv.classList.remove('empty');
+          // Update hidden input
+          const hiddenInput = document.getElementById(`player${activeSlot}_id`);
+          if (hiddenInput) {
+              hiddenInput.value = playerId;
+          }
 
+          // Update UI
+          updatePlayerSlot(activeSlot, player);
           updateOdds();
           closePlayerList();
       }
 
+      // Event listeners
       playerSlots.forEach(slot => {
-          slot.classList.add('empty');
-          slot.addEventListener('click', () => openPlayerList(slot));
+          slot.addEventListener('click', function() {
+              // If slot has a player, allow removing it
+              const slotNumber = this.dataset.slot;
+              if (selectedPlayers[slotNumber]) {
+                  // Remove player
+                  delete selectedPlayers[slotNumber];
+                  document.getElementById(`player${slotNumber}_id`).value = '';
+
+                  // Reset slot UI
+                  this.innerHTML = `
+                      <div class="player-slot-icon">
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12 4V20M4 12H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                      </div>
+                      <span class="player-slot-text">Add Player</span>
+                  `;
+                  this.classList.add('empty');
+                  updateOdds();
+              } else {
+                  // Add player
+                  openPlayerList(this);
+              }
+          });
       });
 
-      popupCloseBtn.addEventListener('click', closePlayerList);
-      playerListOverlay.addEventListener('click', (e) => {
-          if (e.target === playerListOverlay) closePlayerList();
-      });
+      if (popupCloseBtn) {
+          popupCloseBtn.addEventListener('click', closePlayerList);
+      }
 
-      playerListBody.addEventListener('click', (e) => {
-          if (e.target.classList.contains('add-player-btn')) {
-              selectPlayer(e.target.dataset.playerId);
+      if (playerListOverlay) {
+          playerListOverlay.addEventListener('click', function(e) {
+              if (e.target === playerListOverlay) {
+                  closePlayerList();
+              }
+          });
+      }
+
+      if (playerListBody) {
+          playerListBody.addEventListener('click', function(e) {
+              if (e.target.classList.contains('add-player-btn')) {
+                  selectPlayer(e.target.dataset.playerId);
+              }
+          });
+      }
+
+      // Handle form submission
+      const form = document.getElementById('add-entry-form');
+      if (form) {
+          form.addEventListener('submit', function(e) {
+              const playerCount = Object.keys(selectedPlayers).length;
+              if (playerCount !== 3) {
+                  e.preventDefault();
+                  alert('Please select exactly 3 players.');
+                  return false;
+              }
+
+              const tieBreaker = document.getElementById('tie_breaker_answer');
+              if (!tieBreaker || !tieBreaker.value.trim()) {
+                  e.preventDefault();
+                  alert('Please answer the tie-breaker question.');
+                  return false;
+              }
+          });
+      }
+
+      // Handle keyboard events
+      document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && playerListOverlay.classList.contains('active')) {
+              closePlayerList();
           }
       });
 
-      updateOdds(); // Initial check
+      // Initialize the page
+      initializeExistingSelections();
   });
 </script>
 {% endblock %}

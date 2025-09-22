@@ -585,6 +585,8 @@ def add_entry(league_id):
                 #     },
                 # )
 
+                stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
+
                 checkout_session = stripe.checkout.Session.create(
                     line_items=[{
                         'price_data': {
