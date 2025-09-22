@@ -1,0 +1,416 @@
+/* Tour Leaderboard Section Styling */
+
+/* Section Container */
+#leaderboards-section {
+    background: var(--surface-white);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--surface-border);
+}
+
+/* Dashboard Header */
+#leaderboards-section .dashboard-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--surface-border);
+}
+
+#leaderboards-section .dashboard-header h1 {
+    color: var(--text-primary);
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.025em;
+}
+
+#leaderboards-section .dashboard-header .subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* Tour Selection Tabs */
+.leaderboard-tour-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    padding: 0.5rem;
+    background: var(--surface-light);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--surface-border);
+}
+
+.leaderboard-tour-tabs .tab-button {
+    flex: 1;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: calc(var(--border-radius) - 2px);
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.leaderboard-tour-tabs .tab-button:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: var(--text-primary);
+}
+
+.leaderboard-tour-tabs .tab-button.active {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* Leaderboard Card */
+.leaderboard-card {
+    background: var(--surface-white);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--surface-border);
+    margin: 0; /* Override any default form-card margins */
+}
+
+/* Leaderboard Header */
+.leaderboard-card .leaderboard-header {
+    background: var(--surface-light);
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--surface-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.leaderboard-card .leaderboard-header h4 {
+    color: var(--text-primary);
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Live Tag */
+.tag-live {
+    background: var(--success-gradient);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 8px rgba(17, 153, 142, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.tag-live::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: white;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Table Container */
+.leaderboard-table-container {
+    overflow-x: auto;
+    background: var(--surface-white);
+}
+
+/* Professional Table Styling */
+.leaderboard-table.wide {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface-white);
+    font-size: 0.9rem;
+}
+
+.leaderboard-table.wide thead {
+    background: var(--surface-light);
+}
+
+.leaderboard-table.wide thead th {
+    color: var(--text-primary);
+    font-weight: 700;
+    padding: 1rem 1.5rem;
+    text-align: left;
+    border-bottom: 2px solid var(--surface-border);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    position: sticky;
+    top: 0;
+    background: var(--surface-light);
+    z-index: 10;
+}
+
+.leaderboard-table.wide thead th:first-child {
+    width: 60px;
+    text-align: center;
+}
+
+.leaderboard-table.wide thead th:nth-child(3),
+.leaderboard-table.wide thead th:nth-child(4),
+.leaderboard-table.wide thead th:nth-child(5) {
+    text-align: center;
+    width: 80px;
+}
+
+/* Table Body */
+.leaderboard-table.wide tbody tr {
+    border-bottom: 1px solid var(--surface-border);
+    transition: var(--transition);
+}
+
+.leaderboard-table.wide tbody tr:hover {
+    background: var(--surface-light);
+    transform: translateX(2px);
+}
+
+.leaderboard-table.wide tbody tr.highlighted,
+.leaderboard-table.wide tbody tr.leader-row {
+    background: linear-gradient(135deg, #fef7cd 0%, #fef3c7 100%);
+    border-left: 4px solid #fbbf24;
+    font-weight: 600;
+}
+
+.leaderboard-table.wide tbody td {
+    padding: 1rem 1.5rem;
+    /* color: var(--text-primary); */
+    font-weight: 500;
+    vertical-align: middle;
+}
+
+.leaderboard-table.wide tbody td:first-child {
+    text-align: center;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+/* Player Name Styling */
+.leaderboard-table.wide .player-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    /* display: flex; */
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.leaderboard-table.wide .flag {
+    width: 20px;
+    height: 14px;
+    background: var(--surface-border);
+    border-radius: 2px;
+    display: inline-block;
+}
+
+/* Score Styling */
+.leaderboard-table.wide .score,
+.leaderboard-table.wide .score-under,
+.leaderboard-table.wide .score-over,
+.leaderboard-table.wide .score-even {
+    font-weight: 700;
+    font-size: 1rem;
+    text-align: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    min-width: 50px;
+    display: inline-block;
+}
+
+/* Score Colors - Consistent with your existing classes */
+.score-negative,
+.score-under {
+    background-color: #dcfce7;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.score-positive,
+.score-over {
+    background-color: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.score-even {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+/* Position Styling */
+.leaderboard-table.wide .pos {
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+/* Leader Crown Icon */
+.leaderboard-table.wide .fa-crown {
+    color: #ffd700;
+    margin-right: 0.5rem;
+    font-size: 1rem;
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Leaderboard Footer */
+.leaderboard-footer {
+    background: var(--surface-light);
+    padding: 1rem 2rem;
+    border-top: 1px solid var(--surface-border);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-align: center;
+    font-style: italic;
+}
+
+/* Loading and Empty States */
+.leaderboard-table.wide .loading-state,
+.leaderboard-table.wide .empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--text-secondary);
+}
+
+.leaderboard-table.wide .loading-state i,
+.leaderboard-table.wide .empty-state i {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.leaderboard-table.wide .fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+.leaderboard-table.wide .error-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #dc2626;
+}
+
+.leaderboard-table.wide .error-state i {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    #leaderboards-section {
+        padding: 1.5rem;
+    }
+
+    .leaderboard-tour-tabs {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .leaderboard-tour-tabs .tab-button {
+        padding: 0.75rem;
+        text-align: center;
+    }
+
+    .leaderboard-card .leaderboard-header {
+        padding: 1rem 1.5rem;
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .leaderboard-table.wide {
+        font-size: 0.8rem;
+    }
+
+    .leaderboard-table.wide thead th,
+    .leaderboard-table.wide tbody td {
+        padding: 0.75rem 1rem;
+    }
+
+    .leaderboard-table.wide thead th {
+        font-size: 0.7rem;
+    }
+
+    /* Hide less important columns on mobile */
+    .leaderboard-table.wide thead th:nth-child(4),
+    .leaderboard-table.wide tbody td:nth-child(4) {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .leaderboard-table.wide thead th,
+    .leaderboard-table.wide tbody td {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .leaderboard-table.wide .player-name {
+        font-size: 0.9rem;
+    }
+
+    .leaderboard-footer {
+        padding: 0.75rem 1rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .leaderboard-table.wide .flag {
+        background: #4b5563;
+    }
+
+    .tag-live::before {
+        background: rgba(255, 255, 255, 0.9);
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .leaderboard-table.wide tbody tr.highlighted,
+    .leaderboard-table.wide tbody tr.leader-row {
+        border-left-width: 6px;
+    }
+
+    .score-negative,
+    .score-under,
+    .score-positive,
+    .score-over,
+    .score-even {
+        border-width: 2px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .leaderboard-table.wide tbody tr,
+    .leaderboard-tour-tabs .tab-button,
+    .tag-live::before,
+    .fa-crown,
+    .fa-spinner {
+        transition: none;
+        animation: none;
+    }
+}
