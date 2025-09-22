@@ -1,10 +1,10 @@
 import json
-from flask import current_app
 from fantasy_league_app import db, mail
 from fantasy_league_app.models import Player
 from datetime import datetime, timedelta
 from functools import wraps
-from flask import redirect, url_for, request
+from flask import redirect, url_for, request, current_app
+from flask_mail import Message
 from flask_login import current_user
 from pywebpush import webpush, WebPushException
 from .models import PushSubscription
@@ -198,4 +198,199 @@ def send_email(subject, recipients, html_body):
         current_app.logger.info(f"Email sent successfully to {recipients}")
     except Exception as e:
         current_app.logger.error(f"Failed to send email to {recipients}: {e}")
+
+
+def send_email_verification(user):
+    """Send email verification email to user"""
+
+    # Generate verification URL
+    verification_url = url_for(
+        'auth.verify_email',
+        token=user.email_verification_token,
+        _external=True
+    )
+
+    # Email subject and body
+    subject = "Verify Your Email Address - Fantasy Golf"
+
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #006a4e, #3498db); padding: 2rem; text-align: center;">
+            <h1 style="color: white; margin: 0;">Fantasy Golf</h1>
+        </div>
+
+        <div style="padding: 2rem; background: white;">
+            <h2 style="color: #006a4e;">Welcome, {user.full_name}!</h2>
+
+            <p>Thank you for creating your Fantasy Golf account. To complete your registration and start playing, please verify your email address.</p>
+
+            <div style="text-align: center; margin: 2rem 0;">
+                <a href="{verification_url}"
+                   style="background: #006a4e; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                    Verify Email Address
+                </a>
+            </div>
+
+            <p style="color: #666; font-size: 0.9rem;">
+                If the button doesn't work, copy and paste this link into your browser:<br>
+                <a href="{verification_url}" style="color: #006a4e; word-break: break-all;">
+                    {verification_url}
+                </a>
+            </p>
+
+            <p style="color: #666; font-size: 0.9rem; margin-top: 2rem;">
+                This verification link will expire in 24 hours. If you didn't create this account, please ignore this email.
+            </p>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 1rem; text-align: center; color: #666; font-size: 0.8rem;">
+            <p>© 2025 Fantasy Golf. All rights reserved.</p>
+        </div>
+    </div>
+    """
+
+    text_body = f"""
+    Welcome to Fantasy Golf, {user.full_name}!
+
+    Thank you for creating your account. To complete your registration, please verify your email address by clicking the link below:
+
+    {verification_url}
+
+    This link will expire in 24 hours. If you didn't create this account, please ignore this email.
+
+    Thanks,
+    The Fantasy Golf Team
+    """
+
+    try:
+        msg = Message(
+            subject=subject,
+            recipients=[user.email],
+            html=html_body,
+            body=text_body
+        )
+
+        # Add security headers for better deliverability and security
+        msg.extra_headers = {
+            'List-Unsubscribe': f'<mailto:unsubscribe@fantasyfairway.ie?subject=Unsubscribe>',
+            'Reply-To': current_app.config['MAIL_DEFAULT_SENDER'],
+            'X-Auto-Response-Suppress': 'OOF, DR, NDR, RN, NRN',
+            'X-Priority': '3',
+            'X-MSMail-Priority': 'Normal',
+            'X-Mailer': 'Fantasy Golf Application'
+        }
+
+        mail.send(msg)
+
+        # Update the sent timestamp
+        user.email_verification_sent_at = datetime.utcnow()
+        db.session.commit()
+
+        current_app.logger.info(f"Verification email sent to {user.email}")
+        return True
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to send verification email to {user.email}: {str(e)}")
+        # Don't expose detailed error to user for security
+        return False
+
+def send_email_verification_success(user):
+    """Send confirmation email after successful verification"""
+
+    subject = "Email Verified - Welcome to Fantasy Golf!"
+
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #27ae60, #2ecc71); padding: 2rem; text-align: center;">
+            <h1 style="color: white; margin: 0;">🎉 Email Verified!</h1>
+        </div>
+
+        <div style="padding: 2rem; background: white;">
+            <h2 style="color: #27ae60;">Welcome to Fantasy Golf, {user.full_name}!</h2>
+
+            <p>Your email address has been successfully verified. You can now:</p>
+
+            <ul style="color: #333; line-height: 1.6;">
+                <li>Join fantasy golf leagues</li>
+                <li>Create your own leagues</li>
+                <li>Compete with friends and other players</li>
+                <li>Track live tournament scores</li>
+            </ul>
+
+            <div style="text-align: center; margin: 2rem 0;">
+                <a href="{url_for('auth.login_choice', _external=True)}"
+                   style="background: #27ae60; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                    Start Playing Now
+                </a>
+            </div>
+
+            <p style="color: #666;">
+                If you have any questions, feel free to contact our support team.
+            </p>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 1rem; text-align: center; color: #666; font-size: 0.8rem;">
+            <p>© 2025 Fantasy Golf. All rights reserved.</p>
+        </div>
+    </div>
+    """
+
+    try:
+        msg = Message(
+            subject=subject,
+            recipients=[user.email],
+            html=html_body
+        )
+        mail.send(msg)
+        current_app.logger.info(f"Welcome email sent to {user.email}")
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to send welcome email to {user.email}: {e}")
+
+def check_email_verification_required(user):
+    """Check if user needs email verification before login"""
+    return not user.email_verified
+
+
+def is_valid_email_domain(email):
+    """Check if email domain is allowed"""
+
+    # List of blocked domains (disposable email services)
+    blocked_domains = [
+        '10minutemail.com',
+        'tempmail.org',
+        'guerrillamail.com',
+        'mailinator.com',
+        'throwaway.email',
+        'temp-mail.org',
+        'getnada.com',
+        'tempail.com',
+        'dispostable.com',
+        'yopmail.com'
+    ]
+
+    try:
+        domain = email.split('@')[1].lower()
+        return domain not in blocked_domains
+    except (IndexError, AttributeError):
+        return False
+
+def validate_email_security(email):
+    """Comprehensive email validation for security"""
+
+    if not email or '@' not in email:
+        return False, "Invalid email format"
+
+    if not is_valid_email_domain(email):
+        return False, "Email domain not allowed"
+
+    # Check for suspicious patterns
+    if email.count('@') > 1:
+        return False, "Invalid email format"
+
+    # Check for extremely long emails (potential attack)
+    if len(email) > 320:  # RFC 5321 limit
+        return False, "Email address too long"
+
+    return True, "Valid email"
 

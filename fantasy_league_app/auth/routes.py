@@ -4,12 +4,13 @@ from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 import re
-from fantasy_league_app import db, mail
+from fantasy_league_app import db, mail, limiter
 from fantasy_league_app.models import User, Club, League, SiteAdmin, LeagueEntry
 from . import auth_bp, validators
 from .decorators import redirect_if_authenticated, admin_required, user_required
 from ..forms import (RegistrationForm, UserLoginForm, ClubLoginForm,
                      SiteAdminRegistrationForm, ClubRegistrationForm)
+from ..utils import send_email_verification, send_email_verification_success, check_email_verification_required, validate_email_security
 
 # Helper function to create the serializer
 def get_serializer(secret_key):
@@ -58,30 +59,53 @@ from flask_login import login_user as flask_login_user
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 @redirect_if_authenticated
+@limiter.limit("3 per hour")
 def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('main.user_dashboard'))
-
     form = RegistrationForm()
     if form.validate_on_submit():
-        # Create a new user instance but don't set the password directly
+        email = form.email.data.lower().strip()
+
+        # Enhanced email validation
+        is_valid, error_message = validate_email_security(email)
+        if not is_valid:
+            current_app.logger.warning(f"Registration blocked - {error_message}: {email} from IP: {request.remote_addr}")
+            flash('Please use a valid email address from a standard email provider.', 'danger')
+            return redirect(url_for('auth.register'))
+
+        # Check if email already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            # Log potential account enumeration attempt
+            current_app.logger.warning(f"Registration attempt with existing email: {email} from IP: {request.remote_addr}")
+            flash('An account with this email already exists.', 'danger')
+            return redirect(url_for('auth.register'))
+
+        # Create new user (email_verified defaults to False)
         user = User(
-            full_name=form.full_name.data,
-            email=form.email.data
+            full_name=form.full_name.data.strip(),
+            email=email,
+            password_hash=generate_password_hash(form.password.data),
         )
-        # Use the set_password method to create the secure hash
-        user.set_password(form.password.data)
 
         db.session.add(user)
         db.session.commit()
 
-        flash('Your account has been created! You are now able to log in.', 'success')
-        return redirect(url_for('auth.login_choice'))
+        # Log successful registration
+        current_app.logger.info(f"New user registered: {user.email} from IP: {request.remote_addr}")
 
-    return render_template('auth/register.html', title='Register', form=form)
+        # Send verification email
+        if send_email_verification(user):
+            flash('Account created! Please check your email to verify your account before logging in.', 'success')
+        else:
+            flash('Account created, but failed to send verification email. You can request a new one.', 'warning')
+
+        return redirect(url_for('auth.email_verification_pending'))
+
+    return render_template('auth/register.html', form=form)
 
 @auth_bp.route('/register_club', methods=['GET', 'POST'])
 @redirect_if_authenticated
+@limiter.limit("3 per hour")
 def register_club():
 
     if current_user.is_authenticated:
@@ -201,13 +225,21 @@ def login_club_account():
 
         # Check if the club exists and the password is correct
         if club and club.check_password(form.password.data):
-            login_user(club, remember=form.remember_me.data)
-            print(f"DEBUG: Logged in club. Object is: {club}, Type is: {type(club)}")
+            # Check if email is verified
+            if not user.email_verified:
+                flash('Please verify your email address before logging in.', 'warning')
+                return redirect(url_for('auth.email_verification_pending'))
 
+            # Check if account is active
+            if not user.is_active:
+                flash('Your account has been deactivated. Please contact support.', 'danger')
+                return redirect(url_for('auth.login'))
+
+            login_user(club, remember=form.remember_me.data)
+            flash(f'Welcome back, {user.full_name}!', 'success')
             # A league_code might be present if they clicked "Join" on the
             # landing page, but clubs can't join leagues. We can safely ignore it.
 
-            flash('Logged in successfully as Club!', 'success')
             next_page = request.args.get('next')
             return redirect(next_page or url_for('main.club_dashboard'))
         else:
@@ -319,8 +351,6 @@ def logout():
     session.pop('simulated_payment_confirmed', None)
     return redirect(url_for('main.index'))
 
-
-
 # --- NEW: Password Reset Request Routes ---
 
 @auth_bp.route("/reset_password", methods=['GET', 'POST'])
@@ -371,3 +401,90 @@ def reset_token(token):
         return redirect(url_for('auth.login_choice'))
 
     return render_template('auth/reset_password.html', token=token)
+
+
+##########
+##Email Verification##
+
+@auth_bp.route('/verify-email/<token>')
+@limiter.limit("10 per hour")
+def verify_email(token):
+    """Verify email address using token with enhanced security logging"""
+
+    # Log verification attempt
+    current_app.logger.info(f"Email verification attempted with token: {token[:10]}... from IP: {request.remote_addr}")
+
+    # Find user with this token
+    user = User.verify_email_token(token)
+
+    if not user:
+        # Log failed verification attempt with more details
+        current_app.logger.warning(
+            f"Invalid verification token used: {token[:10]}... "
+            f"from IP: {request.remote_addr} "
+            f"User-Agent: {request.headers.get('User-Agent', 'Unknown')}"
+        )
+        flash('Invalid or expired verification link. Please request a new one.', 'danger')
+        return redirect(url_for('auth.resend_verification'))
+
+    if user.email_verified:
+        current_app.logger.info(f"Already verified email attempted verification: {user.email} from IP: {request.remote_addr}")
+        flash('Your email has already been verified. You can log in now.', 'info')
+        return redirect(url_for('auth.login_choice'))
+
+    # Log successful verification
+    current_app.logger.info(f"Email successfully verified for user: {user.email} from IP: {request.remote_addr}")
+
+    # Verify the email
+    user.verify_email()
+
+    # Send welcome email
+    send_email_verification_success(user)
+
+    flash('Email verified successfully! You can now log in to your account.', 'success')
+    return redirect(url_for('auth.login_choice'))
+
+@auth_bp.route('/resend-verification', methods=['GET', 'POST'])
+@limiter.limit("5 per hour")
+def resend_verification():
+    """Resend email verification"""
+
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+
+        if not email:
+            flash('Please enter your email address.', 'danger')
+            return redirect(url_for('auth.resend_verification'))
+
+        user = User.query.filter_by(email=email).first()
+
+        if not user:
+            # Don't reveal if email exists or not for security
+            flash('If an account with that email exists, a verification email has been sent.', 'info')
+            return redirect(url_for('auth.resend_verification'))
+
+        if user.email_verified:
+            flash('This email address is already verified. You can log in now.', 'info')
+            return redirect(url_for('auth.login_choice'))
+
+        if not user.can_resend_verification_email():
+            flash('Please wait 5 minutes before requesting another verification email.', 'warning')
+            return redirect(url_for('auth.resend_verification'))
+
+        # Generate new token and send email
+        user.generate_email_verification_token()
+        db.session.commit()
+
+        if send_email_verification(user):
+            flash('Verification email sent! Please check your inbox and spam folder.', 'success')
+        else:
+            flash('Failed to send verification email. Please try again later.', 'danger')
+
+        return redirect(url_for('auth.resend_verification'))
+
+    return render_template('auth/resend_verification.html')
+
+@auth_bp.route('/email-verification-pending')
+def email_verification_pending():
+    """Show email verification pending page"""
+    return render_template('auth/email_verification_pending.html')

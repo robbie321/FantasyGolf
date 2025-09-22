@@ -14,9 +14,10 @@ Tasks []
 ###############
 ####GENERAL####
 ###############
-[] verify email address before user allowed to join leagues
-[] check over finialised leagues payouts
-[] check that all scheduled tasks are running
+[✅] verify email address before user allowed to join leagues
+[] swap to info@ instead of robmalone7@ for sending emails
+[✅] check over finialised leagues payouts
+[✅] check that all scheduled tasks are running
 [] add player profiles
 [] first time log in, display how to works to users
 [✅] add in stripe API key config vars heroku

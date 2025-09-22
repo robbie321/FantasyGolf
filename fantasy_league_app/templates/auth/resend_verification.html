@@ -1,0 +1,169 @@
+{% extends 'base.html' %} {% block title %}Resend Email Verification{% endblock
+%} {% block content %}
+<style>
+  .resend-container {
+    max-width: 500px;
+    margin: 4rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .resend-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .resend-icon {
+    font-size: 3rem;
+    color: #3498db;
+    margin-bottom: 1rem;
+  }
+
+  .resend-title {
+    color: #2c3e50;
+    font-family: "Merriweather", serif;
+    margin-bottom: 0.5rem;
+  }
+
+  .resend-subtitle {
+    color: #7f8c8d;
+    font-size: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+    font-weight: 600;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid #ecf0f1;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: #006a4e;
+    box-shadow: 0 0 0 3px rgba(0, 106, 78, 0.1);
+  }
+
+  .btn-resend {
+    width: 100%;
+    background: #006a4e;
+    color: white;
+    border: none;
+    padding: 1rem;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn-resend:hover {
+    background: #004d3a;
+    transform: translateY(-2px);
+  }
+
+  .back-link {
+    text-align: center;
+    margin-top: 1.5rem;
+  }
+
+  .back-link a {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .back-link a:hover {
+    text-decoration: underline;
+  }
+
+  .info-box {
+    background: #e8f5e8;
+    border: 1px solid #27ae60;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    color: #27ae60;
+  }
+</style>
+
+<div class="resend-container">
+  <div class="resend-header">
+    <div class="resend-icon">
+      <i class="fas fa-envelope"></i>
+    </div>
+    <h1 class="resend-title">Resend Verification Email</h1>
+    <p class="resend-subtitle">
+      Enter your email address to receive a new verification link
+    </p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %} {% for category, message in messages %}
+  <div
+    class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+    role="alert"
+  >
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %} {% endif %} {% endwith %}
+
+  <div class="info-box">
+    <i class="fas fa-info-circle"></i>
+    We'll send a verification link to your email address. The link will be valid
+    for 24 hours.
+  </div>
+
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+    <div class="form-group">
+      <label for="email" class="form-label">
+        <i class="fas fa-envelope"></i> Email Address
+      </label>
+      <input
+        type="email"
+        class="form-control"
+        id="email"
+        name="email"
+        placeholder="Enter your email address"
+        required
+        autocomplete="email"
+      />
+    </div>
+
+    <button type="submit" class="btn-resend">
+      <i class="fas fa-paper-plane"></i> Send Verification Email
+    </button>
+  </form>
+
+  <div class="back-link">
+    <a href="{{ url_for('auth.login_choice') }}">
+      <i class="fas fa-arrow-left"></i> Back to Login
+    </a>
+  </div>
+</div>
+
+<script>
+  // Auto-focus email input
+  document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("email").focus();
+  });
+</script>
+{% endblock %}

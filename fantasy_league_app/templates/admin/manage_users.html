@@ -139,6 +139,19 @@
                 {% if user.is_active %}Active{% else %}Inactive{% endif %}
               </td>
               <td>
+                {% if user.email_verified %}
+                <span class="badge bg-success">
+                  <i class="fas fa-check-circle"></i> Verified
+                </span>
+                {% else %}
+                <span class="badge bg-warning">
+                  <i class="fas fa-clock"></i> Pending
+                </span>
+                {% if user.is_verification_token_expired() %}
+                <small class="text-danger d-block">Token Expired</small>
+                {% endif %} {% endif %}
+              </td>
+              <td>
                 <div class="action-buttons">
                   <form
                     method="POST"
@@ -154,11 +167,56 @@
                     </button>
                     {% endif %}
                   </form>
+                  <!-- Email verification button -->
+                  {% if not user.email_verified %}
+                  <form
+                    method="POST"
+                    action="{{ url_for('admin.admin_verify_user', user_id=user.id) }}"
+                    class="d-inline"
+                  >
+                    <input
+                      type="hidden"
+                      name="csrf_token"
+                      value="{{ csrf_token() }}"
+                    />
+                    <button
+                      type="submit"
+                      class="btn btn-sm btn-info"
+                      title="Manually verify email"
+                    >
+                      <i class="fas fa-check"></i> Verify
+                    </button>
+                  </form>
+
+                  <form
+                    method="POST"
+                    action="{{ url_for('admin.resend_verification_admin', user_id=user.id) }}"
+                    class="d-inline"
+                  >
+                    <input
+                      type="hidden"
+                      name="csrf_token"
+                      value="{{ csrf_token() }}"
+                    />
+                    <button
+                      type="submit"
+                      class="btn btn-sm btn-secondary"
+                      title="Resend verification email"
+                    >
+                      <i class="fas fa-envelope"></i> Resend
+                    </button>
+                  </form>
+                  {% endif %}
                   <form
                     method="POST"
                     action="{{ url_for('admin.reset_user_password', user_id=user.id) }}"
                     onsubmit="return confirm('Are you sure you want to reset the password for this user?');"
                   >
+                    <input
+                      type="hidden"
+                      name="csrf_token"
+                      value="{{ csrf_token() }}"
+                    />
                     <button type="submit" class="btn btn-info">
                       Reset Password
                     </button>

@@ -1,6 +1,6 @@
 from flask import render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
-from fantasy_league_app import db
+from fantasy_league_app import db, limiter
 from fantasy_league_app.models import User, Club, SiteAdmin, Player, PlayerBucket, League, LeagueEntry
 import csv
 import io
@@ -10,7 +10,7 @@ import requests
 import secrets # NEW: For generating secure random strings
 from werkzeug.security import generate_password_hash # NEW: For hashing passwords
 from fantasy_league_app.league.routes import _create_new_league
-from ..utils import is_testing_mode_active, send_winner_notification_email
+from ..utils import is_testing_mode_active, send_winner_notification_email, send_email_verification
 import os
 from ..auth.decorators import admin_required
 from ..forms import EditLeagueForm, LeagueForm, BroadcastNotificationForm, PlayerBucketForm
@@ -27,6 +27,8 @@ def admin_dashboard():
     total_clubs = Club.query.count()
     total_entries = LeagueEntry.query.count()
     active_leagues = League.query.filter(League.end_date >= datetime.utcnow()).count()
+
+
 
     # Financial Snapshot
     timeframe = request.args.get('revenue_timeframe', 'all')
@@ -61,8 +63,107 @@ def admin_dashboard():
 
     stats['testing_mode_active'] = is_testing_mode_active()
 
+    # verification
+    verified_users = User.query.filter_by(email_verified=True).count()
+    unverified_users = User.query.filter_by(email_verified=False).count()
+
+    # Users with expired verification tokens (older than 24 hours)
+    expired_cutoff = datetime.utcnow() - timedelta(hours=24)
+    expired_unverified = User.query.filter(
+        User.email_verified == False,
+        User.email_verification_sent_at < expired_cutoff
+    ).count()
+
+    stats.update({
+        'verified_users': verified_users,
+        'unverified_users': unverified_users,
+        'expired_unverified': expired_unverified,
+        'verification_rate': round((verified_users / total_users * 100), 1) if total_users > 0 else 0
+    })
+
     return render_template('admin/admin_dashboard.html', stats=stats)
 
+
+# manually verify user
+@admin_bp.route('/verify-user/<int:user_id>', methods=['POST'])
+@admin_required
+def admin_verify_user(user_id):
+    user = User.query.get_or_404(user_id)
+
+    if not user.email_verified:
+        user.verify_email()
+        flash(f'Email verified for user: {user.full_name}', 'success')
+    else:
+        flash(f'User {user.full_name} is already verified.', 'info')
+
+    return redirect(url_for('admin.manage_users'))
+
+
+@admin_bp.route('/resend-verification-admin/<int:user_id>', methods=['POST'])
+@admin_required
+@limiter.limit("5 per hour")
+def resend_verification_admin(user_id):
+    """Admin resend verification email for a user"""
+    user = User.query.get_or_404(user_id)
+
+    if user.email_verified:
+        flash(f'User {user.full_name} is already verified.', 'info')
+        return redirect(url_for('admin.manage_users'))
+
+    # Generate new token and send email
+    user.generate_email_verification_token()
+    db.session.commit()
+
+    if send_email_verification(user):
+        flash(f'Verification email sent to {user.full_name} ({user.email})', 'success')
+
+        # Log admin action
+        current_app.logger.info(f"Admin {current_user.username} resent verification email to user {user.id}")
+    else:
+        flash(f'Failed to send verification email to {user.full_name}', 'danger')
+
+    return redirect(url_for('admin.manage_users'))
+
+@admin_bp.route('/verification-stats')
+@admin_required
+def verification_stats():
+    """Show detailed email verification statistics"""
+    from datetime import datetime, timedelta
+
+    # Calculate stats
+    total_users = User.query.count()
+    verified_users = User.query.filter_by(email_verified=True).count()
+    unverified_users = User.query.filter_by(email_verified=False).count()
+
+    # Users with expired tokens
+    expired_cutoff = datetime.utcnow() - timedelta(hours=24)
+    expired_unverified = User.query.filter(
+        User.email_verified == False,
+        User.email_verification_sent_at < expired_cutoff
+    ).count()
+
+    # Recent registrations (last 7 days)
+    recent_cutoff = datetime.utcnow() - timedelta(days=7)
+    recent_registrations = User.query.filter(
+        User.created_at >= recent_cutoff  # Assuming you have a created_at field
+    ).count()
+
+    # Recent verifications (last 7 days)
+    # This would require tracking when verification happened - you could add a verified_at field
+
+    stats = {
+        'total_users': total_users,
+        'verified_users': verified_users,
+        'unverified_users': unverified_users,
+        'expired_unverified': expired_unverified,
+        'verification_rate': round((verified_users / total_users * 100), 1) if total_users > 0 else 0,
+        'recent_registrations': recent_registrations
+    }
+
+    # Get list of unverified users
+    unverified_list = User.query.filter_by(email_verified=False).order_by(User.email_verification_sent_at.desc()).limit(20).all()
+
+    return render_template('admin/verification_stats.html', stats=stats, unverified_users=unverified_list)
 
 # testing mode
 
@@ -859,3 +960,142 @@ def test_simple_task():
     result = simple_test_task.delay("Hello from admin!")
     flash(f'Simple test task triggered: {result.id}', 'success')
     return redirect(url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/check-beat-status')
+@admin_required
+def check_beat_status():
+    """Check if Celery Beat scheduler is running and configured properly"""
+    from .. import celery
+    import json
+    from datetime import datetime, timezone
+
+    # Check beat schedule configuration
+    beat_schedule = celery.conf.get('beat_schedule', {})
+
+    # Get current time info using built-in timezone
+    utc_now = datetime.now(timezone.utc)
+
+    # Check for active scheduled tasks
+    inspect = celery.control.inspect()
+    scheduled = inspect.scheduled()
+    active = inspect.active()
+    reserved = inspect.reserved()
+
+    # Check if beat schedule is loaded from config
+    config_beat_schedule = current_app.config.get('BEAT_SCHEDULE', {})
+
+    status_info = {
+        'celery_beat_schedule_configured': len(beat_schedule) > 0,
+        'flask_config_beat_schedule': len(config_beat_schedule) > 0,
+        'beat_schedule_source': 'celeryconfig.py' if beat_schedule else 'config.py' if config_beat_schedule else 'NONE',
+        'total_scheduled_tasks': len(beat_schedule) if beat_schedule else len(config_beat_schedule),
+        'task_names': list(beat_schedule.keys()) if beat_schedule else list(config_beat_schedule.keys()),
+        'current_utc_time': utc_now.strftime('%Y-%m-%d %H:%M:%S UTC'),
+        'current_weekday': utc_now.weekday(),  # Monday=0, Sunday=6
+        'current_weekday_name': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][utc_now.weekday()],
+        'scheduled_tasks_in_worker_queue': scheduled,
+        'active_tasks_now': active,
+        'reserved_tasks': reserved,
+        'worker_has_scheduled_tasks': any(scheduled.values()) if scheduled else False,
+        'beat_process_indicators': {
+            'has_scheduled_queue': scheduled is not None,
+            'queue_empty': not any(scheduled.values()) if scheduled else True,
+            'likely_beat_status': 'RUNNING' if (scheduled and any(scheduled.values())) else 'NOT RUNNING OR NO PENDING TASKS'
+        }
+    }
+
+    # Add detailed schedule info
+    if beat_schedule:
+        status_info['beat_schedule_details'] = {
+            task_name: {
+                'task': task_config.get('task'),
+                'schedule_type': type(task_config.get('schedule')).__name__,
+                'schedule_str': str(task_config.get('schedule'))
+            } for task_name, task_config in beat_schedule.items()
+        }
+
+    return f"<pre>{json.dumps(status_info, indent=2, default=str)}</pre>"
+
+@admin_bp.route('/force-bucket-update', methods=['POST'])
+@admin_required
+def force_bucket_update():
+    """Manually force the bucket update task for testing"""
+    from ..tasks import update_player_buckets
+
+    result = update_player_buckets.delay()
+    flash(f'Bucket update task forced: {result.id}', 'info')
+    flash(f'Check result at: /admin/check-task-result/{result.id}', 'info')
+
+    return redirect(url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/heroku-processes')
+@admin_required
+def check_heroku_processes():
+    """Show information about running Heroku processes"""
+    import os
+
+    # This will only work if you add the Heroku CLI info
+    process_info = {
+        'dyno_name': os.environ.get('DYNO', 'Not on Heroku'),
+        'port': os.environ.get('PORT', 'Not set'),
+        'redis_url': os.environ.get('REDISCLOUD_URL', 'Not set')[:50] + '...',
+        'environment_vars': {
+            key: value[:50] + '...' if len(value) > 50 else value
+            for key, value in os.environ.items()
+            if key.startswith(('CELERY', 'REDIS', 'HEROKU'))
+        }
+    }
+
+    return f"<pre>{json.dumps(process_info, indent=2)}</pre>"
+
+
+@admin_bp.route('/simple-celery-check')
+@admin_required
+def simple_celery_check():
+    """Simple check of Celery worker and beat status"""
+    from .. import celery
+    import json
+
+    try:
+        # Basic inspection
+        inspect = celery.control.inspect()
+
+        # Get basic info
+        stats = inspect.stats()
+        active = inspect.active()
+        scheduled = inspect.scheduled()
+
+        # Check if we can reach workers
+        workers_reachable = stats is not None and len(stats) > 0
+
+        simple_status = {
+            'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'),
+            'workers_reachable': workers_reachable,
+            'number_of_workers': len(stats) if stats else 0,
+            'worker_names': list(stats.keys()) if stats else [],
+            'has_scheduled_tasks': bool(scheduled and any(scheduled.values())),
+            'has_active_tasks': bool(active and any(active.values())),
+            'scheduled_task_count': sum(len(tasks) for tasks in scheduled.values()) if scheduled else 0,
+            'active_task_count': sum(len(tasks) for tasks in active.values()) if active else 0,
+            'diagnosis': 'UNKNOWN'
+        }
+
+        # Simple diagnosis
+        if not workers_reachable:
+            simple_status['diagnosis'] = 'NO WORKERS RUNNING'
+        elif simple_status['has_scheduled_tasks']:
+            simple_status['diagnosis'] = 'BEAT SCHEDULER APPEARS TO BE WORKING'
+        elif simple_status['scheduled_task_count'] == 0:
+            simple_status['diagnosis'] = 'WORKERS RUNNING BUT NO SCHEDULED TASKS (BEAT MAY NOT BE RUNNING)'
+        else:
+            simple_status['diagnosis'] = 'WORKERS RUNNING, CHECKING BEAT STATUS'
+
+        return f"<pre>{json.dumps(simple_status, indent=2)}</pre>"
+
+    except Exception as e:
+        error_info = {
+            'error': str(e),
+            'error_type': type(e).__name__,
+            'diagnosis': 'CELERY CONNECTION ERROR'
+        }
+        return f"<pre>{json.dumps(error_info, indent=2)}</pre>"

@@ -129,7 +129,7 @@
 
   /* Revenue Card Special Styling */
   .revenue-card {
-    grid-column: span 4;
+    grid-column: span 2;
     background: linear-gradient(
       135deg,
       var(--primary-green),
@@ -203,7 +203,7 @@
 
   .debug-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 1rem;
     margin-bottom: 2rem;
   }
@@ -493,6 +493,23 @@
         <div class="stat-icon"><i class="fas fa-users"></i></div>
         <div class="stat-value">{{ stats.total_users }}</div>
         <div class="stat-title">Total Players</div>
+        {% if stats.verification_rate is defined %}
+        <small class="text-muted"
+          >{{ stats.verification_rate }}% verified</small
+        >
+        {% endif %}
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+        <div class="stat-value">{{ stats.verified_users or 0 }}</div>
+        <div class="stat-title">Verified Users</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-user-clock"></i></div>
+        <div class="stat-value">{{ stats.unverified_users or 0 }}</div>
+        <div class="stat-title">Pending Verification</div>
       </div>
 
       <div class="stat-card">
@@ -610,6 +627,38 @@
           <i class="fas fa-list-alt"></i>
           <span>Recent Results</span>
         </a>
+
+        <a
+          href="{{ url_for('admin.check_beat_status') }}"
+          class="debug-btn"
+          style="background: #9b59b6; color: white"
+          target="_blank"
+        >
+          <i class="fas fa-heartbeat"></i>
+          <span>Beat Status</span>
+        </a>
+
+        <a
+          href="{{ url_for('admin.simple_celery_check') }}"
+          class="debug-btn"
+          style="background: #8e44ad; color: white"
+          target="_blank"
+        >
+          <i class="fas fa-stethoscope"></i>
+          <span>Simple Check</span>
+        </a>
+
+        <form method="POST" action="{{ url_for('admin.force_bucket_update') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button
+            type="submit"
+            class="debug-btn"
+            style="background: #e67e22; color: white"
+          >
+            <i class="fas fa-sync-alt"></i>
+            <span>Force Bucket Update</span>
+          </button>
+        </form>
       </div>
 
       <div class="debug-instructions">

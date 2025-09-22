@@ -1,6 +1,9 @@
 import os
 from celery.schedules import crontab
 
+# Update your fantasy_league_app/config.py
+# Replace the Config class with this cleaned version:
+
 class Config:
     """Base configuration class with common settings"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your_super_secret_key_change_in_production'
@@ -25,7 +28,7 @@ class Config:
     # Redis URL (used by production and some other configs)
     redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
 
-    # Celery Configuration (common for all environments)
+    # NEW FORMAT CELERY CONFIGURATION ONLY
     broker_url = redis_url
     result_backend = redis_url
     task_serializer = 'json'
@@ -33,16 +36,14 @@ class Config:
     accept_content = ['json']
     timezone = 'UTC'
     enable_utc = True
+    task_track_started = True
+    task_send_sent_event = True
+    broker_connection_retry_on_startup = True
+    broker_connection_retry = True
+    broker_connection_max_retries = 10
 
-    # RedBeat specific configuration
-    REDBEAT_REDIS_URL = redis_url
-    REDBEAT_KEY_PREFIX = 'redbeat'
-    redbeat_redis_url = redis_url
-
-    # Broker connection retry settings
-    CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-    CELERY_BROKER_CONNECTION_RETRY = True
-    CELERY_BROKER_CONNECTION_MAX_RETRIES = 10
+    # REMOVED ALL OLD-STYLE CELERY_ SETTINGS!
+    # No more CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP, etc.
 
     # Stripe Configuration
     STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY') or 'pk_test_51Rt4YFAAtiw6IkD3q6QEunjHZZIlhDBfKvpefcbEHafQqqKV0En2Eu5QJaxomlGgk4CYA8Jk9nBH9hQu3Amsstf800E0bzTL1S'
@@ -80,8 +81,8 @@ class Config:
         'leaderboards': 120,       # 2 minutes - tournament leaderboards
     }
 
-    # Celery Beat Schedule (common for all environments)
-    BEAT_SCHEDULE = {
+    # Celery Beat Schedule - NEW FORMAT ONLY
+    beat_schedule = {
         'schedule-live-score-updates': {
             'task': 'fantasy_league_app.tasks.schedule_score_updates_for_the_week',
             'schedule': crontab(hour=14, minute=50, day_of_week='thu,fri,sat,sun'),
@@ -112,9 +113,36 @@ class Config:
         },
         'warm-caches-early-morning': {
             'task': 'fantasy_league_app.tasks.warm_critical_caches',
-            'schedule': crontab(hour=5, minute=30),  # 5:30 AM daily
+            'schedule': crontab(hour=5, minute=30),
         },
     }
+
+
+    @staticmethod
+    def init_app(app):
+        """Initialize app-specific configuration"""
+
+        # Security logging setup
+        if not app.debug and not app.testing:
+            # Create logs directory if it doesn't exist
+            if not os.path.exists('logs'):
+                os.mkdir('logs')
+
+            # Security event logger
+            security_handler = RotatingFileHandler(
+                'logs/security.log',
+                maxBytes=10240000,
+                backupCount=10
+            )
+            security_handler.setFormatter(logging.Formatter(
+                '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+            ))
+            security_handler.setLevel(logging.INFO)
+
+            # Create security logger
+            security_logger = logging.getLogger('security')
+            security_logger.addHandler(security_handler)
+            security_logger.setLevel(logging.INFO)
 
 
 class DevelopmentConfig(Config):
@@ -125,8 +153,19 @@ class DevelopmentConfig(Config):
     CACHE_TYPE = 'SimpleCache'
     CACHE_DEFAULT_TIMEOUT = 300
 
-    # Override any production-specific settings here if needed
-    # For example, you might want shorter cache timeouts in development:
+    # REMOVED OLD FORMAT SETTINGS!
+    # No more CELERY_BROKER_URL or CELERY_RESULT_BACKEND
+
+    # NEW FORMAT ONLY: Override Redis URL for development
+    # Since Redis is working on your machine, let's stick with Redis for development
+    broker_url = 'redis://localhost:6379/0'
+    result_backend = 'redis://localhost:6379/0'
+
+    # If you want to use memory broker instead (loses tasks on restart):
+    # broker_url = 'memory://'
+    # result_backend = 'cache+memory://'
+
+    # Override cache timeouts for faster development testing
     CACHE_TIMEOUTS = {
         'player_scores': 60,       # 1 minute in dev
         'league_data': 120,        # 2 minutes in dev

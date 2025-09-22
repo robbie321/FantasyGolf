@@ -997,3 +997,54 @@ def cleanup_expired_caches():
 
         except Exception as e:
             logger.error(f"CACHE CLEANUP: Error: {e}")
+
+
+@shared_task(
+    bind=True,
+    autoretry_for=(DatabaseConnectionError,),
+    retry_kwargs={'max_retries': 2, 'countdown': 300},
+    soft_time_limit=600,   # 10 minutes
+    time_limit=720         # 12 minutes
+)
+def cleanup_expired_verification_tokens(self):
+    """Clean up expired email verification tokens"""
+    app = get_app()
+
+    try:
+        with app.app_context():
+            logger.info("TOKEN CLEANUP: Starting expired token cleanup")
+
+            from datetime import datetime, timedelta
+
+            # Clean tokens older than 48 hours (keep for a bit longer than expiry)
+            expired_cutoff = datetime.utcnow() - timedelta(hours=48)
+
+            try:
+                expired_users = User.query.filter(
+                    User.email_verified == False,
+                    User.email_verification_sent_at < expired_cutoff,
+                    User.email_verification_token.isnot(None)
+                ).all()
+
+                count = 0
+                for user in expired_users:
+                    user.email_verification_token = None
+                    user.email_verification_sent_at = None
+                    count += 1
+
+                db.session.commit()
+
+                logger.info(f"TOKEN CLEANUP: Cleaned up {count} expired verification tokens")
+                return f"Cleaned {count} expired tokens"
+
+            except Exception as db_error:
+                logger.error(f"TOKEN CLEANUP: Database error: {db_error}")
+                db.session.rollback()
+                raise DatabaseConnectionError(f"Token cleanup failed: {db_error}")
+
+    except SoftTimeLimitExceeded:
+        logger.warning("TOKEN CLEANUP: Task timeout")
+        raise self.retry(countdown=300)
+    except Exception as e:
+        logger.error(f"TOKEN CLEANUP: Unexpected error: {e}")
+        raise
