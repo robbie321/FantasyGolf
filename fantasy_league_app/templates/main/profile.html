@@ -90,7 +90,6 @@
     font-size: 2.5rem;
     font-weight: bold;
     margin: 0 0 0.5rem 0;
-    font-family: "Merriweather", serif;
   }
 
   .profile-subtitle {
@@ -371,12 +370,19 @@
     border-color: var(--primary-green);
   }
 
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+
   .history-table {
     width: 100%;
+    min-width: 700px; /* Prevents table from becoming too compressed */
     border-collapse: collapse;
     border-radius: 15px;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   }
 
   .history-table th {
@@ -454,8 +460,25 @@
       font-size: 2rem;
     }
 
+    .table-responsive {
+      margin: 0 -1rem; /* Allow table to use full width on mobile */
+      border-radius: 0;
+    }
+
     .history-table {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
+      min-width: 600px; /* Adjust minimum width for mobile */
+    }
+
+    .history-table th,
+    .history-table td {
+      padding: 0.75rem 0.5rem; /* Reduce padding on mobile */
+    }
+
+    .rank-badge {
+      width: 30px;
+      height: 30px;
+      font-size: 0.8rem;
     }
   }
 

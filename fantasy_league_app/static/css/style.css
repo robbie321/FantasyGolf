@@ -1310,6 +1310,7 @@ h4 { font-size: 1.1rem; }
 
     .stat-card {
         padding: 1rem;
+        display: none;
     }
 
     .stat-card .value {
