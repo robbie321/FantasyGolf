@@ -1,158 +1,862 @@
 {% extends 'base.html' %} {% block content %}
 <style>
-  .page-wrapper {
-    padding: 4rem 1rem;
-    background-color: #f7f7f7;
-  }
-  .profile-container {
-    max-width: 900px;
-    margin: 0 auto;
-  }
-  .profile-header {
-    background-color: #fff;
-    padding: 2rem;
-    border-radius: 8px;
-    text-align: center;
-    border: 1px solid #e0e0e0;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  }
-  .profile-header h1 {
-    font-family: "Merriweather", serif;
-    margin: 0;
-    font-size: 2.5rem;
-  }
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-  .stat-card {
-    background-color: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 1.5rem;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  }
-  .stat-card .stat-title {
-    font-size: 1rem;
-    color: #666;
-    margin: 0 0 0.5rem 0;
-    text-transform: uppercase;
-    font-weight: bold;
-  }
-  .stat-card .stat-value {
-    font-size: 2.5rem;
-    font-weight: bold;
-    color: #006a4e;
+  :root {
+    --primary-green: #006a4e;
+    --light-green: #e8f5e8;
+    --accent-gold: #ffd700;
+    --accent-blue: #3498db;
+    --accent-orange: #f39c12;
+    --dark-gray: #2c3e50;
+    --light-gray: #ecf0f1;
+    --border-color: #bdc3c7;
+    --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
   }
 
-  .history-section {
-    background-color: #fff;
-    padding: 2rem;
-    border-radius: 8px;
-    border: 1px solid #e0e0e0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  .profile-wrapper {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding: 2rem 1rem;
   }
-  .history-section h2 {
-    font-family: "Merriweather", serif;
-    margin-top: 0;
+
+  .profile-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Header Section */
+  .profile-header {
+    background: linear-gradient(
+      135deg,
+      var(--primary-green),
+      var(--accent-blue)
+    );
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 20px;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .profile-header::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 70%
+    );
+    animation: pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 0.1;
+    }
+  }
+
+  .profile-info {
+    position: relative;
+    z-index: 2;
     text-align: center;
   }
+
+  .profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, var(--accent-gold), #ffed4e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem auto;
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--dark-gray);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .profile-name {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0 0 0.5rem 0;
+    font-family: "Merriweather", serif;
+  }
+
+  .profile-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin: 0 0 1rem 0;
+  }
+
+  .profile-level {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  /* Quick Stats Cards */
+  .quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(
+      90deg,
+      var(--primary-green),
+      var(--accent-blue)
+    );
+  }
+
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--primary-green);
+  }
+
+  .stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--dark-gray);
+    margin: 0.5rem 0;
+  }
+
+  .stat-title {
+    color: #7f8c8d;
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Achievement System */
+  .achievements-section {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    box-shadow: var(--shadow);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--light-gray);
+  }
+
+  .section-icon {
+    font-size: 2rem;
+    color: var(--accent-gold);
+    margin-right: 1rem;
+  }
+
+  .section-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--dark-gray);
+    font-family: "Merriweather", serif;
+  }
+
+  .achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .achievement-card {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border: 2px solid var(--border-color);
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .achievement-card.unlocked {
+    background: linear-gradient(135deg, var(--light-green), #d4edda);
+    border-color: var(--primary-green);
+    transform: scale(1.02);
+  }
+
+  .achievement-card.unlocked::before {
+    content: "✓";
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: var(--primary-green);
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+
+  .achievement-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .achievement-card.unlocked .achievement-icon {
+    color: var(--primary-green);
+  }
+
+  .achievement-card:not(.unlocked) .achievement-icon {
+    color: #bdc3c7;
+    filter: grayscale(100%);
+  }
+
+  .achievement-title {
+    font-weight: bold;
+    color: var(--dark-gray);
+    margin-bottom: 0.5rem;
+  }
+
+  .achievement-description {
+    font-size: 0.9rem;
+    color: #6c757d;
+    line-height: 1.4;
+  }
+
+  .achievement-progress {
+    margin-top: 1rem;
+  }
+
+  .progress-bar {
+    background: #e9ecef;
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    background: linear-gradient(
+      90deg,
+      var(--primary-green),
+      var(--accent-blue)
+    );
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+
+  .progress-text {
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+    color: #6c757d;
+  }
+
+  /* Recent Activity Feed */
+  .activity-section {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    box-shadow: var(--shadow);
+  }
+
+  .activity-feed {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .activity-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-left: 4px solid var(--primary-green);
+    background: #f8f9fa;
+    margin-bottom: 1rem;
+    border-radius: 0 10px 10px 0;
+    transition: all 0.3s ease;
+  }
+
+  .activity-item:hover {
+    background: var(--light-green);
+    transform: translateX(5px);
+  }
+
+  .activity-icon {
+    font-size: 1.5rem;
+    color: var(--primary-green);
+    margin-right: 1rem;
+    min-width: 40px;
+  }
+
+  .activity-content {
+    flex: 1;
+  }
+
+  .activity-title {
+    font-weight: 600;
+    color: var(--dark-gray);
+    margin-bottom: 0.25rem;
+  }
+
+  .activity-time {
+    font-size: 0.8rem;
+    color: #6c757d;
+  }
+
+  /* Enhanced League History */
+  .history-section {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+  }
+
+  .history-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--border-color);
+    background: white;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+  }
+
+  .filter-btn.active {
+    background: var(--primary-green);
+    color: white;
+    border-color: var(--primary-green);
+  }
+
   .history-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 1.5rem;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   }
-  .history-table th,
-  .history-table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-  }
-  .history-table thead th {
-    background-color: #f2f2f2;
-  }
-  .btn {
-    background-color: #006a4e;
+
+  .history-table th {
+    background: var(--primary-green);
     color: white;
-    text-decoration: none;
-    padding: 8px 15px;
-    border-radius: 5px;
-    font-size: 0.9rem;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
   }
-  .trophy {
-    color: #ffd700;
-    font-size: 1.2rem;
+
+  .history-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.3s ease;
+  }
+
+  .history-table tr:hover td {
+    background: var(--light-green);
+  }
+
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-weight: bold;
+    color: white;
+  }
+
+  .rank-1 {
+    background: var(--accent-gold);
+    color: var(--dark-gray);
+  }
+  .rank-2 {
+    background: #c0c0c0;
+  }
+  .rank-3 {
+    background: #cd7f32;
+  }
+  .rank-other {
+    background: var(--primary-green);
+  }
+
+  .winnings-positive {
+    color: var(--primary-green);
+    font-weight: bold;
+  }
+
+  .winnings-zero {
+    color: #6c757d;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .profile-wrapper {
+      padding: 1rem 0.5rem;
+    }
+
+    .quick-stats {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+
+    .achievements-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .history-filters {
+      flex-direction: column;
+    }
+
+    .profile-name {
+      font-size: 2rem;
+    }
+
+    .history-table {
+      font-size: 0.9rem;
+    }
+  }
+
+  /* Loading animations */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .fade-in {
+    animation: fadeInUp 0.6s ease-out;
   }
 </style>
 
-<div class="page-wrapper">
+<div class="profile-wrapper">
   <div class="profile-container">
-    <div class="profile-header">
-      <h1>{{ user.full_name }}</h1>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <h3 class="stat-title">Leagues Played</h3>
-        <p class="stat-value">{{ stats.leagues_played }}</p>
-      </div>
-      <div class="stat-card">
-        <h3 class="stat-title">Leagues Won</h3>
-        <p class="stat-value">{{ stats.leagues_won }}</p>
-      </div>
-      <div class="stat-card">
-        <h3 class="stat-title">Win Percentage</h3>
-        <p class="stat-value">{{ stats.win_percentage }}</p>
-      </div>
-      <div class="stat-card">
-        <h3 class="stat-title">Total Winnings</h3>
-        <p class="stat-value">{{ stats.total_winnings }}</p>
+    <!-- Enhanced Profile Header -->
+    <div class="profile-header fade-in">
+      <div class="profile-info">
+        <div class="profile-avatar">
+          {{ user.full_name[0] }}{{ user.full_name.split(' ')[-1][0] if
+          user.full_name.split(' ')|length > 1 else '' }}
+        </div>
+        <h1 class="profile-name">{{ user.full_name }}</h1>
+        <p class="profile-subtitle">Fantasy Golf Player</p>
+        <div class="profile-level">
+          <i class="fas fa-star"></i>
+          <span style="margin-left: 0.5rem"
+            >Level {{ stats.user_level or 1 }} Player</span
+          >
+        </div>
       </div>
     </div>
 
-    <div class="history-section">
-      <h2>League History</h2>
-      <table class="history-table">
-        <thead>
-          <tr>
-            <th>League Name</th>
-            <th style="text-align: center">Final Rank</th>
-            <th style="text-align: center">Winnings</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in league_history %}
-          <tr>
-            <td>
-              {{ item.league_name }} {% if item.is_winner %}<span class="trophy"
-                >🏆</span
-              >{% endif %}
-            </td>
-            <td style="text-align: center">{{ item.rank }}</td>
-            <td style="text-align: center">{{ item.winnings }}</td>
-            <td>
-              <a
-                href="{{ url_for('league.view_league', league_id=item.league_id) }}"
-                class="btn"
-                >View League</a
+    <!-- Enhanced Quick Stats -->
+    <div class="quick-stats fade-in">
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+        <div class="stat-value">{{ stats.leagues_played or 0 }}</div>
+        <div class="stat-title">Leagues Played</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-crown"></i></div>
+        <div class="stat-value">{{ stats.leagues_won or 0 }}</div>
+        <div class="stat-title">Leagues Won</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+        <div class="stat-value">{{ stats.win_percentage or 0 }}%</div>
+        <div class="stat-title">Win Rate</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-euro-sign"></i></div>
+        <div class="stat-value">€{{ stats.total_winnings or 0 }}</div>
+        <div class="stat-title">Total Winnings</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-fire"></i></div>
+        <div class="stat-value">{{ stats.current_streak or 0 }}</div>
+        <div class="stat-title">Current Streak</div>
+      </div>
+    </div>
+
+    <!-- Achievement System -->
+    <div class="achievements-section fade-in">
+      <div class="section-header">
+        <div class="section-icon"><i class="fas fa-medal"></i></div>
+        <h2 class="section-title">Achievements</h2>
+      </div>
+
+      <div class="achievements-grid">
+        <div
+          class="achievement-card {{ 'unlocked' if stats.leagues_played >= 1 else '' }}"
+        >
+          <div class="achievement-icon"><i class="fas fa-play"></i></div>
+          <div class="achievement-title">First Timer</div>
+          <div class="achievement-description">Join your first league</div>
+          {% if stats.leagues_played < 1 %}
+          <div class="achievement-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="progress-text">0/1 leagues</div>
+          </div>
+          {% endif %}
+        </div>
+
+        <div
+          class="achievement-card {{ 'unlocked' if stats.leagues_won >= 1 else '' }}"
+        >
+          <div class="achievement-icon"><i class="fas fa-trophy"></i></div>
+          <div class="achievement-title">Victory Royale</div>
+          <div class="achievement-description">Win your first league</div>
+          {% if stats.leagues_won < 1 %}
+          <div class="achievement-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="progress-text">0/1 wins</div>
+          </div>
+          {% endif %}
+        </div>
+
+        <div
+          class="achievement-card {{ 'unlocked' if stats.leagues_played >= 5 else '' }}"
+        >
+          <div class="achievement-icon"><i class="fas fa-star"></i></div>
+          <div class="achievement-title">Regular Player</div>
+          <div class="achievement-description">Participate in 5 leagues</div>
+          <div class="achievement-progress">
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                style="width: {{ (stats.leagues_played / 5 * 100) if stats.leagues_played < 5 else 100 }}%"
+              ></div>
+            </div>
+            <div class="progress-text">
+              {{ stats.leagues_played or 0 }}/5 leagues
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="achievement-card {{ 'unlocked' if stats.leagues_won >= 3 else '' }}"
+        >
+          <div class="achievement-icon"><i class="fas fa-crown"></i></div>
+          <div class="achievement-title">Triple Crown</div>
+          <div class="achievement-description">Win 3 leagues</div>
+          <div class="achievement-progress">
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                style="width: {{ (stats.leagues_won / 3 * 100) if stats.leagues_won < 3 else 100 }}%"
+              ></div>
+            </div>
+            <div class="progress-text">{{ stats.leagues_won or 0 }}/3 wins</div>
+          </div>
+        </div>
+
+        <div
+          class="achievement-card {{ 'unlocked' if stats.current_streak >= 3 else '' }}"
+        >
+          <div class="achievement-icon"><i class="fas fa-fire"></i></div>
+          <div class="achievement-title">Hot Streak</div>
+          <div class="achievement-description">Win 3 leagues in a row</div>
+          <div class="achievement-progress">
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                style="width: {{ (stats.current_streak / 3 * 100) if stats.current_streak < 3 else 100 }}%"
+              ></div>
+            </div>
+            <div class="progress-text">
+              {{ stats.current_streak or 0 }}/3 streak
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="achievement-card {{ 'unlocked' if stats.total_winnings >= 100 else '' }}"
+        >
+          <div class="achievement-icon">
+            <i class="fas fa-money-bill-wave"></i>
+          </div>
+          <div class="achievement-title">Century Club</div>
+          <div class="achievement-description">Earn €100 in total winnings</div>
+          <div class="achievement-progress">
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                style="width: {{ (stats.total_winnings / 100 * 100) if stats.total_winnings < 100 else 100 }}%"
+              ></div>
+            </div>
+            <div class="progress-text">
+              €{{ stats.total_winnings or 0 }}/€100
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity Feed -->
+    <div class="activity-section fade-in">
+      <div class="section-header">
+        <div class="section-icon"><i class="fas fa-history"></i></div>
+        <h2 class="section-title">Recent Activity</h2>
+      </div>
+
+      <div class="activity-feed">
+        {% for activity in recent_activity %}
+        <div class="activity-item">
+          <div class="activity-icon">
+            {% if activity.type == 'league_join' %}<i
+              class="fas fa-plus-circle"
+            ></i>
+            {% elif activity.type == 'league_win' %}<i
+              class="fas fa-trophy"
+            ></i>
+            {% elif activity.type == 'rank_change' %}<i
+              class="fas fa-arrow-up"
+            ></i>
+            {% else %}<i class="fas fa-golf-ball"></i>{% endif %}
+          </div>
+          <div class="activity-content">
+            <div class="activity-title">{{ activity.description }}</div>
+            <div class="activity-time">{{ activity.time_ago }}</div>
+          </div>
+        </div>
+        {% else %}
+        <div class="activity-item">
+          <div class="activity-icon"><i class="fas fa-info-circle"></i></div>
+          <div class="activity-content">
+            <div class="activity-title">No recent activity</div>
+            <div class="activity-time">
+              Join a league to start building your activity feed!
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Enhanced League History -->
+    <div class="history-section fade-in">
+      <div class="section-header">
+        <div class="section-icon"><i class="fas fa-list-alt"></i></div>
+        <h2 class="section-title">League History</h2>
+      </div>
+
+      <div class="history-filters">
+        <button class="filter-btn active" onclick="filterHistory('all')">
+          All Leagues
+        </button>
+        <button class="filter-btn" onclick="filterHistory('won')">
+          Wins Only
+        </button>
+        <button class="filter-btn" onclick="filterHistory('recent')">
+          Recent
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>League Name</th>
+              <th style="text-align: center">Rank</th>
+              <th style="text-align: center">Players</th>
+              <th style="text-align: center">Winnings</th>
+              <th style="text-align: center">Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in league_history %}
+            <tr data-filter="{{ 'won' if item.is_winner else 'other' }}">
+              <td>
+                <strong>{{ item.league_name }}</strong>
+                {% if item.is_winner %}
+                <span style="color: var(--accent-gold); margin-left: 0.5rem"
+                  ><i class="fas fa-crown"></i
+                ></span>
+                {% endif %}
+              </td>
+              <td style="text-align: center">
+                <span
+                  class="rank-badge rank-{{ '1' if item.rank == 1 else '2' if item.rank == 2 else '3' if item.rank == 3 else 'other' }}"
+                >
+                  {{ item.rank }}
+                </span>
+              </td>
+              <td style="text-align: center">
+                {{ item.total_players or 'N/A' }}
+              </td>
+              <td style="text-align: center">
+                <span
+                  class="{{ 'winnings-positive' if item.winnings > 0 else 'winnings-zero' }}"
+                >
+                  €{{ item.winnings or 0 }}
+                </span>
+              </td>
+              <td style="text-align: center">
+                {{ item.date_finished or 'Ongoing' }}
+              </td>
+              <td>
+                <a
+                  href="{{ url_for('league.view_league', league_id=item.league_id) }}"
+                  class="btn"
+                  style="
+                    background: var(--primary-green);
+                    color: white;
+                    text-decoration: none;
+                    padding: 0.5rem 1rem;
+                    border-radius: 5px;
+                  "
+                >
+                  View League
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td
+                colspan="6"
+                style="text-align: center; padding: 3rem; color: #6c757d"
               >
-            </td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="4" style="text-align: center; padding: 2rem">
-              This user has not joined any leagues yet.
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+                <i
+                  class="fas fa-golf-ball"
+                  style="font-size: 3rem; margin-bottom: 1rem; display: block"
+                ></i>
+                No league history yet. Join your first league to start building
+                your golf legacy!
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
+
+<script>
+  // Add interactivity
+  document.addEventListener("DOMContentLoaded", function () {
+    // Animate stat cards on load
+    const statCards = document.querySelectorAll(".stat-card");
+    statCards.forEach((card, index) => {
+      setTimeout(() => {
+        card.style.opacity = "0";
+        card.style.transform = "translateY(20px)";
+        card.style.transition = "all 0.6s ease";
+        setTimeout(() => {
+          card.style.opacity = "1";
+          card.style.transform = "translateY(0)";
+        }, 100);
+      }, index * 100);
+    });
+
+    // Achievement card hover effects
+    const achievementCards = document.querySelectorAll(".achievement-card");
+    achievementCards.forEach((card) => {
+      card.addEventListener("mouseenter", function () {
+        if (this.classList.contains("unlocked")) {
+          this.style.transform = "scale(1.05) rotate(1deg)";
+        }
+      });
+
+      card.addEventListener("mouseleave", function () {
+        this.style.transform = "scale(1.02) rotate(0deg)";
+      });
+    });
+  });
+
+  // History filtering
+  function filterHistory(filter) {
+    const rows = document.querySelectorAll("tbody tr[data-filter]");
+    const buttons = document.querySelectorAll(".filter-btn");
+
+    // Update button states
+    buttons.forEach((btn) => btn.classList.remove("active"));
+    event.target.classList.add("active");
+
+    // Filter rows
+    rows.forEach((row) => {
+      const shouldShow =
+        filter === "all" ||
+        (filter === "won" && row.dataset.filter === "won") ||
+        filter === "recent"; // You'd implement recent logic based on your data
+
+      row.style.display = shouldShow ? "" : "none";
+    });
+  }
+
+  // Progressive enhancement for animations
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("fade-in");
+        }
+      });
+    });
+
+    document
+      .querySelectorAll(
+        ".achievements-section, .activity-section, .history-section"
+      )
+      .forEach((el) => {
+        observer.observe(el);
+      });
+  }
+</script>
 {% endblock %}

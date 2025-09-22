@@ -43,15 +43,45 @@ class User(db.Model, UserMixin):
     created_leagues = db.relationship('League', back_populates='creator', foreign_keys='League.creator_id')
     # created_public_leagues = db.relationship('League', back_populates='site_admin', foreign_keys='League.site_admin_id')
 
+    # Email verification fields
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
     email_verification_token = db.Column(db.String(100), unique=True, nullable=True)
     email_verification_sent_at = db.Column(db.DateTime, nullable=True)
+
+    #PROFILE ENHANCEMENT:
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    last_active = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    profile_views = db.Column(db.Integer, default=0, nullable=False)
+    achievement_data = db.Column(db.Text, nullable=True)  # JSON string for achievements
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
         # Generate verification token for new users
         if not self.email_verification_token:
             self.generate_email_verification_token()
+
+    def get_achievements(self):
+        """Get user's achievement data as dictionary"""
+        if self.achievement_data:
+            try:
+                return json.loads(self.achievement_data)
+            except (json.JSONDecodeError, TypeError):
+                return {}
+        return {}
+
+    def set_achievements(self, achievements_dict):
+        """Set user's achievement data"""
+        self.achievement_data = json.dumps(achievements_dict)
+
+    def update_last_active(self):
+        """Update user's last active timestamp"""
+        self.last_active = datetime.utcnow()
+        db.session.commit()
+
+    def increment_profile_views(self):
+        """Increment profile view count"""
+        self.profile_views += 1
+        db.session.commit()
 
     def generate_email_verification_token(self):
         """Generate a new email verification token"""
@@ -136,6 +166,39 @@ class User(db.Model, UserMixin):
     def invalidate_cache(self):
         """Invalidate all cached data for this user"""
         cache.delete(CacheManager.cache_key_for_user_leagues(self.id))
+
+
+class UserActivity(db.Model):
+    __tablename__ = 'user_activities'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    activity_type = db.Column(db.String(50), nullable=False)  # 'league_join', 'league_win', 'rank_change', etc.
+    description = db.Column(db.String(200), nullable=False)
+    league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'), nullable=True)
+    extra_data = db.Column(db.Text, nullable=True)  # Changed from 'metadata' to 'extra_data'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('activities', lazy=True, order_by='UserActivity.created_at.desc()'))
+    league = db.relationship('League', backref=db.backref('user_activities', lazy=True))
+
+    def __repr__(self):
+        return f'<UserActivity {self.user_id}: {self.activity_type}>'
+
+    def get_extra_data(self):
+        """Get extra_data as dictionary"""
+        if self.extra_data:
+            try:
+                return json.loads(self.extra_data)
+            except (json.JSONDecodeError, TypeError):
+                return {}
+        return {}
+
+    def set_extra_data(self, data_dict):
+        """Set extra_data from dictionary"""
+        self.extra_data = json.dumps(data_dict) if data_dict else None
+
 
 class Club(db.Model, UserMixin):
     __tablename__ = 'clubs'
@@ -589,13 +652,64 @@ class LeagueEntry(db.Model):
 
     fee_collected = db.Column(db.Boolean, default=False, nullable=False)
 
-    # current_rank = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    final_rank = db.Column(db.Integer, nullable=True)  # Store calculated final rank
+    previous_rank = db.Column(db.Integer, nullable=True)  # Track rank changes
+    rank_change_count = db.Column(db.Integer, default=0, nullable=False)  # How many times rank changed
 
     player1 = db.relationship('Player', foreign_keys=[player1_id], backref='entries_as_player1', lazy=True)
     player2 = db.relationship('Player', foreign_keys=[player2_id], backref='entries_as_player2', lazy=True)
     player3 = db.relationship('Player', foreign_keys=[player3_id], backref='entries_as_player3', lazy=True)
-
     user = db.relationship('User', backref='league_entries_user', lazy=True)
+
+
+    def calculate_and_store_rank(self):
+        """Calculate and store the final rank for this entry"""
+        if not self.league.is_finalized:
+            return None
+
+        # Get all entries in this league sorted by total score
+        all_entries = LeagueEntry.query.filter_by(league_id=self.league_id).all()
+
+        # Sort by total score (lower is better)
+        sorted_entries = sorted(all_entries, key=lambda e: e.total_score or float('inf'))
+
+        # Find and store rank
+        for rank, entry in enumerate(sorted_entries, 1):
+            if entry.id == self.id:
+                self.final_rank = rank
+                db.session.commit()
+                return rank
+
+        return None
+
+    def update_rank_if_changed(self, new_rank):
+        """Update rank and track changes"""
+        if self.final_rank != new_rank:
+            self.previous_rank = self.final_rank
+            self.final_rank = new_rank
+            self.rank_change_count += 1
+            db.session.commit()
+            return True
+        return False
+
+    def get_current_total_score(self):
+        """Calculate current total score from players"""
+        score = 0
+        if self.player1 and self.player1.current_score is not None:
+            score += self.player1.current_score
+        if self.player2 and self.player2.current_score is not None:
+            score += self.player2.current_score
+        if self.player3 and self.player3.current_score is not None:
+            score += self.player3.current_score
+        return score
+
+    @property
+    def total_score(self):
+        """Calculate total score dynamically from player scores."""
+        scores = [self.player1.current_score, self.player2.current_score, self.player3.current_score]
+        valid_scores = [score for score in scores if score is not None]
+        return sum(valid_scores) if valid_scores else None
 
     @property
     def display_entry_name(self):
