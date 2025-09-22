@@ -16,7 +16,7 @@ from .models import League, Player, PlayerBucket, LeagueEntry, PlayerScore, User
 from celery import shared_task
 from celery.exceptions import SoftTimeLimitExceeded
 from .stripe_client import process_payouts,  create_payout
-from .utils import send_winner_notification_email, send_push_notification, send_email
+from .utils import send_winner_notification_email, send_push_notification, send_email, send_big_mover_email, send_big_drop_email,send_leader_email, send_leader_lost_email
 from requests.exceptions import RequestException, Timeout,ConnectionError
 
 class CacheManager:
@@ -225,14 +225,21 @@ def update_player_scores(self, tour, end_time_iso):
                                 new_rank = new_rank_idx + 1
                                 old_rank = old_ranks.get(entry.user_id)
                                 if old_rank is not None:
+                                    # Big positive movement (5+ positions up)
                                     if (old_rank - new_rank) >= 5:
-                                        send_push_notification(entry.user_id, "Big Mover!", f"You've jumped up to P{new_rank} in '{league.name}'!")
-                                    if (new_rank - old_rank) >= 5:
-                                        send_push_notification(entry.user_id, "Uh Oh...", f"You've dropped to P{new_rank} in '{league.name}'.")
-                                    if new_rank == 1 and old_rank != 1:
-                                        send_push_notification(entry.user_id, "You're in the Lead!", f"You've moved into 1st place in '{league.name}'!")
-                                    if old_rank == 1 and new_rank != 1:
-                                        send_push_notification(entry.user_id, "Leader Change!", f"You've been knocked out of 1st place in '{league.name}'.")
+                                        send_big_mover_email(entry.user_id, new_rank, league.name)
+
+                                    # Big negative movement (5+ positions down)
+                                    elif (new_rank - old_rank) >= 5:
+                                        send_big_drop_email(entry.user_id, new_rank, league.name)
+
+                                    # Moved into 1st place
+                                    elif new_rank == 1 and old_rank != 1:
+                                        send_leader_email(entry.user_id, league.name)
+
+                                    # Lost 1st place
+                                    elif old_rank == 1 and new_rank != 1:
+                                        send_leader_lost_email(entry.user_id, new_rank, league.name)
 
                 except Exception as db_error:
                     logger.error(f"Database error during score update: {db_error}")

@@ -394,3 +394,116 @@ def validate_email_security(email):
 
     return True, "Valid email"
 
+
+def send_rank_change_email(user_id, subject, message, league_name):
+    """Send rank change notification email to user"""
+    try:
+        from .models import User
+
+        user = User.query.get(user_id)
+        if not user or not user.email:
+            current_app.logger.warning(f"Cannot send rank change email - user {user_id} not found or no email")
+            return False
+
+        # Create HTML email template
+        html_body = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #006a4e, #3498db); padding: 2rem; text-align: center;">
+                <h1 style="color: white; margin: 0;">🏌️ Fantasy Golf Update</h1>
+            </div>
+
+            <div style="padding: 2rem; background: white;">
+                <h2 style="color: #006a4e;">Hi {user.full_name}!</h2>
+
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px; margin: 1.5rem 0; border-left: 4px solid #006a4e;">
+                    <h3 style="margin-top: 0; color: #2c3e50;">{subject}</h3>
+                    <p style="font-size: 1.1rem; color: #333; margin: 0;">{message}</p>
+                </div>
+
+                <div style="text-align: center; margin: 2rem 0;">
+                    <a href="{url_for('league.view_league_details', league_id=get_league_id_by_name(league_name), _external=True) if get_league_id_by_name else '#'}"
+                       style="background: #006a4e; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                        View League Details
+                    </a>
+                </div>
+
+                <p style="color: #666; font-size: 0.9rem; text-align: center;">
+                    Keep up the great work! Good luck in the rest of the tournament.
+                </p>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 1rem; text-align: center; color: #666; font-size: 0.8rem;">
+                <p>© 2025 Fantasy Golf. All rights reserved.</p>
+                <p style="margin: 0;">
+                    <a href="#" style="color: #666; text-decoration: none;">Unsubscribe</a> |
+                    <a href="#" style="color: #666; text-decoration: none;">Update Preferences</a>
+                </p>
+            </div>
+        </div>
+        """
+
+        # Create plain text version
+        text_body = f"""
+        Hi {user.full_name}!
+
+        {subject}
+        {message}
+
+        League: {league_name}
+
+        Log in to your Fantasy Golf account to see the latest standings and track your progress.
+
+        Good luck!
+
+        The Fantasy Golf Team
+        """
+
+        # Send the email
+        msg = Message(
+            subject=f"Fantasy Golf: {subject}",
+            recipients=[user.email],
+            html=html_body,
+            body=text_body
+        )
+
+        mail.send(msg)
+        current_app.logger.info(f"Rank change email sent to {user.email}: {subject}")
+        return True
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to send rank change email to user {user_id}: {str(e)}")
+        return False
+
+def send_big_mover_email(user_id, new_rank, league_name):
+    """Send email for big positive rank movement (5+ positions up)"""
+    subject = "Big Mover! 📈"
+    message = f"You've jumped up to P{new_rank} in '{league_name}'! Your players are performing excellently."
+    return send_rank_change_email(user_id, subject, message, league_name)
+
+def send_big_drop_email(user_id, new_rank, league_name):
+    """Send email for big negative rank movement (5+ positions down)"""
+    subject = "Position Update 📉"
+    message = f"You've dropped to P{new_rank} in '{league_name}'. Don't worry - there's still time to climb back up!"
+    return send_rank_change_email(user_id, subject, message, league_name)
+
+def send_leader_email(user_id, league_name):
+    """Send email when user moves into 1st place"""
+    subject = "You're in the Lead! 🏆"
+    message = f"Congratulations! You've moved into 1st place in '{league_name}'. Keep it up!"
+    return send_rank_change_email(user_id, subject, message, league_name)
+
+def send_leader_lost_email(user_id, new_rank, league_name):
+    """Send email when user loses 1st place"""
+    subject = "Leader Change 👑"
+    message = f"You've been knocked out of 1st place in '{league_name}' and are now P{new_rank}. Time to fight back!"
+    return send_rank_change_email(user_id, subject, message, league_name)
+
+def get_league_id_by_name(league_name):
+    """Helper function to get league ID by name for URL generation"""
+    try:
+        from .models import League
+        league = League.query.filter_by(name=league_name).first()
+        return league.id if league else None
+    except:
+        return None
+
