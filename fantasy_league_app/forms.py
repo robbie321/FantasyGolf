@@ -154,3 +154,15 @@ class EditLeagueForm(FlaskForm):
     # --- END: New Tour Field ---
 
     submit = SubmitField('Update League')
+
+
+class ResendVerificationForm(FlaskForm):
+    email = StringField(
+        'Email Address',
+        validators=[
+            DataRequired(message="Email address is required."),
+            Email(message="Please enter a valid email address.")
+        ],
+        render_kw={"placeholder": "Enter your email address", "autocomplete": "email"}
+    )
+    submit = SubmitField('Send Verification Email')

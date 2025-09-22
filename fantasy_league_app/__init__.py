@@ -12,6 +12,8 @@ from .config import config, Config
 from celery import Celery
 from celery.schedules import crontab
 import mimetypes
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # --- Extension Initialization ---
 cache = Cache()
@@ -20,6 +22,7 @@ migrate = Migrate()
 mail = Mail()
 csrf = CSRFProtect()
 socketio = SocketIO()
+limiter = Limiter(key_func=get_remote_address)
 
 def make_celery(app=None):
     """Create and configure Celery instance"""
@@ -30,7 +33,10 @@ def make_celery(app=None):
         broker=redis_url,
         backend=redis_url,
         include=['fantasy_league_app.tasks']
+
     )
+    # IMPORTANT: Configure Celery to load from celeryconfig.py
+    celery.config_from_object('celeryconfig')
 
     # Basic configuration - beat schedule will be loaded from celeryconfig.py
     celery.conf.update(
@@ -68,7 +74,6 @@ login_manager = LoginManager()
 login_manager.login_view = 'auth.login_choice'
 login_manager.session_protection = "strong"
 
-
 _app_instance = None
 
 
@@ -99,13 +104,21 @@ def create_app(config_name=None):
     socketio.init_app(app)
     cache.init_app(app)
     login_manager.init_app(app)
+    Config.init_app(app)
 
     # Properly configure Celery with app context
     celery.conf.update(app.config)
 
+    # Initialize rate limiter
+    limiter = Limiter(
+    app,
+    storage_uri=os.environ.get('REDIS_URL', 'redis://localhost:6379/1'),
+    default_limits=["200 per day", "50 per hour"]
+)
+
     # IMPORTANT: Explicitly set the beat schedule
     from celery.schedules import crontab
-    celery.conf.beat_schedule = app.config.get('BEAT_SCHEDULE', {})
+    celery.conf.beat_schedule = app.config.get('beat_schedule', {})
 
     # Configure tasks to run with app context
     class ContextTask(celery.Task):

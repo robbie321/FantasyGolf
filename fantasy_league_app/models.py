@@ -1,4 +1,5 @@
 # --- File: fantasy_league_app/models.py (UPDATED - Add Tie-Breaker Question to League and Answer to LeagueEntry) ---
+import secrets
 from datetime import datetime, timedelta
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -42,7 +43,59 @@ class User(db.Model, UserMixin):
     created_leagues = db.relationship('League', back_populates='creator', foreign_keys='League.creator_id')
     # created_public_leagues = db.relationship('League', back_populates='site_admin', foreign_keys='League.site_admin_id')
 
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    email_verification_token = db.Column(db.String(100), unique=True, nullable=True)
+    email_verification_sent_at = db.Column(db.DateTime, nullable=True)
+
+    def __init__(self, **kwargs):
+        super(User, self).__init__(**kwargs)
+        # Generate verification token for new users
+        if not self.email_verification_token:
+            self.generate_email_verification_token()
+
+    def generate_email_verification_token(self):
+        """Generate a new email verification token"""
+        self.email_verification_token = secrets.token_urlsafe(32)
+        self.email_verification_sent_at = datetime.utcnow()
+        return self.email_verification_token
+
+    def verify_email(self):
+        """Mark email as verified and clear verification token"""
+        self.email_verified = True
+        self.email_verification_token = None
+        self.email_verification_sent_at = None
+        db.session.commit()
+
+    def can_resend_verification_email(self):
+        """Check if user can resend verification email (rate limiting)"""
+        if not self.email_verification_sent_at:
+            return True
+
+        # Allow resend after 5 minutes
+        time_since_last_send = datetime.utcnow() - self.email_verification_sent_at
+        return time_since_last_send > timedelta(minutes=5)
+
+    def is_verification_token_expired(self):
+        """Check if verification token is expired (24 hours)"""
+        if not self.email_verification_sent_at:
+            return True
+
+        time_since_sent = datetime.utcnow() - self.email_verification_sent_at
+        return time_since_sent > timedelta(hours=24)
+
+    @staticmethod
+    def verify_email_token(token):
+        """Verify email verification token and return user if valid"""
+        user = User.query.filter_by(email_verification_token=token).first()
+
+        if user and not user.is_verification_token_expired():
+            return user
+        return None
+
     def get_id(self):
+        """Required for Flask-Login. Modified to check email verification."""
+        if not self.email_verified:
+            return None  # This will prevent login for unverified users
         return f"user-{self.id}"
 
 

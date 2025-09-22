@@ -167,10 +167,10 @@
     text-align: center;
 }
 
-.leaderboard-table.wide thead th:nth-child(3),
-.leaderboard-table.wide thead th:nth-child(4),
-.leaderboard-table.wide thead th:nth-child(5) {
-    text-align: center;
+.leaderboard-table.wide thead th:nth-child(3), /* TOTAL */
+.leaderboard-table.wide thead th:nth-child(4), /* THRU */
+.leaderboard-table.wide thead th:nth-child(5)  /* RND */ {
+    text-align: center !important;
     width: 80px;
 }
 
@@ -205,6 +205,33 @@
     color: var(--text-secondary);
 }
 
+/* Center align the score cells in body rows */
+.leaderboard-table.wide tbody td:nth-child(3), /* TOTAL column */
+.leaderboard-table.wide tbody td:nth-child(4), /* THRU column */
+.leaderboard-table.wide tbody td:nth-child(5)  /* RND column */ {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Position column (POS) should also be centered */
+.leaderboard-table.wide thead th:nth-child(1),
+.leaderboard-table.wide tbody td:nth-child(1) {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* NAME column should be left-aligned */
+.leaderboard-table.wide thead th:nth-child(2),
+.leaderboard-table.wide tbody td:nth-child(2) {
+    text-align: left !important;
+    vertical-align: middle !important;
+}
+
+/* Override any JavaScript inline styles */
+.leaderboard-table.wide tbody tr td {
+    vertical-align: middle !important;
+}
+
 /* Player Name Styling */
 .leaderboard-table.wide .player-name {
     font-weight: 600;
@@ -226,14 +253,16 @@
 .leaderboard-table.wide .score,
 .leaderboard-table.wide .score-under,
 .leaderboard-table.wide .score-over,
-.leaderboard-table.wide .score-even {
-    font-weight: 700;
-    font-size: 1rem;
-    text-align: center;
-    padding: 0.25rem 0.5rem;
-    border-radius: 6px;
-    min-width: 50px;
+.leaderboard-table.wide .score-even,
+.leaderboard-table.wide .score-positive,
+.leaderboard-table.wide .score-negative {
+    text-align: center !important;
     display: inline-block;
+    margin: 0 auto;
+}
+
+.leaderboard-table.wide tbody td[style*="text-align: center"] {
+    text-align: center !important;
 }
 
 /* Score Colors - Consistent with your existing classes */
@@ -357,6 +386,16 @@
     .leaderboard-table.wide thead th:nth-child(4),
     .leaderboard-table.wide tbody td:nth-child(4) {
         display: none;
+    }
+
+    .leaderboard-table.wide thead th:nth-child(3),
+    .leaderboard-table.wide thead th:nth-child(4),
+    .leaderboard-table.wide thead th:nth-child(5),
+    .leaderboard-table.wide tbody td:nth-child(3),
+    .leaderboard-table.wide tbody td:nth-child(4),
+    .leaderboard-table.wide tbody td:nth-child(5) {
+        text-align: center !important;
+        padding: 0.75rem 0.5rem;
     }
 }
 

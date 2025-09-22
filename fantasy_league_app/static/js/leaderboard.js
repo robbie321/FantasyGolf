@@ -139,7 +139,6 @@ function renderLeaderboard(stats) {
                     ${player.current_pos || index + 1}
                 </td>
                 <td class="player-name" style="text-align: left;">
-                    <span class="flag"></span>
                     ${player.player_name || 'Unknown Player'}
                 </td>
                 <td class="score ${getScoreClass(totalScore)}" style="text-align: center; font-weight: 700;">
