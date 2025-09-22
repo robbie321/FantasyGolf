@@ -1,5 +1,7 @@
 import os
 from celery.schedules import crontab
+import logging
+from logging.handlers import RotatingFileHandler
 
 # Update your fantasy_league_app/config.py
 # Replace the Config class with this cleaned version:

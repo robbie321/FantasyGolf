@@ -18,7 +18,8 @@ psycopg2-binary
 redis
 celery==5.2.7
 Flask-Caching
-pywebpush
+pywebpush==1.14.0
+cryptography>=3.4.8
 stripe
 email_validator
 celery-redbeat==2.0.0
