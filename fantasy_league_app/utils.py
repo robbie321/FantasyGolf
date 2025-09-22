@@ -507,3 +507,510 @@ def get_league_id_by_name(league_name):
     except:
         return None
 
+
+def log_user_activity(user_id, activity_type, description, league_id=None, extra_data=None):
+    """Log user activity for the activity feed"""
+    from .models import UserActivity
+
+    activity = UserActivity(
+        user_id=user_id,
+        activity_type=activity_type,
+        description=description,
+        league_id=league_id
+    )
+
+    # Set extra data if provided
+    if extra_data:
+        activity.set_extra_data(extra_data)
+
+    db.session.add(activity)
+    db.session.commit()
+
+def get_recent_activity(user_id, limit=10):
+    """Get recent user activity for the activity feed"""
+    from .models import UserActivity
+
+    activities = UserActivity.query.filter_by(user_id=user_id).order_by(
+        UserActivity.created_at.desc()
+    ).limit(limit).all()
+
+    activity_list = []
+    for activity in activities:
+        activity_list.append({
+            'type': activity.activity_type,
+            'description': activity.description,
+            'time_ago': get_time_ago(activity.created_at),
+            'extra_data': activity.get_extra_data()
+        })
+
+    return activity_list
+
+def update_user_achievements(user_id):
+    """Check and update user achievements based on current stats"""
+    from .models import User
+
+    user = User.query.get(user_id)
+    if not user:
+        return
+
+    # Get current achievements
+    achievements = user.get_achievements()
+    stats = calculate_user_stats(user_id)
+
+    # Check each achievement
+    achievement_updates = []
+
+    # First Timer - Join first league
+    if stats['leagues_played'] >= 1 and not achievements.get('first_timer'):
+        achievements['first_timer'] = True
+        achievement_updates.append('first_timer')
+
+    # Victory Royale - Win first league
+    if stats['leagues_won'] >= 1 and not achievements.get('victory_royale'):
+        achievements['victory_royale'] = True
+        achievement_updates.append('victory_royale')
+
+    # Regular Player - Play 5 leagues
+    if stats['leagues_played'] >= 5 and not achievements.get('regular_player'):
+        achievements['regular_player'] = True
+        achievement_updates.append('regular_player')
+
+    # Triple Crown - Win 3 leagues
+    if stats['leagues_won'] >= 3 and not achievements.get('triple_crown'):
+        achievements['triple_crown'] = True
+        achievement_updates.append('triple_crown')
+
+    # Hot Streak - Win 3 in a row
+    if stats['current_streak'] >= 3 and not achievements.get('hot_streak'):
+        achievements['hot_streak'] = True
+        achievement_updates.append('hot_streak')
+
+    # Century Club - Earn €100
+    if stats['total_winnings'] >= 100 and not achievements.get('century_club'):
+        achievements['century_club'] = True
+        achievement_updates.append('century_club')
+
+    # Save updated achievements
+    if achievement_updates:
+        user.set_achievements(achievements)
+        db.session.commit()
+
+        # Send achievement notification emails
+        for achievement in achievement_updates:
+            send_achievement_email(user_id, achievement)
+
+def send_achievement_email(user_id, achievement_name):
+    """Send email notification for new achievement"""
+    from .models import User
+
+    user = User.query.get(user_id)
+    if not user or not user.email:
+        return
+
+    achievement_data = {
+        'first_timer': {
+            'title': 'First Timer Achievement Unlocked!',
+            'description': 'You\'ve joined your first league and started your fantasy golf journey!',
+            'icon': '🎯'
+        },
+        'victory_royale': {
+            'title': 'Victory Royale Achievement Unlocked!',
+            'description': 'Congratulations on your first league victory!',
+            'icon': '🏆'
+        },
+        'regular_player': {
+            'title': 'Regular Player Achievement Unlocked!',
+            'description': 'You\'ve played 5 leagues and are becoming a seasoned player!',
+            'icon': '⭐'
+        },
+        'triple_crown': {
+            'title': 'Triple Crown Achievement Unlocked!',
+            'description': 'Amazing! You\'ve won 3 leagues - you\'re on fire!',
+            'icon': '👑'
+        },
+        'hot_streak': {
+            'title': 'Hot Streak Achievement Unlocked!',
+            'description': 'Incredible! You\'ve won 3 leagues in a row!',
+            'icon': '🔥'
+        },
+        'century_club': {
+            'title': 'Century Club Achievement Unlocked!',
+            'description': 'You\'ve earned over €100 in total winnings!',
+            'icon': '💰'
+        }
+    }
+
+    if achievement_name not in achievement_data:
+        return
+
+    achievement = achievement_data[achievement_name]
+
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #ffd700, #ffed4e); padding: 2rem; text-align: center; border-radius: 15px 15px 0 0;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">{achievement['icon']}</div>
+            <h1 style="color: #2c3e50; margin: 0; font-size: 2rem;">Achievement Unlocked!</h1>
+        </div>
+
+        <div style="padding: 2rem; background: white; border-radius: 0 0 15px 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <h2 style="color: #006a4e; text-align: center; margin-bottom: 1rem;">{achievement['title']}</h2>
+
+            <p style="font-size: 1.1rem; color: #333; text-align: center; line-height: 1.6;">
+                {achievement['description']}
+            </p>
+
+            <div style="text-align: center; margin: 2rem 0;">
+                <a href="{url_for('main.profile', _external=True)}"
+                   style="background: #006a4e; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">
+                    View Your Profile
+                </a>
+            </div>
+
+            <p style="color: #666; font-size: 0.9rem; text-align: center;">
+                Keep playing to unlock more achievements and climb the leaderboards!
+            </p>
+        </div>
+    </div>
+    """
+
+    try:
+        msg = Message(
+            subject=f"🏆 {achievement['title']}",
+            recipients=[user.email],
+            html=html_body
+        )
+        mail.send(msg)
+        current_app.logger.info(f"Achievement email sent to {user.email}: {achievement_name}")
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to send achievement email: {e}")
+
+# Hook into existing functions to track activities
+def track_league_join(user_id, league_id):
+    """Track when user joins a league"""
+    from .models import League
+
+    league = League.query.get(league_id)
+    if league:
+        log_user_activity(
+            user_id=user_id,
+            activity_type='league_join',
+            description=f"Joined '{league.name}'",
+            league_id=league_id,
+            extra_data={
+                'league_name': league.name,
+                'entry_fee': float(league.entry_fee) if league.entry_fee else 0
+            }
+        )
+
+        # Update achievements
+        update_user_achievements(user_id)
+
+
+def track_league_win(user_id, league_id):
+    """Track when user wins a league"""
+    from .models import League
+
+    league = League.query.get(league_id)
+    if league:
+        # Calculate winnings
+        total_pot = len(league.entries) * league.entry_fee if league.entries else 0
+        winnings = total_pot * 0.8  # Adjust based on your prize structure
+
+        log_user_activity(
+            user_id=user_id,
+            activity_type='league_win',
+            description=f"Won '{league.name}'!",
+            league_id=league_id,
+            extra_data={
+                'league_name': league.name,
+                'winnings': round(winnings, 2),
+                'total_players': len(league.entries) if league.entries else 0
+            }
+        )
+
+        # Update achievements
+        update_user_achievements(user_id)
+
+
+def calculate_user_stats(user_id):
+    """Calculate comprehensive user statistics"""
+    from .models import LeagueEntry, League
+
+    # Get all user's league entries
+    entries = LeagueEntry.query.filter_by(user_id=user_id).all()
+
+    # Basic counts
+    leagues_played = len(entries)
+    leagues_won = len([e for e in entries if e.league.winner_id == user_id])
+
+    # Calculate win percentage
+    win_percentage = round((leagues_won / leagues_played * 100), 1) if leagues_played > 0 else 0
+
+    # Calculate total winnings
+    total_winnings = calculate_total_winnings(user_id)
+
+    # Calculate current streak (consecutive wins)
+    current_streak = calculate_current_streak(user_id)
+
+    # Calculate days active (days since first league)
+    days_active = calculate_days_active(user_id)
+
+    # Calculate user level based on activities
+    user_level = calculate_user_level(leagues_played, leagues_won, total_winnings)
+
+    return {
+        'leagues_played': leagues_played,
+        'leagues_won': leagues_won,
+        'win_percentage': win_percentage,
+        'total_winnings': total_winnings,
+        'current_streak': current_streak,
+        'days_active': days_active,
+        'user_level': user_level,
+        'average_rank': calculate_average_rank(entries),
+        'best_rank': calculate_best_rank(entries),
+        'leagues_this_month': calculate_leagues_this_month(user_id)
+    }
+
+def calculate_total_winnings(user_id):
+    """Calculate total prize money won by user"""
+    from .models import League
+
+    # Get all leagues won by this user
+    won_leagues = League.query.filter_by(winner_id=user_id, is_finalized=True).all()
+
+    total = 0
+    for league in won_leagues:
+        # Calculate prize based on your business logic
+        if league.entries:
+            total_pot = len(league.entries) * league.entry_fee
+            # Assuming winner gets 80% of pot (adjust based on your model)
+            prize = total_pot * 0.8
+            total += prize
+
+    return round(total, 2)
+
+def calculate_current_streak(user_id):
+    """Calculate current consecutive wins streak"""
+    from .models import League, LeagueEntry
+
+    # Get user's recent finalized leagues ordered by date
+    recent_leagues = db.session.query(League).join(LeagueEntry).filter(
+        LeagueEntry.user_id == user_id,
+        League.is_finalized == True
+    ).order_by(desc(League.end_date)).limit(20).all()
+
+    streak = 0
+    for league in recent_leagues:
+        if league.winner_id == user_id:
+            streak += 1
+        else:
+            break  # Streak broken
+
+    return streak
+
+def calculate_days_active(user_id):
+    """Calculate days since user first joined a league"""
+    from .models import LeagueEntry
+
+    first_entry = LeagueEntry.query.filter_by(user_id=user_id).order_by(LeagueEntry.id).first()
+    if not first_entry:
+        return 0
+
+    # Use the created_at field or league start_date as fallback
+    first_date = getattr(first_entry, 'created_at', first_entry.league.start_date)
+    if first_date:
+        days_active = (datetime.utcnow() - first_date).days
+        return max(0, days_active)
+    return 0
+
+def calculate_user_level(leagues_played, leagues_won, total_winnings):
+    """Calculate user level based on activity and performance"""
+
+    # Simple leveling system - adjust as needed
+    points = 0
+    points += leagues_played * 10  # 10 points per league
+    points += leagues_won * 50     # 50 bonus points per win
+    points += int(total_winnings)  # 1 point per euro won
+
+    # Level thresholds
+    if points < 50:
+        return 1
+    elif points < 150:
+        return 2
+    elif points < 300:
+        return 3
+    elif points < 500:
+        return 4
+    elif points < 750:
+        return 5
+    else:
+        return min(10, 5 + (points - 750) // 200)  # Cap at level 10
+
+def calculate_average_rank(entries):
+    """Calculate user's average finishing position"""
+    if not entries:
+        return 0
+
+    total_rank = 0
+    finalized_count = 0
+
+    for entry in entries:
+        if entry.league.is_finalized and hasattr(entry, 'final_rank') and entry.final_rank:
+            total_rank += entry.final_rank
+            finalized_count += 1
+
+    return round(total_rank / finalized_count, 1) if finalized_count > 0 else 0
+
+def calculate_best_rank(entries):
+    """Find user's best (lowest) finishing position"""
+    best = float('inf')
+
+    for entry in entries:
+        if entry.league.is_finalized and hasattr(entry, 'final_rank') and entry.final_rank:
+            if entry.final_rank < best:
+                best = entry.final_rank
+
+    return best if best != float('inf') else 0
+
+def calculate_leagues_this_month(user_id):
+    """Count leagues played this month"""
+    from .models import LeagueEntry, League
+
+    start_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    count = db.session.query(LeagueEntry).join(League).filter(
+        LeagueEntry.user_id == user_id,
+        League.start_date >= start_of_month
+    ).count()
+
+    return count
+
+def get_enhanced_league_history(user_id, limit=20):
+    """Get detailed league history for the user"""
+    from .models import LeagueEntry, League
+
+    entries = db.session.query(LeagueEntry).join(League).filter(
+        LeagueEntry.user_id == user_id
+    ).order_by(desc(League.end_date)).limit(limit).all()
+
+    history = []
+    for entry in entries:
+        league = entry.league
+
+        # Use stored final_rank if available, otherwise calculate
+        rank = getattr(entry, 'final_rank', None) or calculate_entry_rank(entry)
+
+        # Calculate winnings for this league
+        winnings = 0
+        if league.winner_id == user_id and league.is_finalized:
+            total_pot = len(league.entries) * league.entry_fee
+            winnings = total_pot * 0.8  # Adjust based on your prize structure
+
+        # Count total players
+        total_players = len(league.entries)
+
+        history.append({
+            'league_id': league.id,
+            'league_name': league.name,
+            'rank': rank,
+            'total_players': total_players,
+            'winnings': round(winnings, 2),
+            'is_winner': league.winner_id == user_id,
+            'date_finished': league.end_date.strftime('%Y-%m-%d') if league.is_finalized else None,
+            'is_active': not league.is_finalized
+        })
+
+    return history
+
+def calculate_entry_rank(entry):
+    """Calculate the rank of a specific entry in its league"""
+    # Get all entries in the same league
+    all_entries = entry.league.entries
+
+    # Sort by total score (assuming lower score is better)
+    sorted_entries = sorted(all_entries, key=lambda e: e.total_score or float('inf'))
+
+    # Find the rank (1-indexed)
+    for rank, e in enumerate(sorted_entries, 1):
+        if e.id == entry.id:
+            return rank
+
+    return None
+
+def get_recent_activity(user_id, limit=10):
+    """Get recent user activity for the activity feed"""
+    from .models import UserActivity
+
+    # Try to get activities from UserActivity model first
+    try:
+        activities = UserActivity.query.filter_by(user_id=user_id).order_by(
+            desc(UserActivity.created_at)
+        ).limit(limit).all()
+
+        activity_list = []
+        for activity in activities:
+            activity_list.append({
+                'type': activity.activity_type,
+                'description': activity.description,
+                'time_ago': get_time_ago(activity.created_at),
+                'extra_data': activity.get_extra_data() if hasattr(activity, 'get_extra_data') else {}
+            })
+
+        if activity_list:
+            return activity_list
+
+    except Exception as e:
+        # If UserActivity table doesn't exist yet, fall back to generating from league data
+        current_app.logger.warning(f"UserActivity table not available: {e}")
+
+    # Fallback: Generate activity from league entries
+    from .models import LeagueEntry, League
+
+    recent_entries = db.session.query(LeagueEntry).join(League).filter(
+        LeagueEntry.user_id == user_id
+    ).order_by(desc(LeagueEntry.id)).limit(limit).all()
+
+    activities = []
+    for entry in recent_entries:
+        league = entry.league
+
+        # League join activity
+        activities.append({
+            'type': 'league_join',
+            'description': f"Joined '{league.name}'",
+            'time_ago': get_time_ago(getattr(entry, 'created_at', league.start_date)),
+        })
+
+        # League win activity (if won and finalized)
+        if league.winner_id == user_id and league.is_finalized:
+            activities.append({
+                'type': 'league_win',
+                'description': f"Won '{league.name}'!",
+                'time_ago': get_time_ago(league.end_date),
+            })
+
+    # Sort by most recent and limit
+    return activities[:limit]
+
+def get_time_ago(date_time):
+    """Convert datetime to human-readable time ago string"""
+    if not date_time:
+        return "Unknown"
+
+    now = datetime.utcnow()
+    diff = now - date_time
+
+    if diff.days > 30:
+        return f"{diff.days // 30} month{'s' if diff.days // 30 != 1 else ''} ago"
+    elif diff.days > 0:
+        return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
+    elif diff.seconds > 3600:
+        hours = diff.seconds // 3600
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    elif diff.seconds > 60:
+        minutes = diff.seconds // 60
+        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+    else:
+        return "Just now"
+

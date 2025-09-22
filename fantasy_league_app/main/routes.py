@@ -5,7 +5,7 @@ from fantasy_league_app.models import League, LeagueEntry, User, Club
 from . import main_bp
 from fantasy_league_app import db, stripe_client
 from fantasy_league_app.utils import password_reset_required
-from sqlalchemy import func, distinct
+from sqlalchemy import func, distinct, desc
 from datetime import datetime, timedelta
 import requests
 from ..data_golf_client import DataGolfClient
@@ -228,65 +228,291 @@ def club_dashboard():
 @main_bp.route('/profile/<int:user_id>')
 @user_required
 def view_profile(user_id):
-    user = User.query.get_or_404(user_id)
+    # Basic user info
+    user = current_user
 
-    # Cache user profile data
-    @cache_result('user_data',
-                  key_func=lambda: CacheManager.make_key('profile', user_id),
-                  timeout=600)  # 10 minute cache
-    def get_user_profile_data():
-        entries = LeagueEntry.query.filter_by(user_id=user.id).all()
+    # Calculate comprehensive statistics
+    stats = calculate_user_stats(user.id)
 
-        leagues_played = len(entries)
-        leagues_won = League.query.filter_by(winner_id=user.id, is_finalized=True).count()
-        total_winnings = user.total_winnings or 0.0
-        win_percentage = (leagues_won / leagues_played * 100) if leagues_played > 0 else 0
+    # Get league history with enhanced data
+    league_history = get_enhanced_league_history(user.id)
 
-        stats = {
-            'leagues_played': leagues_played,
-            'leagues_won': leagues_won,
-            'win_percentage': f"{win_percentage:.1f}%",
-            'total_winnings': f"€{total_winnings:.2f}"
-        }
-
-        # Prepare league history data
-        league_history = []
-        for entry in entries:
-            league = entry.league
-            rank = "N/A"
-            winnings = 0.0
-
-            if league.is_finalized:
-                leaderboard = league.get_leaderboard()  # This is cached
-                user_entry = next(
-                    (item for item in leaderboard if item.get('entry_id') == entry.id),
-                    None
-                )
-                if user_entry:
-                    rank = user_entry.get('position', 'N/A')
-
-                if league.winner_id == user.id:
-                    winnings = league.entry_fee * len(league.entries)
-
-            league_history.append({
-                'league_name': league.name,
-                'league_id': league.id,
-                'rank': rank,
-                'is_winner': league.winner_id == user.id,
-                'winnings': f"€{winnings:.2f}"
-            })
-
-        return {
-            'stats': stats,
-            'league_history': league_history
-        }
-
-    profile_data = get_user_profile_data()
+    # Get recent activity
+    recent_activity = get_recent_activity(user.id)
 
     return render_template('main/profile.html',
                          user=user,
-                         stats=profile_data['stats'],
-                         league_history=profile_data['league_history'])
+                         stats=stats,
+                         league_history=league_history,
+                         recent_activity=recent_activity)
+
+
+def calculate_user_stats(user_id):
+    """Calculate comprehensive user statistics"""
+    from ..models import LeagueEntry, League
+
+    # Get all user's league entries
+    entries = LeagueEntry.query.filter_by(user_id=user_id).all()
+
+    # Basic counts
+    leagues_played = len(entries)
+    leagues_won = len([e for e in entries if e.league.winner_id == user_id])
+
+    # Calculate win percentage
+    win_percentage = round((leagues_won / leagues_played * 100), 1) if leagues_played > 0 else 0
+
+    # Calculate total winnings (you'll need to add this logic based on your prize structure)
+    total_winnings = calculate_total_winnings(user_id)
+
+    # Calculate current streak (consecutive wins)
+    current_streak = calculate_current_streak(user_id)
+
+    # Calculate days active (days since first league)
+    days_active = calculate_days_active(user_id)
+
+    # Calculate user level based on activities
+    user_level = calculate_user_level(leagues_played, leagues_won, total_winnings)
+
+    return {
+        'leagues_played': leagues_played,
+        'leagues_won': leagues_won,
+        'win_percentage': win_percentage,
+        'total_winnings': total_winnings,
+        'current_streak': current_streak,
+        'days_active': days_active,
+        'user_level': user_level,
+        'average_rank': calculate_average_rank(entries),
+        'best_rank': calculate_best_rank(entries),
+        'leagues_this_month': calculate_leagues_this_month(user_id)
+    }
+
+
+def calculate_total_winnings(user_id):
+    """Calculate total prize money won by user"""
+    from ..models import League
+
+    # Get all leagues won by this user
+    won_leagues = League.query.filter_by(winner_id=user_id, is_finalized=True).all()
+
+    total = 0
+    for league in won_leagues:
+        # Calculate prize based on your business logic
+        # This is a simplified version - adjust based on your prize structure
+        if league.entries:
+            total_pot = len(league.entries) * league.entry_fee
+            # Assuming winner gets 80% of pot (adjust based on your model)
+            prize = total_pot * 0.8
+            total += prize
+
+    return round(total, 2)
+
+def calculate_current_streak(user_id):
+    """Calculate current consecutive wins streak"""
+    from ..models import League, LeagueEntry
+
+    # Get user's recent finalized leagues ordered by date
+    recent_leagues = db.session.query(League).join(LeagueEntry).filter(
+        LeagueEntry.user_id == user_id,
+        League.is_finalized == True
+    ).order_by(desc(League.end_date)).limit(20).all()
+
+    streak = 0
+    for league in recent_leagues:
+        if league.winner_id == user_id:
+            streak += 1
+        else:
+            break  # Streak broken
+
+    return streak
+
+def calculate_days_active(user_id):
+    """Calculate days since user first joined a league"""
+    from ..models import LeagueEntry
+
+    first_entry = LeagueEntry.query.filter_by(user_id=user_id).order_by(LeagueEntry.id).first()
+    if not first_entry:
+        return 0
+
+    # Assuming you have a created_at field on LeagueEntry
+    # If not, you can use the league's start_date
+    first_date = getattr(first_entry, 'created_at', first_entry.league.start_date)
+    days_active = (datetime.utcnow() - first_date).days
+    return max(0, days_active)
+
+def calculate_user_level(leagues_played, leagues_won, total_winnings):
+    """Calculate user level based on activity and performance"""
+
+    # Simple leveling system - adjust as needed
+    points = 0
+    points += leagues_played * 10  # 10 points per league
+    points += leagues_won * 50     # 50 bonus points per win
+    points += int(total_winnings)  # 1 point per euro won
+
+    # Level thresholds
+    if points < 50:
+        return 1
+    elif points < 150:
+        return 2
+    elif points < 300:
+        return 3
+    elif points < 500:
+        return 4
+    elif points < 750:
+        return 5
+    else:
+        return min(10, 5 + (points - 750) // 200)  # Cap at level 10
+
+def calculate_average_rank(entries):
+    """Calculate user's average finishing position"""
+    if not entries:
+        return 0
+
+    total_rank = 0
+    finalized_count = 0
+
+    for entry in entries:
+        if entry.league.is_finalized:
+            # You'll need to implement rank calculation logic
+            # This is a placeholder - adjust based on how you store ranks
+            rank = calculate_entry_rank(entry)
+            if rank:
+                total_rank += rank
+                finalized_count += 1
+
+    return round(total_rank / finalized_count, 1) if finalized_count > 0 else 0
+
+def calculate_best_rank(entries):
+    """Find user's best (lowest) finishing position"""
+    best = float('inf')
+
+    for entry in entries:
+        if entry.league.is_finalized:
+            rank = calculate_entry_rank(entry)
+            if rank and rank < best:
+                best = rank
+
+    return best if best != float('inf') else 0
+
+def calculate_entry_rank(entry):
+    """Calculate the rank of a specific entry in its league"""
+    # Get all entries in the same league
+    all_entries = entry.league.entries
+
+    # Sort by total score (assuming lower score is better)
+    sorted_entries = sorted(all_entries, key=lambda e: e.total_score or float('inf'))
+
+    # Find the rank (1-indexed)
+    for rank, e in enumerate(sorted_entries, 1):
+        if e.id == entry.id:
+            return rank
+
+    return None
+
+def calculate_leagues_this_month(user_id):
+    """Count leagues played this month"""
+    from ..models import LeagueEntry, League
+
+    start_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    count = db.session.query(LeagueEntry).join(League).filter(
+        LeagueEntry.user_id == user_id,
+        League.start_date >= start_of_month
+    ).count()
+
+    return count
+
+def get_enhanced_league_history(user_id, limit=20):
+    """Get detailed league history for the user"""
+    from ..models import LeagueEntry, League
+
+    entries = db.session.query(LeagueEntry).join(League).filter(
+        LeagueEntry.user_id == user_id
+    ).order_by(desc(League.end_date)).limit(limit).all()
+
+    history = []
+    for entry in entries:
+        league = entry.league
+
+        # Calculate rank in this league
+        rank = calculate_entry_rank(entry)
+
+        # Calculate winnings for this league
+        winnings = 0
+        if league.winner_id == user_id and league.is_finalized:
+            total_pot = len(league.entries) * league.entry_fee
+            winnings = total_pot * 0.8  # Adjust based on your prize structure
+
+        # Count total players
+        total_players = len(league.entries)
+
+        history.append({
+            'league_id': league.id,
+            'league_name': league.name,
+            'rank': rank,
+            'total_players': total_players,
+            'winnings': round(winnings, 2),
+            'is_winner': league.winner_id == user_id,
+            'date_finished': league.end_date.strftime('%Y-%m-%d') if league.is_finalized else None,
+            'is_active': not league.is_finalized
+        })
+
+    return history
+
+def get_recent_activity(user_id, limit=10):
+    """Get recent user activity for the activity feed"""
+    from ..models import LeagueEntry, League
+
+    activities = []
+
+    # Get recent league joins
+    recent_entries = db.session.query(LeagueEntry).join(League).filter(
+        LeagueEntry.user_id == user_id
+    ).order_by(desc(LeagueEntry.id)).limit(limit).all()
+
+    for entry in recent_entries:
+        league = entry.league
+
+        # League join activity
+        activities.append({
+            'type': 'league_join',
+            'description': f"Joined '{league.name}'",
+            'time_ago': get_time_ago(getattr(entry, 'created_at', league.start_date)),
+            'icon': 'plus-circle'
+        })
+
+        # League win activity (if won and finalized)
+        if league.winner_id == user_id and league.is_finalized:
+            activities.append({
+                'type': 'league_win',
+                'description': f"Won '{league.name}'!",
+                'time_ago': get_time_ago(league.end_date),
+                'icon': 'trophy'
+            })
+
+    # Sort by most recent and limit
+    activities.sort(key=lambda x: x['time_ago'], reverse=True)
+    return activities[:limit]
+
+def get_time_ago(date_time):
+    """Convert datetime to human-readable time ago string"""
+    if not date_time:
+        return "Unknown"
+
+    now = datetime.utcnow()
+    diff = now - date_time
+
+    if diff.days > 30:
+        return f"{diff.days // 30} month{'s' if diff.days // 30 != 1 else ''} ago"
+    elif diff.days > 0:
+        return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
+    elif diff.seconds > 3600:
+        hours = diff.seconds // 3600
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    elif diff.seconds > 60:
+        minutes = diff.seconds // 60
+        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+    else:
+        return "Just now"
 
 # --- Stripe Connect Onboarding Routes ---
 
