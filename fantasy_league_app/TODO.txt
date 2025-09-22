@@ -37,15 +37,15 @@ Tasks []
 #### USER ####
 ##############
 [✅] show vaild data on the 3 boxes on the user dashboard
-[] if player is overpar change total score background to green and add + before total score
+[✅] if player is overpar change total score background to green and add + before total score
 [✅] when a player misses the cut, add +10 to their score
 [✅] fix "View leage details" dropdown on the view leage page
 [✅] show join league button at the top right on desktop
 [] load top 30 players. show a button to load 30 more
 [✅] fix winner banner. its not showing on completed leagues
 [✅] add back button to leaderboard
-[] change bubble score to odds and add player score beside their name on the team view
-[] fix dropdown to view users 3 player selection on leaderboard
+[✅] change bubble score to odds and add player score beside their name on the team view
+[✅] fix dropdown to view users 3 player selection on leaderboard
 [✅] fix display of messages to screen
 
 

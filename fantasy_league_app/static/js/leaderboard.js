@@ -145,7 +145,7 @@ function renderLeaderboard(stats) {
                 <td class="score ${getScoreClass(totalScore)}" style="text-align: center; font-weight: 700;">
                     ${formatScore(totalScore)}
                 </td>
-                <td style="text-align: center; font-weight: 600;">
+                <td style="text-align: center; font-weight: 600; color:white;">
                     ${player.thru === 18 ? 'F' : (player.thru || 'F')}
                 </td>
                 <td class="score ${getScoreClass(todayScore)}" style="text-align: center; font-weight: 600;">
