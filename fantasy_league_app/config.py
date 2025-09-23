@@ -30,6 +30,9 @@ class Config:
     # Redis URL (used by production and some other configs)
     redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
 
+    RATELIMIT_STORAGE_URI = redis_url
+    RATELIMIT_DEFAULT = "200 per day, 50 per hour"
+
     # NEW FORMAT CELERY CONFIGURATION ONLY
     broker_url = redis_url
     result_backend = redis_url
