@@ -251,6 +251,11 @@ def get_tournament_details(bucket_id):
 def vapid_public_key():
     """Provides the VAPID public key to the frontend."""
     public_key = current_app.config.get('VAPID_PUBLIC_KEY')
+    private_key = current_app.config.get('VAPID_PRIVATE_KEY')
+
+    print(f"DEBUG: Public key from config: {public_key}")
+    print(f"DEBUG: Private key from config: {private_key[:20]}...")  # Only first 20 chars for security
+    print(f"DEBUG: Private key length: {len(private_key) if private_key else 0}")
 
     # Check if the key is missing or is still the default placeholder
     if not public_key or 'YOUR_GENERATED_PUBLIC_KEY' in public_key:
