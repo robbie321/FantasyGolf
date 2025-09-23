@@ -73,7 +73,7 @@ login_manager.session_protection = "strong"
 # Rate Limiter - configure with storage URI and defaults
 limiter = Limiter(
     key_func=get_remote_address,
-    storage_uri=os.environ.get('REDIS_URL', 'redis://localhost:6379/1'),
+    storage_uri=os.environ.get('redis_url', 'redis://localhost:6379/1'),
     default_limits=["200 per day", "50 per hour"]
 )
 
