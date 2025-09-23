@@ -166,3 +166,29 @@ class ResendVerificationForm(FlaskForm):
         render_kw={"placeholder": "Enter your email address", "autocomplete": "email"}
     )
     submit = SubmitField('Send Verification Email')
+
+class BroadcastNotificationForm(FlaskForm):
+    title = StringField('Notification Title', validators=[
+        DataRequired(message="Title is required"),
+        Length(min=1, max=100, message="Title must be between 1 and 100 characters")
+    ])
+
+    body = TextAreaField('Message Body', validators=[
+        DataRequired(message="Message body is required"),
+        Length(min=1, max=500, message="Message must be between 1 and 500 characters")
+    ])
+
+    notification_type = SelectField('Notification Type', choices=[
+        ('broadcast', 'General Broadcast'),
+        ('announcement', 'Important Announcement'),
+        ('tournament_update', 'Tournament Update'),
+        ('system_notice', 'System Notice'),
+        ('marketing', 'Marketing Message')
+    ], default='broadcast')
+
+    priority = SelectField('Priority Level', choices=[
+        ('normal', 'Normal'),
+        ('high', 'High Priority (Requires Interaction)')
+    ], default='normal', description='High priority notifications require user interaction and include vibration')
+
+    submit = SubmitField('Send Broadcast Notification')

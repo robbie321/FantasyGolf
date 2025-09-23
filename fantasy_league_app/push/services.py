@@ -5,7 +5,9 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from flask import current_app
 from pywebpush import webpush, WebPushException
-
+import base64
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from fantasy_league_app.extensions import db
 from fantasy_league_app.models import PushSubscription
 from .models import NotificationLog, NotificationTemplate, NotificationPreference
@@ -36,50 +38,25 @@ class PushNotificationService:
 
         return True
 
-    def send_notification(
-        self,
-        user_ids: List[int],
-        notification_type: str,
-        title: str,
-        body: str,
-        data: Optional[Dict] = None,
-        url: Optional[str] = None,
-        icon: Optional[str] = None,
-        badge: Optional[str] = None,
-        actions: Optional[List[Dict]] = None,
-        require_interaction: bool = False,
-        tag: Optional[str] = None,
-        vibrate: Optional[List[int]] = None
-    ) -> Dict[str, Any]:
-        """
-        Send push notification to multiple users
-        Integrates with your existing Celery setup for background processing
-        """
+    def _convert_der_private_key(self, der_base64_key):
+        """Convert DER-encoded private key to raw bytes for pywebpush"""
+        try:
+            import base64
+            # Decode base64
+            der_bytes = base64.b64decode(der_base64_key)
 
-        # Use Celery for background processing
-        from fantasy_league_app.tasks import send_push_notification_task
+            # Extract the 32-byte private key from position 36-68 (as confirmed by your test)
+            private_key_bytes = der_bytes[36:68]
 
-        # Queue the notification sending as a background task
-        task = send_push_notification_task.delay(
-            user_ids=user_ids,
-            notification_type=notification_type,
-            title=title,
-            body=body,
-            data=data,
-            url=url,
-            icon=icon,
-            badge=badge,
-            actions=actions,
-            require_interaction=require_interaction,
-            tag=tag,
-            vibrate=vibrate
-        )
+            if len(private_key_bytes) != 32:
+                raise ValueError(f"Invalid private key length: {len(private_key_bytes)} (expected 32)")
 
-        return {
-            'task_id': task.id,
-            'status': 'queued',
-            'user_count': len(user_ids)
-        }
+            current_app.logger.info("Successfully converted DER private key to raw bytes")
+            return private_key_bytes
+
+        except Exception as e:
+            current_app.logger.error(f"Error converting private key: {e}")
+            return None
 
     def send_notification_sync(
         self,
@@ -95,13 +72,23 @@ class PushNotificationService:
         require_interaction: bool = False,
         tag: Optional[str] = None,
         vibrate: Optional[List[int]] = None
-    ) -> Dict[str, Any]:
-        """
-        Send push notification synchronously (for immediate sending)
-        """
+        ) -> Dict[str, Any]:
+        """Send push notification synchronously (for immediate sending)"""
 
-        if not current_app.config.get('VAPID_PRIVATE_KEY'):
+        # Get VAPID configuration
+        vapid_private_key_der = current_app.config.get('VAPID_PRIVATE_KEY')
+        vapid_claim_email = current_app.config.get('VAPID_CLAIM_EMAIL')
+
+        if not vapid_private_key_der or not vapid_claim_email:
+            current_app.logger.error("VAPID configuration missing")
             return {"error": "VAPID keys not configured", "success": 0, "failed": 0}
+
+        # Convert DER private key to raw bytes
+        vapid_private_key = self._convert_der_private_key(vapid_private_key_der)
+        if not vapid_private_key:
+            return {"error": "Invalid VAPID private key format", "success": 0, "failed": 0}
+
+        current_app.logger.info(f"Sending notifications to {len(user_ids)} users")
 
         # Filter users based on preferences
         filtered_users = self._filter_users_by_preferences(user_ids, notification_type)
@@ -115,7 +102,10 @@ class PushNotificationService:
         ).all()
 
         if not subscriptions:
+            current_app.logger.warning("No active subscriptions found")
             return {"success": 0, "failed": 0, "message": "No active subscriptions found"}
+
+        current_app.logger.info(f"Found {len(subscriptions)} active subscriptions")
 
         # Prepare notification payload
         payload = {
@@ -139,10 +129,97 @@ class PushNotificationService:
         if vibrate:
             payload["vibrate"] = vibrate
 
-        # Send notifications
-        results = self._send_to_subscriptions(subscriptions, payload)
+        # Send notifications using converted key
+        results = self._send_to_subscriptions_with_raw_key(
+            subscriptions, payload, vapid_private_key, vapid_claim_email
+        )
 
         return results
+
+    def _send_to_subscriptions_with_raw_key(self, subscriptions, payload, vapid_private_key, vapid_claim_email):
+        """Send notification to multiple subscriptions using raw private key"""
+
+        success_count = 0
+        failed_count = 0
+
+        for subscription in subscriptions:
+            try:
+                subscription_data = subscription.to_dict()
+                if not subscription_data:
+                    failed_count += 1
+                    current_app.logger.warning(f"Invalid subscription data for subscription {subscription.id}")
+                    continue
+
+                current_app.logger.info(f"Sending push to endpoint: {subscription_data.get('endpoint', 'unknown')[:50]}...")
+
+                vapid_private_key_b64 = base64.urlsafe_b64encode(vapid_private_key).decode('utf-8').rstrip('=')
+
+                webpush(
+                    subscription_info=subscription_data,
+                    data=json.dumps(payload),
+                    vapid_private_key=vapid_private_key_b64,  # Raw bytes
+                    vapid_claims={
+                        "sub": vapid_claim_email
+                    }
+                )
+
+                success_count += 1
+                current_app.logger.info(f"✅ Push notification sent successfully to user {subscription.user_id}")
+
+                # Log successful notification
+                self._log_notification(
+                    subscription.user_id,
+                    subscription.id,
+                    payload,
+                    'sent'
+                )
+
+            except WebPushException as e:
+                failed_count += 1
+                error_msg = f"WebPush error: {str(e)}"
+
+                current_app.logger.error(f"❌ WebPush failed for user {subscription.user_id}: {error_msg}")
+
+                # Handle expired/invalid subscriptions
+                if e.response and e.response.status_code in [400, 404, 410]:
+                    try:
+                        current_app.logger.info(f"Removing invalid subscription {subscription.id}")
+                        db.session.delete(subscription)
+                        db.session.commit()
+                        error_msg = "Subscription expired/invalid - removed"
+                    except Exception:
+                        db.session.rollback()
+
+                # Log failed notification
+                self._log_notification(
+                    subscription.user_id,
+                    subscription.id,
+                    payload,
+                    'failed',
+                    error_msg
+                )
+
+            except Exception as e:
+                failed_count += 1
+                error_msg = f"General error: {str(e)}"
+                current_app.logger.error(f"❌ Push notification failed for user {subscription.user_id}: {error_msg}")
+
+                self._log_notification(
+                    subscription.user_id,
+                    subscription.id,
+                    payload,
+                    'failed',
+                    error_msg
+                )
+
+        current_app.logger.info(f"Push notification results: {success_count} success, {failed_count} failed")
+
+        return {
+            "success": success_count,
+            "failed": failed_count,
+            "total": len(subscriptions)
+        }
+
 
     def _filter_users_by_preferences(self, user_ids: List[int], notification_type: str) -> List[int]:
         """Filter users based on their notification preferences"""
@@ -442,3 +519,109 @@ def send_prize_won_notification(user_id: int, prize_amount: float, league_name: 
         )
     except Exception as e:
         current_app.logger.error(f"Failed to send prize won notification: {e}")
+
+
+def convert_der_to_raw_private_key(der_base64_key):
+    """Convert DER-encoded private key to raw bytes for pywebpush"""
+    try:
+        # Decode base64
+        der_bytes = base64.b64decode(der_base64_key)
+
+        # Load the DER-encoded private key
+        private_key = serialization.load_der_private_key(der_bytes, password=None)
+
+        # Extract raw private key bytes (32 bytes for P-256)
+        private_numbers = private_key.private_numbers()
+        private_bytes = private_numbers.private_value.to_bytes(32, byteorder='big')
+
+        return private_bytes
+
+    except Exception as e:
+        print(f"Error converting private key: {e}")
+        return None
+
+def convert_der_to_raw_public_key(der_base64_key):
+    """Convert DER-encoded public key to raw bytes"""
+    try:
+        # Decode base64
+        der_bytes = base64.b64decode(der_base64_key)
+
+        # Find the uncompressed point (starts with 0x04)
+        point_start = der_bytes.find(b'\x04')
+        if point_start == -1:
+            raise ValueError("Could not find uncompressed point in DER data")
+
+        # Extract the 65-byte uncompressed point
+        public_key_bytes = der_bytes[point_start:point_start + 65]
+
+        if len(public_key_bytes) != 65:
+            raise ValueError(f"Invalid public key length: {len(public_key_bytes)}")
+
+        return public_key_bytes
+
+    except Exception as e:
+        print(f"Error converting public key: {e}")
+        return None
+
+def send_broadcast_notification(self, title, body, notification_type='broadcast', **kwargs):
+    """Send notification to all subscribed users"""
+    try:
+        from fantasy_league_app.models import User
+
+        # Get all active users
+        active_users = User.query.filter_by(is_active=True).all()
+        user_ids = [user.id for user in active_users]
+
+        if not user_ids:
+            return {'success': 0, 'failed': 0, 'total': 0, 'message': 'No active users found'}
+
+        current_app.logger.info(f"Broadcasting notification to {len(user_ids)} users")
+
+        # Send using the existing sync method
+        result = self.send_notification_sync(
+            user_ids=user_ids,
+            notification_type=notification_type,
+            title=title,
+            body=body,
+            **kwargs
+        )
+
+        current_app.logger.info(f"Broadcast complete: {result}")
+        return result
+
+    except Exception as e:
+        current_app.logger.error(f"Broadcast notification error: {e}")
+        return {'success': 0, 'failed': 0, 'total': 0, 'error': str(e)}
+
+# Test your current keys
+def test_current_vapid_keys():
+    """Test and convert your current VAPID keys"""
+
+    # Your current keys from config.py
+    current_private = 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgJEK++bJ3qsf4NV4jkIHX/RHFlzs0ZlaBe7AK8F865T6hRANCAAQyKR43hjnqpSX00q1vq++d4mz7QELsN8pcmUJAYJjbepEqXm4lLfpzdJYmpVW+/p6j7mu+Cc05vxG/V1Qpx0Rl'
+    current_public = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMikeN4Y56qUl9NKtb6vvneJs+0BC7DfKXJlCQGCY23qRKl5uJS36c3SWJqVVvv6eo+5rvgnNOb8Rv1dUKcdEZQ=='
+
+    print("=== VAPID Key Conversion Test ===")
+
+    # Convert private key
+    raw_private = convert_der_to_raw_private_key(current_private)
+    if raw_private:
+        print(f"✅ Private key converted successfully")
+        print(f"   Raw private key length: {len(raw_private)} bytes")
+        print(f"   Base64 encoded: {base64.b64encode(raw_private).decode()}")
+    else:
+        print("❌ Private key conversion failed")
+
+    # Convert public key
+    raw_public = convert_der_to_raw_public_key(current_public)
+    if raw_public:
+        print(f"✅ Public key converted successfully")
+        print(f"   Raw public key length: {len(raw_public)} bytes")
+        print(f"   Base64 encoded: {base64.b64encode(raw_public).decode()}")
+    else:
+        print("❌ Public key conversion failed")
+
+    return raw_private, raw_public
+
+if __name__ == "__main__":
+    test_current_vapid_keys()

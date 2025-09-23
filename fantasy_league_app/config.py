@@ -66,8 +66,8 @@ class Config:
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', MAIL_USERNAME)
 
     # VAPID Keys for Push Notifications
-    VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY') or 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMikeN4Y56qUl9NKtb6vvneJs+0BC7DfKXJlCQGCY23qRKl5uJS36c3SWJqVVvv6eo+5rvgnNOb8Rv1dUKcdEZQ=='
-    VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY') or 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgJEK++bJ3qsf4NV4jkIHX/RHFlzs0ZlaBe7AK8F865T6hRANCAAQyKR43hjnqpSX00q1vq++d4mz7QELsN8pcmUJAYJjbepEqXm4lLfpzdJYmpVW+/p6j7mu+Cc05vxG/V1Qpx0Rl'
+    VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY') or 'BK7DkYrPmaEsLe-jgW-SarBoyhdq0kLXvUC3m-651GWGCY-lpsgdNDzezScSVkjAbipgMv7d99YDEU45Z06Rif0'
+    VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY') or 'BJ0SBEH4WaLeyuHdCapquWjZ-ryd-JzMs_LlBuvg5WQ'
     VAPID_CLAIM_EMAIL = os.environ.get('VAPID_CLAIM_EMAIL', 'mailto:rmalone7@gmail.com')
 
     TESTING_MODE_FLAG = 'testing_mode.flag'
