@@ -777,28 +777,114 @@ def finalize_league_admin(league_id):
 
 
 
-
 @admin_bp.route('/send-notification', methods=['GET', 'POST'])
 @admin_required
 def send_broadcast_notification():
+    from ..forms import BroadcastNotificationForm
+    from ..tasks import broadcast_notification_task
+    from ..push.services import push_service
+
     form = BroadcastNotificationForm()
+
     if form.validate_on_submit():
         title = form.title.data
         body = form.body.data
 
-        # Trigger the background task to avoid a long-running request
-        app = current_app._get_current_object()
-        scheduler.add_job(
-            id=f'broadcast_{datetime.utcnow().timestamp()}',
-            func=broadcast_notification_task,
-            args=[app, title, body],
-            trigger='date' # Run immediately, once
-        )
+        try:
+            # Get notification options from form
+            notification_type = getattr(form, 'notification_type', None)
+            notification_type = notification_type.data if notification_type else 'broadcast'
 
-        flash('The broadcast notification is being sent to all users in the background.', 'success')
-        return redirect(url_for('admin.admin_dashboard'))
+            priority = getattr(form, 'priority', None)
+            priority = priority.data if priority else 'normal'
 
-    return render_template('admin/send_notification.html', form=form, title="Send Broadcast Notification")
+            # Enhanced notification data
+            notification_data = {
+                'title': title,
+                'body': body,
+                'notification_type': notification_type,
+                'icon': '/static/images/icon-192x192.png',
+                'badge': '/static/images/badge-72x72.png',
+                'tag': f'broadcast_{int(datetime.utcnow().timestamp())}',
+                'requireInteraction': priority == 'high',
+                'url': '/dashboard',
+                'data': {
+                    'broadcast_id': str(datetime.utcnow().timestamp()),
+                    'admin_user': current_user.username,
+                    'sent_at': datetime.utcnow().isoformat(),
+                    'priority': priority
+                }
+            }
+
+            # Add vibration for high priority
+            if priority == 'high':
+                notification_data['vibrate'] = [200, 100, 200, 100, 200]
+
+            # Send notification using the push service
+            if hasattr(push_service, 'send_broadcast_notification'):
+                # If you have a dedicated broadcast method
+                result = push_service.send_broadcast_notification(**notification_data)
+            else:
+                # Use the general notification method for all users
+                from ..models import User
+
+                # Get all active users
+                active_users = User.query.filter_by(is_active=True).all()
+                user_ids = [user.id for user in active_users]
+
+                if user_ids:
+                    result = push_service.send_notification_sync(
+                        user_ids=user_ids,
+                        notification_type=notification_type,
+                        title=title,
+                        body=body,
+                        icon=notification_data['icon'],
+                        badge=notification_data['badge'],
+                        require_interaction=notification_data['requireInteraction'],
+                        tag=notification_data['tag'],
+                        url=notification_data['url'],
+                        vibrate=notification_data.get('vibrate'),
+                        data=notification_data['data']
+                    )
+                else:
+                    result = {'success': 0, 'failed': 0, 'total': 0, 'message': 'No active users found'}
+
+            # Log the broadcast
+            current_app.logger.info(f"Admin {current_user.username} sent broadcast notification: '{title}' to {result.get('total', 0)} users")
+
+            # Show results to admin
+            if result.get('success', 0) > 0:
+                flash(f'✅ Broadcast sent successfully to {result["success"]} users!', 'success')
+
+            if result.get('failed', 0) > 0:
+                flash(f'⚠️ Failed to send to {result["failed"]} users', 'warning')
+
+            if result.get('total', 0) == 0:
+                flash('ℹ️ No users found to send notifications to', 'info')
+
+            # Redirect to prevent resubmission
+            return redirect(url_for('admin.send_broadcast_notification'))
+
+        except Exception as e:
+            current_app.logger.error(f"Broadcast notification failed: {str(e)}")
+            flash(f'❌ Failed to send broadcast notification: {str(e)}', 'danger')
+
+    # Get notification statistics for display
+    try:
+        from ..models import User, PushSubscription
+
+        total_users = User.query.filter_by(is_active=True).count()
+        subscribed_users = db.session.query(PushSubscription.user_id).distinct().count()
+
+        stats = {
+            'total_active_users': total_users,
+            'subscribed_users': subscribed_users,
+            'subscription_rate': round((subscribed_users / total_users * 100), 1) if total_users > 0 else 0
+        }
+    except Exception:
+        stats = {'total_active_users': 0, 'subscribed_users': 0, 'subscription_rate': 0}
+
+    return render_template('admin/send_notification.html', form=form, stats=stats, title="Send Broadcast Notification")
 
 
 # TESTING
@@ -1099,3 +1185,344 @@ def simple_celery_check():
             'diagnosis': 'CELERY CONNECTION ERROR'
         }
         return f"<pre>{json.dumps(error_info, indent=2)}</pre>"
+
+
+#////////////////
+# NOTIFICATIONS
+
+
+@admin_bp.route('/test-notification', methods=['POST'])
+@admin_required
+@limiter.limit("3 per hour")
+def test_admin_notification():
+    """Send a test notification to the current admin user"""
+    try:
+        # Check if admin has push subscriptions
+        from ..models import PushSubscription, User
+        from ..push.services import push_service
+
+        # Try to find admin user in regular users table or create test notification
+        admin_subscriptions = PushSubscription.query.filter_by(user_id=current_user.id).all()
+
+        if not admin_subscriptions:
+            # If admin doesn't have subscriptions, try to find any user with subscriptions for testing
+            test_user = db.session.query(User).join(PushSubscription).first()
+            if test_user:
+                target_user_id = test_user.id
+                flash(f'No subscriptions found for admin. Sending test to user: {test_user.full_name}', 'info')
+            else:
+                flash('No users with push subscriptions found for testing.', 'warning')
+                return redirect(url_for('admin.send_broadcast_notification'))
+        else:
+            target_user_id = current_user.id
+
+        # Send test notification
+        result = push_service.send_notification_sync(
+            user_ids=[target_user_id],
+            notification_type='admin_test',
+            title='🧪 Admin Test Notification',
+            body=f'This is a test notification sent by {current_user.username} at {datetime.utcnow().strftime("%H:%M:%S")}',
+            icon='/static/images/icon-192x192.png',
+            require_interaction=True,
+            url='/admin/dashboard',
+            data={
+                'test': True,
+                'admin': current_user.username,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+        )
+
+        if result.get('success', 0) > 0:
+            flash('✅ Test notification sent successfully!', 'success')
+        else:
+            flash('❌ Test notification failed to send.', 'danger')
+
+    except Exception as e:
+        current_app.logger.error(f"Admin test notification failed: {e}")
+        flash(f'Test notification error: {str(e)}', 'danger')
+
+    return redirect(url_for('admin.send_broadcast_notification'))
+
+
+@admin_bp.route('/notification-analytics')
+@admin_required
+def notification_analytics():
+    """View notification analytics and statistics"""
+    try:
+        from ..models import User, PushSubscription
+        from ..push.models import NotificationLog
+        from sqlalchemy import func
+        from datetime import datetime, timedelta
+
+        # Basic stats
+        total_users = User.query.filter_by(is_active=True).count()
+        total_subscriptions = PushSubscription.query.count()
+        unique_subscribed_users = db.session.query(PushSubscription.user_id).distinct().count()
+
+        # Recent notification stats (last 30 days)
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+
+        recent_notifications = NotificationLog.query.filter(
+            NotificationLog.sent_at >= thirty_days_ago
+        ).count() if hasattr(NotificationLog, 'sent_at') else 0
+
+        successful_notifications = NotificationLog.query.filter(
+            NotificationLog.sent_at >= thirty_days_ago,
+            NotificationLog.status == 'sent'
+        ).count() if hasattr(NotificationLog, 'sent_at') else 0
+
+        # Notification types breakdown
+        if hasattr(NotificationLog, 'notification_type'):
+            type_stats = db.session.query(
+                NotificationLog.notification_type,
+                func.count(NotificationLog.id).label('count')
+            ).filter(
+                NotificationLog.sent_at >= thirty_days_ago
+            ).group_by(NotificationLog.notification_type).all()
+        else:
+            type_stats = []
+
+        analytics_data = {
+            'total_users': total_users,
+            'total_subscriptions': total_subscriptions,
+            'unique_subscribed_users': unique_subscribed_users,
+            'subscription_rate': round((unique_subscribed_users / total_users * 100), 1) if total_users > 0 else 0,
+            'recent_notifications': recent_notifications,
+            'successful_notifications': successful_notifications,
+            'success_rate': round((successful_notifications / recent_notifications * 100), 1) if recent_notifications > 0 else 0,
+            'type_breakdown': dict(type_stats) if type_stats else {}
+        }
+
+        return render_template('admin/notification_analytics.html', data=analytics_data)
+
+    except Exception as e:
+        current_app.logger.error(f"Analytics error: {e}")
+        flash('Error loading analytics data', 'danger')
+        return redirect(url_for('admin.admin_dashboard'))
+
+
+@admin_bp.route('/notification-history')
+@admin_required
+def notification_history():
+    """View recent notification history"""
+    try:
+        from ..push.models import NotificationLog
+
+        # Get recent notifications (last 50)
+        if hasattr(NotificationLog, 'sent_at'):
+            recent_notifications = NotificationLog.query.order_by(
+                NotificationLog.sent_at.desc()
+            ).limit(50).all()
+        else:
+            recent_notifications = []
+
+        return render_template('admin/notification_history.html', notifications=recent_notifications)
+
+    except Exception as e:
+        current_app.logger.error(f"Notification history error: {e}")
+        flash('Error loading notification history', 'danger')
+        return redirect(url_for('admin.admin_dashboard'))
+
+
+# Add these notification management routes to your admin dashboard
+
+@admin_bp.route('/clear-inactive-subscriptions', methods=['POST'])
+@admin_required
+def clear_inactive_subscriptions():
+    """Remove inactive push subscriptions"""
+    try:
+        from ..models import PushSubscription
+        from datetime import datetime, timedelta
+
+        # Remove subscriptions older than 90 days with no recent activity
+        cutoff_date = datetime.utcnow() - timedelta(days=90)
+
+        if hasattr(PushSubscription, 'last_used'):
+            inactive_subs = PushSubscription.query.filter(
+                PushSubscription.last_used < cutoff_date
+            ).all()
+        elif hasattr(PushSubscription, 'created_at'):
+            # Fallback to creation date if last_used doesn't exist
+            inactive_subs = PushSubscription.query.filter(
+                PushSubscription.created_at < cutoff_date
+            ).all()
+        else:
+            inactive_subs = []
+
+        count = len(inactive_subs)
+        for sub in inactive_subs:
+            db.session.delete(sub)
+
+        db.session.commit()
+
+        flash(f'✅ Cleaned up {count} inactive push subscriptions.', 'success')
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Cleanup error: {e}")
+        flash('❌ Error cleaning up subscriptions.', 'danger')
+
+    return redirect(url_for('admin.admin_dashboard'))
+
+
+
+@admin_bp.route('/debug-vapid-keys')
+@admin_required
+def debug_vapid_keys():
+    """Debug VAPID key configuration"""
+    import base64
+
+    try:
+        # Get VAPID keys from config
+        private_key = current_app.config.get('VAPID_PRIVATE_KEY', '')
+        public_key = current_app.config.get('VAPID_PUBLIC_KEY', '')
+        claim_email = current_app.config.get('VAPID_CLAIM_EMAIL', '')
+
+        debug_info = {
+            'vapid_config': {
+                'private_key_exists': bool(private_key),
+                'private_key_length': len(private_key),
+                'private_key_preview': private_key[:20] + '...' if len(private_key) > 20 else private_key,
+                'public_key_exists': bool(public_key),
+                'public_key_length': len(public_key),
+                'public_key_preview': public_key[:20] + '...' if len(public_key) > 20 else public_key,
+                'claim_email': claim_email
+            },
+            'key_format_analysis': {},
+            'conversion_test': {}
+        }
+
+        # Analyze key format
+        if private_key:
+            if len(private_key) < 100 and not private_key.startswith('MI'):
+                debug_info['key_format_analysis']['format'] = 'base64url (new format)'
+                debug_info['key_format_analysis']['expected_length'] = '43-44 characters'
+            elif len(private_key) > 100 or private_key.startswith('MI'):
+                debug_info['key_format_analysis']['format'] = 'DER encoded (old format)'
+                debug_info['key_format_analysis']['expected_length'] = '100+ characters'
+            else:
+                debug_info['key_format_analysis']['format'] = 'Unknown format'
+
+        # Test key conversion
+        if private_key:
+            try:
+                if len(private_key) < 100 and not private_key.startswith('MI'):
+                    # Test base64url conversion
+                    padding = '=' * (4 - len(private_key) % 4) % 4
+                    padded_key = private_key + padding
+                    regular_b64 = padded_key.replace('-', '+').replace('_', '/')
+                    raw_bytes = base64.b64decode(regular_b64)
+
+                    debug_info['conversion_test'] = {
+                        'method': 'base64url_to_bytes',
+                        'input_length': len(private_key),
+                        'padded_length': len(padded_key),
+                        'output_length': len(raw_bytes),
+                        'success': len(raw_bytes) == 32,
+                        'error': None if len(raw_bytes) == 32 else f'Expected 32 bytes, got {len(raw_bytes)}'
+                    }
+
+                else:
+                    # Test DER conversion
+                    der_bytes = base64.b64decode(private_key)
+                    if len(der_bytes) >= 68:
+                        extracted_key = der_bytes[36:68]
+                        debug_info['conversion_test'] = {
+                            'method': 'der_extraction',
+                            'der_length': len(der_bytes),
+                            'extracted_length': len(extracted_key),
+                            'success': len(extracted_key) == 32,
+                            'error': None if len(extracted_key) == 32 else f'Expected 32 bytes, got {len(extracted_key)}'
+                        }
+                    else:
+                        debug_info['conversion_test'] = {
+                            'method': 'der_extraction',
+                            'der_length': len(der_bytes),
+                            'success': False,
+                            'error': f'DER data too short: {len(der_bytes)} bytes'
+                        }
+
+            except Exception as e:
+                debug_info['conversion_test'] = {
+                    'success': False,
+                    'error': str(e)
+                }
+
+        # Test pywebpush import
+        try:
+            from pywebpush import webpush
+            debug_info['pywebpush_status'] = 'Available'
+        except ImportError as e:
+            debug_info['pywebpush_status'] = f'Not available: {e}'
+
+        # Generate HTML response
+        html = f"""
+        <html>
+        <head>
+            <title>VAPID Keys Debug</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                .section {{ margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }}
+                .success {{ color: green; font-weight: bold; }}
+                .error {{ color: red; font-weight: bold; }}
+                .info {{ color: blue; }}
+                pre {{ background: #f5f5f5; padding: 10px; border-radius: 3px; overflow: auto; }}
+            </style>
+        </head>
+        <body>
+            <h1>VAPID Keys Debug Information</h1>
+            <a href="{url_for('admin.admin_dashboard')}" style="margin-bottom: 20px; display: inline-block;">← Back to Dashboard</a>
+
+            <div class="section">
+                <h2>Configuration Status</h2>
+                <p><strong>Private Key:</strong> {'✅ Present' if debug_info['vapid_config']['private_key_exists'] else '❌ Missing'}</p>
+                <p><strong>Public Key:</strong> {'✅ Present' if debug_info['vapid_config']['public_key_exists'] else '❌ Missing'}</p>
+                <p><strong>Claim Email:</strong> {debug_info['vapid_config']['claim_email'] or '❌ Missing'}</p>
+                <p><strong>PyWebPush:</strong> {debug_info['pywebpush_status']}</p>
+            </div>
+
+            <div class="section">
+                <h2>Key Format Analysis</h2>
+                <p><strong>Private Key Length:</strong> {debug_info['vapid_config']['private_key_length']} characters</p>
+                <p><strong>Detected Format:</strong> {debug_info['key_format_analysis'].get('format', 'Not analyzed')}</p>
+                <p><strong>Preview:</strong> <code>{debug_info['vapid_config']['private_key_preview']}</code></p>
+            </div>
+
+            <div class="section">
+                <h2>Conversion Test</h2>
+        """
+
+        if debug_info['conversion_test']:
+            if debug_info['conversion_test'].get('success'):
+                html += f'<p class="success">✅ Key conversion successful!</p>'
+                html += f'<p><strong>Method:</strong> {debug_info["conversion_test"].get("method", "unknown")}</p>'
+                html += f'<p><strong>Output Length:</strong> {debug_info["conversion_test"].get("output_length", "unknown")} bytes</p>'
+            else:
+                html += f'<p class="error">❌ Key conversion failed!</p>'
+                html += f'<p><strong>Error:</strong> {debug_info["conversion_test"].get("error", "Unknown error")}</p>'
+        else:
+            html += '<p class="info">No conversion test performed</p>'
+
+        html += """
+            </div>
+
+            <div class="section">
+                <h2>Debug Data</h2>
+                <pre>{}</pre>
+            </div>
+        </body>
+        </html>
+        """.format(json.dumps(debug_info, indent=2))
+
+        return html
+
+    except Exception as e:
+        return f"""
+        <html>
+        <body>
+            <h1>VAPID Debug Error</h1>
+            <p style="color: red;">Error: {str(e)}</p>
+            <a href="{url_for('admin.admin_dashboard')}">← Back to Dashboard</a>
+        </body>
+        </html>
+        """

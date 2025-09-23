@@ -10,7 +10,7 @@ from fantasy_league_app.push.models import NotificationLog, NotificationTemplate
 from . import mail, socketio, get_app, cache    # Make sure mail is imported if you use it in other tasks
 from flask_mail import Message
 from flask import current_app
-
+from fantasy_league_app.push.services import push_service, send_rank_change_notification, send_tournament_start_notification
 from .data_golf_client import DataGolfClient
 
 from collections import defaultdict # Add this import
@@ -1080,7 +1080,6 @@ def send_push_notification_task(
     Integrates with your existing task system
     """
     try:
-        from fantasy_league_app.push.services import push_service
 
         result = push_service.send_notification_sync(
             user_ids=user_ids,
@@ -1116,7 +1115,6 @@ def send_template_notification_task(
 ):
     """Celery task to send template-based notifications"""
     try:
-        from fantasy_league_app.push.services import push_service
 
         return push_service.send_from_template(
             user_ids=user_ids,
@@ -1174,7 +1172,7 @@ def cleanup_old_push_subscriptions():
 def send_league_start_notifications():
     """Send notifications when leagues start (integrate with your existing schedule)"""
     try:
-        from fantasy_league_app.push.services import send_tournament_start_notification
+
 
         # Get leagues starting today (adjust logic to match your needs)
         today = datetime.utcnow().date()
@@ -1217,7 +1215,6 @@ def send_rank_change_notifications():
     This would integrate with your existing score update tasks
     """
     try:
-        from fantasy_league_app.push.services import send_rank_change_notification
 
         # This is pseudo-code - adapt to your rank change detection logic
         # You might call this after score updates

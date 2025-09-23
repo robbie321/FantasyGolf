@@ -1,36 +1,582 @@
+<!-- Replace your templates/admin/send_notification.html with this enhanced version -->
 {% extends 'base.html' %} {% from "_form_macros.html" import render_field %} {%
 block content %}
-<div class="page-wrapper">
-  <div class="form-container" style="max-width: 800px">
-    <h1 class="form-title">Send Broadcast Notification</h1>
-    <p class="form-subtitle">
-      This message will be sent as a push notification to all users who have
-      subscribed.
-    </p>
+<style>
+  :root {
+    --primary-green: #006a4e;
+    --light-green: #e8f5e8;
+    --accent-blue: #3498db;
+    --accent-orange: #f39c12;
+    --accent-red: #e74c3c;
+    --dark-gray: #2c3e50;
+    --light-gray: #ecf0f1;
+    --border-color: #bdc3c7;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
 
-    <form
-      method="POST"
-      action="{{ url_for('admin.send_broadcast_notification') }}"
-      novalidate
-    >
-      {{ form.hidden_tag() }}
+  .notification-wrapper {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
 
-      <div class="form-group">
-        {{ render_field(form.title, class="form-control",
-        placeholder="Notification Title") }}
+  .notification-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .notification-header {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+    text-align: center;
+    position: relative;
+  }
+
+  .notification-header h1 {
+    font-family: "Merriweather", serif;
+    color: var(--primary-green);
+    margin: 0 0 0.5rem 0;
+    font-size: 2.2rem;
+  }
+
+  .notification-header .subtitle {
+    color: #7f8c8d;
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  .back-btn {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: var(--accent-blue);
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+  }
+
+  .back-btn:hover {
+    background: #2980b9;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+  }
+
+  /* Statistics Cards */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .stat-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-icon.users {
+    color: var(--accent-blue);
+  }
+
+  .stat-icon.subscriptions {
+    color: var(--primary-green);
+  }
+
+  .stat-icon.rate {
+    color: var(--accent-orange);
+  }
+
+  .stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--dark-gray);
+    margin: 0.5rem 0;
+  }
+
+  .stat-label {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  /* Form Container */
+  .form-container {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+  }
+
+  .form-section {
+    margin-bottom: 2rem;
+  }
+
+  .form-section h3 {
+    color: var(--dark-gray);
+    margin-bottom: 1rem;
+    font-family: "Merriweather", serif;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-icon {
+    color: var(--primary-green);
+    font-size: 1.2rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-weight: bold;
+    color: var(--dark-gray);
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    font-family: inherit;
+  }
+
+  .form-control:focus {
+    border-color: var(--primary-green);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 106, 78, 0.1);
+  }
+
+  .form-control.is-invalid {
+    border-color: var(--accent-red);
+  }
+
+  .invalid-feedback {
+    color: var(--accent-red);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+  }
+
+  /* Character Counter */
+  .char-counter {
+    text-align: right;
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    margin-top: 0.25rem;
+  }
+
+  .char-counter.warning {
+    color: var(--accent-orange);
+  }
+
+  .char-counter.danger {
+    color: var(--accent-red);
+  }
+
+  /* Preview Box */
+  .notification-preview {
+    background: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .preview-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    color: var(--dark-gray);
+  }
+
+  .preview-phone {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    max-width: 350px;
+  }
+
+  .preview-notification {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .preview-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-green);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .preview-content {
+    flex: 1;
+  }
+
+  .preview-title {
+    font-weight: bold;
+    color: var(--dark-gray);
+    margin: 0 0 0.25rem 0;
+    font-size: 0.95rem;
+  }
+
+  .preview-body {
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  /* Submit Button */
+  .submit-section {
+    background: var(--light-green);
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .btn-submit {
+    background: linear-gradient(
+      135deg,
+      var(--primary-green),
+      var(--accent-blue)
+    );
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 25px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: var(--shadow);
+  }
+
+  .btn-submit:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .btn-submit:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .submit-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    color: #856404;
+    font-size: 0.9rem;
+  }
+
+  /* Flash Messages */
+  .alert {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+
+  .alert-success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+  }
+
+  .alert-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+  }
+
+  .alert-danger {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+  }
+
+  .alert-info {
+    background: #cce7f0;
+    border: 1px solid #b3d7e6;
+    color: #0c5460;
+  }
+
+  .alert-icon {
+    margin-right: 0.5rem;
+    font-size: 1.1rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .notification-wrapper {
+      padding: 1rem 0.5rem;
+    }
+
+    .back-btn {
+      position: static;
+      margin-bottom: 1rem;
+      display: inline-block;
+    }
+
+    .notification-header {
+      text-align: left;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .form-container {
+      padding: 1.5rem;
+    }
+  }
+</style>
+
+<div class="notification-wrapper">
+  <div class="notification-container">
+    <!-- Header -->
+    <div class="notification-header">
+      <a href="{{ url_for('admin.admin_dashboard') }}" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+      </a>
+      <h1><i class="fas fa-bullhorn"></i> Broadcast Notification</h1>
+      <p class="subtitle">Send push notifications to all subscribed users</p>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %} {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">
+      <i
+        class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' if category == 'warning' else 'times-circle' if category == 'danger' else 'info-circle' }} alert-icon"
+      ></i>
+      {{ message|safe }}
+    </div>
+    {% endfor %} {% endif %} {% endwith %}
+
+    <!-- Statistics -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon users"><i class="fas fa-users"></i></div>
+        <div class="stat-value">{{ stats.total_active_users }}</div>
+        <div class="stat-label">Active Users</div>
       </div>
-
-      <div class="form-group">
-        {{ render_field(form.body, class="form-control",
-        placeholder="Notification body message...", rows="5") }}
+      <div class="stat-card">
+        <div class="stat-icon subscriptions"><i class="fas fa-bell"></i></div>
+        <div class="stat-value">{{ stats.subscribed_users }}</div>
+        <div class="stat-label">Subscribed</div>
       </div>
-
-      <div class="form-group">
-        <button type="submit" class="btn btn-primary btn-block">
-          Send Notification to All Users
-        </button>
+      <div class="stat-card">
+        <div class="stat-icon rate"><i class="fas fa-percentage"></i></div>
+        <div class="stat-value">{{ stats.subscription_rate }}%</div>
+        <div class="stat-label">Subscription Rate</div>
       </div>
-    </form>
+    </div>
+
+    <!-- Form -->
+    <div class="form-container">
+      <form
+        method="POST"
+        action="{{ url_for('admin.send_broadcast_notification') }}"
+        novalidate
+        id="notificationForm"
+      >
+        {{ form.hidden_tag() }}
+
+        <!-- Basic Information -->
+        <div class="form-section">
+          <h3><i class="fas fa-edit section-icon"></i>Notification Content</h3>
+
+          <div class="form-group">
+            {{ form.title.label(class="form-label") }} {{
+            form.title(class="form-control" + (" is-invalid" if
+            form.title.errors else ""), placeholder="Enter notification
+            title...", maxlength="100", oninput="updatePreview();
+            updateCharCount('title', 100);") }} {% if form.title.errors %}
+            <div class="invalid-feedback">{{ form.title.errors[0] }}</div>
+            {% endif %}
+            <div class="char-counter" id="title-counter">
+              0 / 100 characters
+            </div>
+          </div>
+
+          <div class="form-group">
+            {{ form.body.label(class="form-label") }} {{
+            form.body(class="form-control" + (" is-invalid" if form.body.errors
+            else ""), placeholder="Enter your notification message...",
+            rows="4", maxlength="500", oninput="updatePreview();
+            updateCharCount('body', 500);") }} {% if form.body.errors %}
+            <div class="invalid-feedback">{{ form.body.errors[0] }}</div>
+            {% endif %}
+            <div class="char-counter" id="body-counter">0 / 500 characters</div>
+          </div>
+        </div>
+
+        <!-- Notification Settings -->
+        <div class="form-section">
+          <h3><i class="fas fa-cogs section-icon"></i>Notification Settings</h3>
+
+          <div class="form-group">
+            {{ form.notification_type.label(class="form-label") }} {{
+            form.notification_type(class="form-control",
+            onchange="updatePreview()") }}
+          </div>
+
+          <div class="form-group">
+            {{ form.priority.label(class="form-label") }} {{
+            form.priority(class="form-control", onchange="updatePreview()") }}
+            <small class="form-text text-muted">
+              High priority notifications require user interaction and include
+              vibration.
+            </small>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="notification-preview">
+          <div class="preview-header">
+            <i class="fas fa-mobile-alt"></i>&nbsp; Notification Preview
+          </div>
+          <div class="preview-phone">
+            <div class="preview-notification">
+              <div class="preview-icon">
+                <i class="fas fa-golf-ball"></i>
+              </div>
+              <div class="preview-content">
+                <div class="preview-title" id="preview-title">
+                  Notification Title
+                </div>
+                <div class="preview-body" id="preview-body">
+                  Your notification message will appear here...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="submit-section">
+          <div class="submit-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Warning:</strong> This will send a push notification to all
+            {{ stats.subscribed_users }} subscribed users. Please review your
+            message carefully before sending.
+          </div>
+
+          <button type="submit" class="btn-submit" id="submitBtn">
+            <i class="fas fa-paper-plane"></i>
+            <span>Send to All Subscribed Users</span>
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize character counters and preview
+    updateCharCount("title", 100);
+    updateCharCount("body", 500);
+    updatePreview();
+
+    // Form submission handling
+    const form = document.getElementById("notificationForm");
+    const submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", function (e) {
+      // Disable button and show loading state
+      submitBtn.disabled = true;
+      submitBtn.innerHTML =
+        '<i class="fas fa-spinner fa-spin"></i> <span>Sending...</span>';
+
+      // Re-enable after 5 seconds (in case of errors)
+      setTimeout(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML =
+          '<i class="fas fa-paper-plane"></i> <span>Send to All Subscribed Users</span>';
+      }, 5000);
+    });
+  });
+
+  function updateCharCount(fieldId, maxChars) {
+    const field = document.getElementById(fieldId);
+    const counter = document.getElementById(fieldId + "-counter");
+
+    if (field && counter) {
+      const currentLength = field.value.length;
+      counter.textContent = `${currentLength} / ${maxChars} characters`;
+
+      // Update counter color
+      counter.className = "char-counter";
+      if (currentLength > maxChars * 0.9) {
+        counter.classList.add("danger");
+      } else if (currentLength > maxChars * 0.7) {
+        counter.classList.add("warning");
+      }
+    }
+  }
+
+  function updatePreview() {
+    const title =
+      document.getElementById("title").value || "Notification Title";
+    const body =
+      document.getElementById("body").value ||
+      "Your notification message will appear here...";
+
+    document.getElementById("preview-title").textContent = title;
+    document.getElementById("preview-body").textContent = body;
+  }
+</script>
+
 {% endblock %}

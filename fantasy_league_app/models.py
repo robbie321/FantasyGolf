@@ -5,6 +5,7 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from fantasy_league_app.extensions import db, cache
 import random
+import json
 
 from fantasy_league_app.cache_utils import CacheManager, cache_result
 

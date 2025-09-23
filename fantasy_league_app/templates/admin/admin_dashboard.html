@@ -747,6 +747,93 @@
               >
             </div>
           </div>
+
+          <div class="management-card">
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-paper-plane"></i></div>
+              <h4 class="card-title">Broadcast Notification</h4>
+            </div>
+            <p class="card-description">
+              Send push notifications to all {{ stats.subscribed_users or 0 }}
+              subscribed users instantly
+            </p>
+            <div class="card-actions">
+              <a
+                href="{{ url_for('admin.send_broadcast_notification') }}"
+                class="action-btn"
+                style="background: linear-gradient(135deg, #e74c3c, #c0392b)"
+                ><i class="fas fa-bullhorn"></i> Send Broadcast</a
+              >
+              <form
+                method="POST"
+                action="{{ url_for('admin.test_admin_notification') }}"
+                class="d-inline"
+              >
+                <input
+                  type="hidden"
+                  name="csrf_token"
+                  value="{{ csrf_token() }}"
+                />
+                <button type="submit" class="action-btn btn-warning">
+                  <i class="fas fa-vial"></i> Send Test
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="management-card">
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-chart-bar"></i></div>
+              <h4 class="card-title">Notification Analytics</h4>
+            </div>
+            <p class="card-description">
+              View push notification statistics, success rates, and user
+              engagement
+            </p>
+            <div class="card-actions">
+              <a
+                href="{{ url_for('admin.notification_analytics') }}"
+                class="action-btn"
+                >View Analytics</a
+              >
+              <a
+                href="{{ url_for('admin.notification_history') }}"
+                class="action-btn btn-success"
+                >View History</a
+              >
+            </div>
+          </div>
+
+          <div class="management-card">
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-broom"></i></div>
+              <h4 class="card-title">Subscription Cleanup</h4>
+            </div>
+            <p class="card-description">
+              Remove inactive push subscriptions to optimize notification
+              delivery
+            </p>
+            <div class="card-actions">
+              <form
+                method="POST"
+                action="{{ url_for('admin.clear_inactive_subscriptions') }}"
+                class="d-inline"
+              >
+                <input
+                  type="hidden"
+                  name="csrf_token"
+                  value="{{ csrf_token() }}"
+                />
+                <button
+                  type="submit"
+                  class="action-btn btn-warning"
+                  onclick="return confirm('Remove inactive push subscriptions older than 90 days?');"
+                >
+                  <i class="fas fa-trash-alt"></i> Cleanup
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
 

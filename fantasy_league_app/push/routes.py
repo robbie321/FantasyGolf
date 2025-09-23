@@ -122,31 +122,50 @@ def unsubscribe():
 
 @push_bp.route('/test', methods=['POST'])
 @login_required
-@limiter.limit("5 per hour", key_func=lambda: str(current_user.id))
 def send_test_notification():
     """Send a test notification to current user"""
     try:
         data = request.get_json() or {}
+
+        # Add debug logging
+        current_app.logger.info(f"=== TEST NOTIFICATION DEBUG ===")
+        current_app.logger.info(f"User ID: {current_user.id}")
+        current_app.logger.info(f"Request data: {data}")
+
+        # Check VAPID configuration
+        vapid_private = current_app.config.get('VAPID_PRIVATE_KEY')
+        vapid_public = current_app.config.get('VAPID_PUBLIC_KEY')
+        vapid_email = current_app.config.get('VAPID_CLAIM_EMAIL')
+
+        current_app.logger.info(f"VAPID private key exists: {bool(vapid_private)}")
+        current_app.logger.info(f"VAPID private key length: {len(vapid_private) if vapid_private else 0}")
+        current_app.logger.info(f"VAPID public key exists: {bool(vapid_public)}")
+        current_app.logger.info(f"VAPID email: {vapid_email}")
+
+        # Check subscriptions
+        subscriptions = PushSubscription.query.filter_by(user_id=current_user.id).all()
+        current_app.logger.info(f"Found {len(subscriptions)} subscriptions for user")
+
+        for sub in subscriptions:
+            current_app.logger.info(f"Subscription {sub.id}: endpoint={sub.get_endpoint()[:50]}...")
 
         result = push_service.send_notification_sync(
             user_ids=[current_user.id],
             notification_type='test',
             title=data.get('title', f'Hello {current_user.full_name}!'),
             body=data.get('body', 'This is a test notification from Fantasy Fairways'),
-            url='/dashboard',
-            actions=[
-                {
-                    'action': 'view-dashboard',
-                    'title': 'View Dashboard',
-                    'icon': '/static/images/icon-192x192.png'
-                }
-            ]
+            url='/dashboard'
         )
+
+        current_app.logger.info(f"Push service result: {result}")
+        current_app.logger.info(f"=== END TEST NOTIFICATION DEBUG ===")
 
         return jsonify(result), 200
 
     except Exception as e:
-        current_app.logger.error(f"Failed to send test notification: {e}")
+        current_app.logger.error(f"Test notification exception: {str(e)}")
+        import traceback
+        current_app.logger.error(f"Full traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -314,3 +333,32 @@ def get_notification_stats():
     except Exception as e:
         current_app.logger.error(f"Failed to get notification stats: {e}")
         return jsonify({'error': 'Failed to get stats'}), 500
+
+
+
+# Add this to your push/routes.py temporarily
+@push_bp.route('/debug-subscription', methods=['GET'])
+@login_required
+def debug_subscription():
+    """Debug push subscription details"""
+    try:
+        # Get user's subscription
+        subscription = PushSubscription.query.filter_by(user_id=current_user.id).first()
+
+        if not subscription:
+            return jsonify({'error': 'No subscription found for user'}), 404
+
+        # Try to parse subscription
+        subscription_data = subscription.to_dict()
+
+        return jsonify({
+            'subscription_exists': True,
+            'subscription_endpoint': subscription_data.get('endpoint', 'Missing') if subscription_data else 'Invalid JSON',
+            'has_keys': 'keys' in (subscription_data or {}),
+            'vapid_configured': bool(current_app.config.get('VAPID_PRIVATE_KEY')),
+            'vapid_claim_email': current_app.config.get('VAPID_CLAIM_EMAIL'),
+            'subscription_raw': subscription.subscription_json[:100] + '...' if subscription.subscription_json else 'None'
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

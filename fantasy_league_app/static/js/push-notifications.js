@@ -59,12 +59,81 @@ class PushNotificationManager {
             }
 
             const data = await response.json();
+            console.log('[Push] VAPID key from server:', data.publicKey);
+            console.log('[Push] Key length:', data.publicKey.length);
+
+            // Convert base64url key to Uint8Array (no DER extraction needed)
             this.applicationServerKey = this.urlBase64ToUint8Array(data.publicKey);
-            console.log('[Push] VAPID public key retrieved');
+            console.log('[Push] VAPID public key converted successfully');
+            console.log('[Push] Final key length:', this.applicationServerKey.length);
 
         } catch (error) {
             console.error('[Push] Failed to get application server key:', error);
             throw error;
+        }
+    }
+
+    extractRawKeyFromDER(derBase64) {
+        console.log('[Push] Extracting raw key from DER format');
+
+        try {
+            // Decode base64
+            const derBytes = window.atob(derBase64);
+            const byteArray = Array.from(derBytes).map(c => c.charCodeAt(0));
+
+            console.log('[Push] DER bytes length:', byteArray.length);
+            console.log('[Push] First few DER bytes:', byteArray.slice(0, 10));
+
+            // Find the uncompressed point marker (0x04)
+            // In DER format, the actual public key starts with 0x04
+            const pointStart = byteArray.indexOf(0x04);
+
+            if (pointStart === -1) {
+                throw new Error('Could not find uncompressed point marker in DER data');
+            }
+
+            console.log('[Push] Found uncompressed point at index:', pointStart);
+
+            // Extract the 65-byte uncompressed point
+            const rawKeyBytes = byteArray.slice(pointStart, pointStart + 65);
+
+            if (rawKeyBytes.length !== 65) {
+                throw new Error(`Invalid raw key length: ${rawKeyBytes.length} (expected 65)`);
+            }
+
+            if (rawKeyBytes[0] !== 0x04) {
+                throw new Error(`Invalid key format: first byte is ${rawKeyBytes[0]} (expected 4)`);
+            }
+
+            console.log('[Push] Successfully extracted raw key, length:', rawKeyBytes.length);
+            return new Uint8Array(rawKeyBytes);
+
+        } catch (error) {
+            console.error('[Push] Failed to extract raw key from DER:', error);
+            throw new Error(`DER key extraction failed: ${error.message}`);
+        }
+    }
+
+    async debugVapidKey() {
+        try {
+            console.log('=== VAPID KEY DEBUG ===');
+
+            const response = await fetch('/api/push/vapid-public-key');
+            const data = await response.json();
+
+            console.log('Server key:', data.publicKey);
+            console.log('Key length:', data.publicKey.length);
+
+            // Try the extraction
+            const extractedKey = this.extractRawKeyFromDER(data.publicKey);
+            console.log('Extracted key length:', extractedKey.length);
+            console.log('First 10 bytes:', Array.from(extractedKey.slice(0, 10)));
+
+            return extractedKey;
+
+        } catch (error) {
+            console.error('Debug failed:', error);
+            return null;
         }
     }
 
@@ -414,19 +483,44 @@ class PushNotificationManager {
 
     // Utility functions
     urlBase64ToUint8Array(base64String) {
+        console.log('[Push] Converting base64url key:', base64String);
+        console.log('[Push] Original key length:', base64String.length);
+
+        // Remove any whitespace
+        base64String = base64String.replace(/\s/g, '');
+
+        // Add padding if necessary for base64url
         const padding = '='.repeat((4 - base64String.length % 4) % 4);
         const base64 = (base64String + padding)
             .replace(/-/g, '+')
             .replace(/_/g, '/');
 
-        const rawData = window.atob(base64);
-        const outputArray = new Uint8Array(rawData.length);
+        console.log('[Push] Padded base64:', base64);
 
-        for (let i = 0; i < rawData.length; ++i) {
-            outputArray[i] = rawData.charCodeAt(i);
+        try {
+            const rawData = window.atob(base64);
+            console.log('[Push] Raw data length:', rawData.length);
+
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+
+            console.log('[Push] Converted key length:', outputArray.length);
+            console.log('[Push] Expected length: 65 bytes for P-256 key');
+
+            // For the new format, we should get 65 bytes
+            if (outputArray.length !== 65) {
+                console.warn('[Push] Unexpected key length:', outputArray.length);
+            }
+
+            console.log('[Push] Key conversion successful!');
+            return outputArray;
+
+        } catch (error) {
+            console.error('[Push] Error converting VAPID key:', error);
+            throw new Error('Invalid VAPID key format: ' + error.message);
         }
-
-        return outputArray;
     }
 
     getCSRFToken() {
@@ -478,6 +572,78 @@ class PushNotificationManager {
 
     getSubscriptionStatus() {
         return this.isSubscribed;
+    }
+
+    async testVapidKeyConversion() {
+        try {
+            console.log('[Push] Testing VAPID key conversion...');
+
+            const response = await fetch('/api/push/vapid-public-key');
+            if (!response.ok) {
+                throw new Error('Failed to get VAPID public key');
+            }
+
+            const data = await response.json();
+            console.log('[Push] Raw key from server:', data.publicKey);
+            console.log('[Push] Key type:', typeof data.publicKey);
+            console.log('[Push] Key length:', data.publicKey.length);
+
+            // Test the conversion
+            const convertedKey = this.urlBase64ToUint8Array(data.publicKey);
+            console.log('[Push] Conversion test successful!');
+            console.log('[Push] Converted key preview:', Array.from(convertedKey.slice(0, 10)));
+
+            return convertedKey;
+
+        } catch (error) {
+            console.error('[Push] Key conversion test failed:', error);
+            throw error;
+        }
+    }
+}
+
+function debugCurrentVapidKey() {
+    // Your current key from config.py
+    const currentKey = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMikeN4Y56qUl9NKtb6vvneJs+0BC7DfKXJlCQGCY23qRKl5uJS36c3SWJqVVvv6eo+5rvgnNOb8Rv1dUKcdEZQ==';
+
+    console.log('=== VAPID KEY DEBUG ===');
+    console.log('Current key from config:', currentKey);
+    console.log('Key length:', currentKey.length);
+
+    try {
+        // Try to decode it
+        const rawData = window.atob(currentKey);
+        console.log('Decoded length:', rawData.length);
+        console.log('First 10 bytes:', Array.from(rawData.slice(0, 10)).map(c => c.charCodeAt(0)));
+
+        // Your key appears to be DER-encoded, not raw. Let's extract the raw key.
+        // P-256 public keys in DER format have this structure:
+        // 30 59 (SEQUENCE, 89 bytes)
+        // 30 13 (SEQUENCE, 19 bytes) - algorithm identifier
+        // ... algorithm stuff ...
+        // 03 42 00 (BIT STRING, 66 bytes with 0 unused bits)
+        // 04 ... (uncompressed point, 65 bytes)
+
+        const bytes = Array.from(rawData).map(c => c.charCodeAt(0));
+        console.log('All bytes:', bytes);
+
+        // Look for the 0x04 byte that indicates start of uncompressed point
+        const pointStart = bytes.indexOf(0x04);
+        if (pointStart !== -1) {
+            console.log('Found uncompressed point at index:', pointStart);
+            const publicKeyBytes = bytes.slice(pointStart, pointStart + 65);
+            console.log('Extracted public key length:', publicKeyBytes.length);
+            console.log('Raw public key:', publicKeyBytes);
+
+            // Convert to Uint8Array
+            const publicKeyArray = new Uint8Array(publicKeyBytes);
+            return publicKeyArray;
+        } else {
+            console.error('Could not find uncompressed point marker (0x04)');
+        }
+
+    } catch (error) {
+        console.error('Failed to decode key:', error);
     }
 }
 
