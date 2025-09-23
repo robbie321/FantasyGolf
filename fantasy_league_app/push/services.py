@@ -182,38 +182,38 @@ class PushNotificationService:
         """Send notification to multiple subscriptions using raw private key"""
 
         success_count = 0
-    failed_count = 0
+        failed_count = 0
 
-    for subscription in subscriptions:
-        try:
-            subscription_data = subscription.to_dict()
-            if not subscription_data:
-                failed_count += 1
-                current_app.logger.warning(f"Invalid subscription data for subscription {subscription.id}")
-                continue
+        for subscription in subscriptions:
+            try:
+                subscription_data = subscription.to_dict()
+                if not subscription_data:
+                    failed_count += 1
+                    current_app.logger.warning(f"Invalid subscription data for subscription {subscription.id}")
+                    continue
 
-            current_app.logger.info(f"Sending push to endpoint: {subscription_data.get('endpoint', 'unknown')[:50]}...")
+                current_app.logger.info(f"Sending push to endpoint: {subscription_data.get('endpoint', 'unknown')[:50]}...")
 
-            # Use raw bytes directly - pywebpush expects raw bytes, not base64
-            webpush(
-                subscription_info=subscription_data,
-                data=json.dumps(payload),
-                vapid_private_key=vapid_private_key,  # Raw bytes (32 bytes)
-                vapid_claims={
-                    "sub": vapid_claim_email
-                }
-            )
+                # Use raw bytes directly - pywebpush expects raw bytes, not base64
+                webpush(
+                    subscription_info=subscription_data,
+                    data=json.dumps(payload),
+                    vapid_private_key=vapid_private_key,  # Raw bytes (32 bytes)
+                    vapid_claims={
+                        "sub": vapid_claim_email
+                    }
+                )
 
-            success_count += 1
-            current_app.logger.info(f"✅ Push notification sent successfully to user {subscription.user_id}")
+                success_count += 1
+                current_app.logger.info(f"✅ Push notification sent successfully to user {subscription.user_id}")
 
-            # Log successful notification
-            self._log_notification(
-                subscription.user_id,
-                subscription.id,
-                payload,
-                'sent'
-            )
+                # Log successful notification
+                self._log_notification(
+                    subscription.user_id,
+                    subscription.id,
+                    payload,
+                    'sent'
+                )
 
             except WebPushException as e:
                 failed_count += 1
