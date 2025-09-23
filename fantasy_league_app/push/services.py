@@ -198,7 +198,7 @@ class PushNotificationService:
                 webpush(
                     subscription_info=subscription_data,
                     data=json.dumps(payload),
-                    vapid_private_key=vapid_private_key,  # Raw bytes (32 bytes)
+                    vapid_private_key=current_app.config.get('VAPID_PRIVATE_KEY'),  # Raw bytes (32 bytes)
                     vapid_claims={
                         "sub": vapid_claim_email
                     }
