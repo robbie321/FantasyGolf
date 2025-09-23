@@ -117,6 +117,22 @@ class Config:
             'task': 'fantasy_league_app.tasks.warm_critical_caches',
             'schedule': crontab(hour=5, minute=30),
         },
+        'cleanup-push-subscriptions-weekly': {
+        'task': 'fantasy_league_app.tasks.cleanup_old_push_subscriptions',
+        'schedule': crontab(hour=2, minute=0, day_of_week='monday'),
+        },
+        'send-league-start-notifications': {
+            'task': 'fantasy_league_app.tasks.send_league_start_notifications',
+            'schedule': crontab(hour=8, minute=0),  # Daily at 8 AM
+        },
+        'send-rank-change-notifications': {
+            'task': 'fantasy_league_app.tasks.send_rank_change_notifications',
+            'schedule': crontab(minute='*/30'),  # Every 30 minutes during tournaments
+        },
+        'cleanup-push-subscriptions-weekly': {
+        'task': 'fantasy_league_app.tasks.cleanup_old_push_subscriptions',
+        'schedule': crontab(hour=2, minute=0, day_of_week='monday'),
+        },
     }
 
 

@@ -149,42 +149,49 @@ Congratulations to the winner and thank you to everyone who participated.
 
 
 
-def send_push_notification(user_id, title, body, icon=None):
+def send_push_notification(user_id, title, body, icon=None, url=None):
     """
-    Sends a push notification to all subscribed devices for a given user.
+    Enhanced push notification function that uses the new service
+    Maintains backward compatibility with your existing code
     """
-    app = current_app._get_current_object()
-    user_subscriptions = PushSubscription.query.filter_by(user_id=user_id).all()
+    try:
+        from fantasy_league_app.push.services import push_service
 
-    if not user_subscriptions:
-        print(f"No push subscriptions found for user {user_id}.")
-        return
+        result = push_service.send_notification_sync(
+            user_ids=[user_id],
+            notification_type='general',
+            title=title,
+            body=body,
+            icon=icon,
+            url=url
+        )
 
-    message = json.dumps({
-        "title": title,
-        "body": body,
-        "icon": icon or "/static/images/icons/icon-192x192.png"
-    })
+        return result.get('success', 0) > 0
 
-    # Construct the full path to your VAPID private key
-    private_key_path = os.path.join(app.root_path, '..', app.config['VAPID_PRIVATE_KEY'])
+    except Exception as e:
+        current_app.logger.error(f"Push notification failed: {e}")
+        return False
 
-    print(f"Sending push notification to user {user_id}: '{body}'")
-    for sub in user_subscriptions:
-        try:
-            webpush(
-                subscription_info=json.loads(sub.subscription_json),
-                data=message,
-                vapid_private_key=private_key_path,
-                vapid_claims={"sub": f"mailto:{app.config['VAPID_CLAIM_EMAIL']}"}
-            )
-        except WebPushException as ex:
-            print(f"WebPushException for user {user_id}: {ex}")
-            # If the subscription is expired or invalid (404, 410), delete it
-            if ex.response and ex.response.status_code in [404, 410]:
-                db.session.delete(sub)
+def send_league_notification(league_id, title, body, notification_type='league_update'):
+    """Send notification to all users in a league"""
+    try:
+        from fantasy_league_app.push.services import send_league_update_notification
+        send_league_update_notification(league_id, body)
+        return True
+    except Exception as e:
+        current_app.logger.error(f"League notification failed: {e}")
+        return False
 
-    db.session.commit()
+
+def send_prize_notification(user_id, prize_amount, league_name):
+    """Send prize won notification to user"""
+    try:
+        from fantasy_league_app.push.services import send_prize_won_notification
+        send_prize_won_notification(user_id, prize_amount, league_name)
+        return True
+    except Exception as e:
+        current_app.logger.error(f"Prize notification failed: {e}")
+        return False
 
 
 

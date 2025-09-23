@@ -3,11 +3,10 @@ import secrets
 from datetime import datetime, timedelta
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from fantasy_league_app import db
+from fantasy_league_app.extensions import db, cache
 import random
 
 from fantasy_league_app.cache_utils import CacheManager, cache_result
-from fantasy_league_app import cache
 
 # Association table for Player and PlayerBucket (Many-to-Many)
 player_bucket_association = db.Table(
@@ -745,10 +744,30 @@ class PushSubscription(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     subscription_json = db.Column(db.Text, nullable=False)
 
-    @property
-    def endpoint(self):
-        import json
-        return json.loads(self.subscription_json).get('endpoint')
+    user_agent = db.Column(db.String(500), nullable=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
+    last_used = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
+
+    def to_dict(self):
+        """Convert subscription JSON to dict for pywebpush"""
+        try:
+            return json.loads(self.subscription_json)
+        except (json.JSONDecodeError, TypeError):
+            return None
+
+    def get_endpoint(self):
+        """Get endpoint from subscription JSON"""
+        try:
+            data = json.loads(self.subscription_json)
+            return data.get('endpoint', '')
+        except (json.JSONDecodeError, TypeError):
+            return ''
+
+    def update_last_used(self):
+        """Update last used timestamp"""
+        self.last_used = datetime.utcnow()
+        db.session.commit()
 
 
 class DailyTaskTracker(db.Model):
