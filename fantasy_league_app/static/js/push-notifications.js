@@ -62,7 +62,7 @@ class PushNotificationManager {
             console.log('[Push] VAPID key from server:', data.publicKey);
             console.log('[Push] Key length:', data.publicKey.length);
 
-            // Convert base64url key to Uint8Array (no DER extraction needed)
+            // Your key is base64url format, convert it directly
             this.applicationServerKey = this.urlBase64ToUint8Array(data.publicKey);
             console.log('[Push] VAPID public key converted successfully');
             console.log('[Push] Final key length:', this.applicationServerKey.length);
@@ -74,7 +74,7 @@ class PushNotificationManager {
     }
 
     extractRawKeyFromDER(derBase64) {
-        console.log('[Push] Extracting raw key from DER format');
+        console.log('[Push] Extracting raw public key from DER format');
 
         try {
             // Decode base64
@@ -82,7 +82,6 @@ class PushNotificationManager {
             const byteArray = Array.from(derBytes).map(c => c.charCodeAt(0));
 
             console.log('[Push] DER bytes length:', byteArray.length);
-            console.log('[Push] First few DER bytes:', byteArray.slice(0, 10));
 
             // Find the uncompressed point marker (0x04)
             // In DER format, the actual public key starts with 0x04
@@ -105,12 +104,12 @@ class PushNotificationManager {
                 throw new Error(`Invalid key format: first byte is ${rawKeyBytes[0]} (expected 4)`);
             }
 
-            console.log('[Push] Successfully extracted raw key, length:', rawKeyBytes.length);
+            console.log('[Push] Successfully extracted raw public key, length:', rawKeyBytes.length);
             return new Uint8Array(rawKeyBytes);
 
         } catch (error) {
-            console.error('[Push] Failed to extract raw key from DER:', error);
-            throw new Error(`DER key extraction failed: ${error.message}`);
+            console.error('[Push] Failed to extract raw public key from DER:', error);
+            throw new Error(`DER public key extraction failed: ${error.message}`);
         }
     }
 
@@ -145,11 +144,22 @@ class PushNotificationManager {
             console.log('[Push] Subscription status:', this.isSubscribed);
 
             if (this.isSubscribed) {
-                console.log('[Push] Current subscription:', this.subscription);
+                console.log('[Push] Current subscription endpoint:', this.subscription.endpoint.substring(0, 50) + '...');
+
+                // Verify subscription is still valid by checking keys
+                const subData = this.subscription.toJSON();
+                if (subData.keys && subData.keys.p256dh && subData.keys.auth) {
+                    console.log('[Push] Subscription has valid keys');
+                } else {
+                    console.warn('[Push] Subscription missing encryption keys');
+                }
+            } else {
+                console.log('[Push] No active subscription found');
             }
 
         } catch (error) {
             console.error('[Push] Failed to check subscription status:', error);
+            this.isSubscribed = false;
         }
     }
 
@@ -281,38 +291,90 @@ class PushNotificationManager {
 
     async requestPermission() {
         try {
+            console.log('[Push] Requesting notification permission...');
+            console.log('[Push] Current permission status:', Notification.permission);
+
+            // Check if notifications are supported
+            if (!('Notification' in window)) {
+                throw new Error('This browser does not support notifications');
+            }
+
+            if (Notification.permission === 'granted') {
+                console.log('[Push] Permission already granted, proceeding to subscription');
+                this.showSuccess('Notifications already enabled! Setting up push notifications...');
+
+                // Try to subscribe immediately
+                setTimeout(async () => {
+                    try {
+                        await this.subscribeToPush();
+                    } catch (subscribeError) {
+                        console.error('[Push] Auto-subscribe failed:', subscribeError);
+                        this.showError('Permission granted but subscription setup failed. Please try again.');
+                    }
+                }, 500);
+
+                return;
+            }
+
+            if (Notification.permission === 'denied') {
+                this.showError('Notifications are blocked. Please enable them in your browser settings and refresh the page.');
+                return;
+            }
+
+            // Request permission
+            console.log('[Push] Requesting permission...');
             const permission = await Notification.requestPermission();
 
             localStorage.setItem('notificationPermissionRequested', 'true');
-
             this.updatePermissionStatus();
 
-            if (permission === 'granted') {
-                this.showSuccess('Notifications enabled! You can now receive updates.');
+            console.log('[Push] Permission result:', permission);
 
-                // Automatically subscribe to push notifications
-                await this.subscribeToPush();
+            if (permission === 'granted') {
+                this.showSuccess('Notifications enabled! Setting up push notifications...');
+
+                // Wait a moment then try to subscribe
+                setTimeout(async () => {
+                    try {
+                        await this.subscribeToPush();
+                    } catch (subscribeError) {
+                        console.error('[Push] Auto-subscribe failed:', subscribeError);
+                        this.showError('Permission granted but subscription failed. Please try the toggle manually.');
+                    }
+                }, 1000);
+
             } else if (permission === 'denied') {
                 this.showError('Notifications blocked. You can enable them in your browser settings.');
+            } else {
+                console.log('[Push] Permission was dismissed by user');
+                this.showError('Notification permission was not granted. Please try again if you want to receive updates.');
             }
 
         } catch (error) {
             console.error('[Push] Permission request failed:', error);
-            this.showError('Failed to request notification permission');
+            this.showError('Failed to request notification permission: ' + error.message);
         }
     }
 
     async subscribeToPush() {
         try {
+            console.log('[Push] Starting subscription process...');
+
             if (Notification.permission !== 'granted') {
                 throw new Error('Notification permission not granted');
             }
 
             if (!this.applicationServerKey) {
-                throw new Error('Application server key not available');
+                console.log('[Push] No application server key, fetching...');
+                await this.getApplicationServerKey();
+            }
+
+            if (!this.applicationServerKey) {
+                throw new Error('Could not obtain VAPID public key');
             }
 
             console.log('[Push] Subscribing to push notifications...');
+            console.log('[Push] Using key with length:', this.applicationServerKey.length);
 
             const subscription = await this.swRegistration.pushManager.subscribe({
                 userVisibleOnly: true,
@@ -334,7 +396,17 @@ class PushNotificationManager {
 
         } catch (error) {
             console.error('[Push] Subscription failed:', error);
-            this.showError('Failed to enable push notifications: ' + error.message);
+
+            // Provide more specific error messages
+            let errorMessage = 'Failed to enable push notifications: ' + error.message;
+
+            if (error.message.includes('not valid')) {
+                errorMessage = 'Server configuration error. Please contact support.';
+            } else if (error.message.includes('permission')) {
+                errorMessage = 'Please allow notifications in your browser settings.';
+            }
+
+            this.showError(errorMessage);
             throw error;
         }
     }
@@ -491,14 +563,15 @@ class PushNotificationManager {
 
         // Add padding if necessary for base64url
         const padding = '='.repeat((4 - base64String.length % 4) % 4);
-        const base64 = (base64String + padding)
-            .replace(/-/g, '+')
-            .replace(/_/g, '/');
+        const paddedKey = base64String + padding;
 
-        console.log('[Push] Padded base64:', base64);
+        // Convert base64url to regular base64
+        const regularBase64 = paddedKey.replace(/-/g, '+').replace(/_/g, '/');
+
+        console.log('[Push] Converting to regular base64:', regularBase64);
 
         try {
-            const rawData = window.atob(base64);
+            const rawData = window.atob(regularBase64);
             console.log('[Push] Raw data length:', rawData.length);
 
             const outputArray = new Uint8Array(rawData.length);
@@ -507,14 +580,17 @@ class PushNotificationManager {
             }
 
             console.log('[Push] Converted key length:', outputArray.length);
-            console.log('[Push] Expected length: 65 bytes for P-256 key');
 
-            // For the new format, we should get 65 bytes
-            if (outputArray.length !== 65) {
-                console.warn('[Push] Unexpected key length:', outputArray.length);
+            // Validate the key
+            if (outputArray.length === 65 && outputArray[0] === 0x04) {
+                console.log('[Push] ✅ Valid P-256 uncompressed public key');
+            } else if (outputArray.length === 65) {
+                console.log('[Push] ⚠️ 65-byte key but unusual format (first byte:', outputArray[0], ')');
+            } else {
+                console.log('[Push] ⚠️ Unexpected key length:', outputArray.length, '(expected 65)');
             }
 
-            console.log('[Push] Key conversion successful!');
+            console.log('[Push] Key conversion completed!');
             return outputArray;
 
         } catch (error) {

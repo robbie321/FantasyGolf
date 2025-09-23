@@ -568,165 +568,364 @@
       </div>
     </div>
 
+    {% include 'components/notification_prompt.html' with context %}
+
+    <!-- Notification Prompt System -->
+    {% if current_user.is_authenticated %}
+    <div
+      id="notification-prompt-overlay"
+      class="notification-prompt-overlay"
+      style="display: none"
+    >
+      <div class="notification-prompt-modal">
+        <div class="notification-prompt-header">
+          <div class="notification-icon">
+            <i class="fas fa-bell"></i>
+          </div>
+          <h3>Stay Updated with Fantasy Golf!</h3>
+          <button class="close-prompt" onclick="closeNotificationPrompt()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="notification-prompt-body">
+          <div class="notification-benefits">
+            <div class="benefit-item">
+              <i class="fas fa-golf-ball"></i>
+              <span>Live score updates during tournaments</span>
+            </div>
+            <div class="benefit-item">
+              <i class="fas fa-trophy"></i>
+              <span>League results and leaderboard changes</span>
+            </div>
+            <div class="benefit-item">
+              <i class="fas fa-calendar"></i>
+              <span>Tournament start reminders</span>
+            </div>
+            <div class="benefit-item">
+              <i class="fas fa-medal"></i>
+              <span>Prize and winning notifications</span>
+            </div>
+          </div>
+
+          <div class="notification-instructions" id="notification-instructions">
+            <p>
+              Click "Enable Notifications" below to get real-time updates about
+              your fantasy golf leagues!
+            </p>
+          </div>
+        </div>
+
+        <div class="notification-prompt-actions">
+          <button
+            class="btn-enable-notifications"
+            id="enable-notifications-btn"
+            onclick="enableNotifications()"
+          >
+            <i class="fas fa-bell"></i>
+            <span>Enable Notifications</span>
+          </button>
+          <button class="btn-maybe-later" onclick="remindMeLater()">
+            <span>Maybe Later</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Status Bar -->
+    <div
+      id="notification-status-bar"
+      class="notification-status-bar"
+      style="display: none"
+    >
+      <div class="status-content">
+        <div class="status-icon">
+          <i class="fas fa-bell-slash" id="status-icon"></i>
+        </div>
+        <div class="status-text">
+          <span id="status-message">Notifications disabled</span>
+        </div>
+        <button
+          class="status-action-btn"
+          id="status-action-btn"
+          onclick="showNotificationPrompt()"
+        >
+          Enable
+        </button>
+      </div>
+    </div>
+
+    <!-- Floating Notification Button -->
+    <div
+      id="floating-notification-btn"
+      class="floating-notification-btn"
+      style="display: none"
+      onclick="showNotificationPrompt()"
+    >
+      <i class="fas fa-bell"></i>
+      <span class="notification-pulse"></span>
+    </div>
+    {% endif %}
+
+    <!-- Add the CSS -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/notification-prompt.css') }}"
+    />
+
+    <!-- Add the JavaScript -->
     <script>
-      function toggleDropdown() {
-        document.getElementById("myDropdown").classList.toggle("show");
-      }
-      // Close dropdown if clicking outside
-      window.onclick = function (event) {
-        if (!event.target.matches(".dropdown-button")) {
-          var dropdowns = document.getElementsByClassName("dropdown-content");
-          for (var i = 0; i < dropdowns.length; i++) {
-            var openDropdown = dropdowns[i];
-            if (openDropdown.classList.contains("show")) {
-              openDropdown.classList.remove("show");
-            }
+      // Simple notification prompt integration
+      function initializeNotificationPrompts() {
+        // Wait for existing push manager
+        const checkPushManager = setInterval(() => {
+          if (window.pushManager) {
+            clearInterval(checkPushManager);
+            setupNotificationUI();
           }
-        }
-      };
+        }, 100);
 
-      document.addEventListener("DOMContentLoaded", function () {
-        const toggler = document.getElementById("navbar-toggler-btn");
-        const linksContainer = document.getElementById(
-          "navbar-links-container"
-        );
+        function setupNotificationUI() {
+          updateNotificationStatus();
+          setInterval(updateNotificationStatus, 5000);
 
-        if (toggler && linksContainer) {
-          toggler.addEventListener("click", function () {
-            linksContainer.classList.toggle("is-active");
-            toggler.classList.toggle("is-active");
-          });
-        }
-      });
-
-      // --- Professional Toast Notification Logic ---
-      document.addEventListener("DOMContentLoaded", () => {
-        const toasts = document.querySelectorAll(".toast");
-        const TOAST_DURATION = 6000; // 6 seconds
-
-        function createToastManager(toast, index) {
-          const progressBar = toast.querySelector(".toast__progress");
-          const closeButton = toast.querySelector(".toast__close");
-
-          let isHovered = false;
-          let isPaused = false;
-          let timeRemaining = TOAST_DURATION;
-          let startTime = null;
-          let animationId = null;
-
-          // Show toast with stagger
+          // Auto-show prompt after delay if needed
           setTimeout(() => {
-            toast.classList.add("show");
-            startTimer();
-          }, index * 150);
-
-          function startTimer() {
-            if (isPaused) return;
-
-            startTime = Date.now();
-            animateProgress();
-          }
-
-          function animateProgress() {
-            if (isPaused) return;
-
-            const elapsed = Date.now() - startTime;
-            const remaining = Math.max(0, timeRemaining - elapsed);
-            const progress = (1 - remaining / TOAST_DURATION) * 100;
-
-            if (progressBar) {
-              progressBar.style.width = `${progress}%`;
+            if (
+              Notification.permission === "default" &&
+              !localStorage.getItem("notificationPromptDismissedUntil")
+            ) {
+              showNotificationPrompt();
             }
-
-            if (remaining <= 0) {
-              hideToast();
-            } else {
-              animationId = requestAnimationFrame(animateProgress);
-            }
-          }
-
-          function pauseTimer() {
-            if (!isPaused && startTime) {
-              isPaused = true;
-              timeRemaining = Math.max(
-                0,
-                timeRemaining - (Date.now() - startTime)
-              );
-              if (animationId) {
-                cancelAnimationFrame(animationId);
-              }
-            }
-          }
-
-          function resumeTimer() {
-            if (isPaused) {
-              isPaused = false;
-              startTimer();
-            }
-          }
-
-          function hideToast() {
-            if (animationId) {
-              cancelAnimationFrame(animationId);
-            }
-            toast.classList.remove("show");
-            setTimeout(() => {
-              if (toast.parentNode) {
-                toast.remove();
-              }
-            }, 400);
-          }
-
-          // Event listeners
-          toast.addEventListener("mouseenter", () => {
-            isHovered = true;
-            pauseTimer();
-          });
-
-          toast.addEventListener("mouseleave", () => {
-            isHovered = false;
-            resumeTimer();
-          });
-
-          if (closeButton) {
-            closeButton.addEventListener("click", (e) => {
-              e.preventDefault();
-              hideToast();
-            });
-          }
-
-          // Handle visibility change (pause when tab not active)
-          document.addEventListener("visibilitychange", () => {
-            if (document.hidden) {
-              pauseTimer();
-            } else if (!isHovered) {
-              resumeTimer();
-            }
-          });
+          }, 3000);
         }
 
-        // Initialize all toasts
-        toasts.forEach((toast, index) => {
-          createToastManager(toast, index);
-        });
+        function updateNotificationStatus() {
+          const statusBar = document.getElementById("notification-status-bar");
+          const floatingBtn = document.getElementById(
+            "floating-notification-btn"
+          );
+
+          if (!statusBar || !floatingBtn) return;
+
+          const permission = Notification.permission;
+          const isSubscribed =
+            window.pushManager?.getSubscriptionStatus() || false;
+
+          if (permission === "granted" && isSubscribed) {
+            statusBar.style.display = "none";
+            floatingBtn.style.display = "none";
+          } else if (permission === "denied") {
+            statusBar.style.display = "none";
+            floatingBtn.style.display = "none";
+          } else {
+            const dismissed = localStorage.getItem(
+              "notificationPromptDismissedUntil"
+            );
+            const shouldShow = !dismissed || new Date() > new Date(dismissed);
+
+            statusBar.style.display = shouldShow ? "block" : "none";
+            floatingBtn.style.display = shouldShow ? "flex" : "none";
+          }
+        }
+
+        // Make functions global for onclick handlers
+        window.updateNotificationStatus = updateNotificationStatus;
+      }
+
+      // Global functions for your HTML onclick handlers
+      function showNotificationPrompt() {
+        const overlay = document.getElementById("notification-prompt-overlay");
+        if (overlay) overlay.style.display = "flex";
+      }
+
+      function closeNotificationPrompt() {
+        const overlay = document.getElementById("notification-prompt-overlay");
+        if (overlay) overlay.style.display = "none";
+      }
+
+      function enableNotifications() {
+        if (window.pushManager?.requestPermission) {
+          window.pushManager.requestPermission().then(() => {
+            closeNotificationPrompt();
+            window.updateNotificationStatus();
+          });
+        }
+      }
+
+      function remindMeLater() {
+        const dismissUntil = new Date();
+        dismissUntil.setHours(dismissUntil.getHours() + 24);
+        localStorage.setItem(
+          "notificationPromptDismissedUntil",
+          dismissUntil.toISOString()
+        );
+        closeNotificationPrompt();
+        window.updateNotificationStatus();
+      }
+
+      // Initialize
+      document.addEventListener("DOMContentLoaded", () => {
+        setTimeout(initializeNotificationPrompts, 1000);
+      });
+    </script>
+  </body>
+</html>
+
+<script>
+  function toggleDropdown() {
+    document.getElementById("myDropdown").classList.toggle("show");
+  }
+  // Close dropdown if clicking outside
+  window.onclick = function (event) {
+    if (!event.target.matches(".dropdown-button")) {
+      var dropdowns = document.getElementsByClassName("dropdown-content");
+      for (var i = 0; i < dropdowns.length; i++) {
+        var openDropdown = dropdowns[i];
+        if (openDropdown.classList.contains("show")) {
+          openDropdown.classList.remove("show");
+        }
+      }
+    }
+  };
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const toggler = document.getElementById("navbar-toggler-btn");
+    const linksContainer = document.getElementById("navbar-links-container");
+
+    if (toggler && linksContainer) {
+      toggler.addEventListener("click", function () {
+        linksContainer.classList.toggle("is-active");
+        toggler.classList.toggle("is-active");
+      });
+    }
+  });
+
+  // --- Professional Toast Notification Logic ---
+  document.addEventListener("DOMContentLoaded", () => {
+    const toasts = document.querySelectorAll(".toast");
+    const TOAST_DURATION = 6000; // 6 seconds
+
+    function createToastManager(toast, index) {
+      const progressBar = toast.querySelector(".toast__progress");
+      const closeButton = toast.querySelector(".toast__close");
+
+      let isHovered = false;
+      let isPaused = false;
+      let timeRemaining = TOAST_DURATION;
+      let startTime = null;
+      let animationId = null;
+
+      // Show toast with stagger
+      setTimeout(() => {
+        toast.classList.add("show");
+        startTimer();
+      }, index * 150);
+
+      function startTimer() {
+        if (isPaused) return;
+
+        startTime = Date.now();
+        animateProgress();
+      }
+
+      function animateProgress() {
+        if (isPaused) return;
+
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, timeRemaining - elapsed);
+        const progress = (1 - remaining / TOAST_DURATION) * 100;
+
+        if (progressBar) {
+          progressBar.style.width = `${progress}%`;
+        }
+
+        if (remaining <= 0) {
+          hideToast();
+        } else {
+          animationId = requestAnimationFrame(animateProgress);
+        }
+      }
+
+      function pauseTimer() {
+        if (!isPaused && startTime) {
+          isPaused = true;
+          timeRemaining = Math.max(0, timeRemaining - (Date.now() - startTime));
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+          }
+        }
+      }
+
+      function resumeTimer() {
+        if (isPaused) {
+          isPaused = false;
+          startTimer();
+        }
+      }
+
+      function hideToast() {
+        if (animationId) {
+          cancelAnimationFrame(animationId);
+        }
+        toast.classList.remove("show");
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.remove();
+          }
+        }, 400);
+      }
+
+      // Event listeners
+      toast.addEventListener("mouseenter", () => {
+        isHovered = true;
+        pauseTimer();
       });
 
-      // Function to create dynamic toasts (for JavaScript usage)
-      function showToast(message, category = "info", duration = 6000) {
-        const container = document.getElementById("toast-container");
-        if (!container) return;
+      toast.addEventListener("mouseleave", () => {
+        isHovered = false;
+        resumeTimer();
+      });
 
-        const iconMap = {
-          success: "fa-check-circle",
-          danger: "fa-exclamation-circle",
-          error: "fa-exclamation-circle",
-          warning: "fa-exclamation-triangle",
-          info: "fa-info-circle",
-        };
+      if (closeButton) {
+        closeButton.addEventListener("click", (e) => {
+          e.preventDefault();
+          hideToast();
+        });
+      }
 
-        const toast = document.createElement("div");
-        toast.className = `toast toast--${category}`;
-        toast.innerHTML = `
+      // Handle visibility change (pause when tab not active)
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          pauseTimer();
+        } else if (!isHovered) {
+          resumeTimer();
+        }
+      });
+    }
+
+    // Initialize all toasts
+    toasts.forEach((toast, index) => {
+      createToastManager(toast, index);
+    });
+  });
+
+  // Function to create dynamic toasts (for JavaScript usage)
+  function showToast(message, category = "info", duration = 6000) {
+    const container = document.getElementById("toast-container");
+    if (!container) return;
+
+    const iconMap = {
+      success: "fa-check-circle",
+      danger: "fa-exclamation-circle",
+      error: "fa-exclamation-circle",
+      warning: "fa-exclamation-triangle",
+      info: "fa-info-circle",
+    };
+
+    const toast = document.createElement("div");
+    toast.className = `toast toast--${category}`;
+    toast.innerHTML = `
           <div class="toast__content">
             <div class="toast__icon">
               <i class="fa-solid ${iconMap[category] || iconMap.info}"></i>
@@ -737,138 +936,134 @@
           <div class="toast__progress"></div>
         `;
 
-        container.appendChild(toast);
+    container.appendChild(toast);
 
-        // Trigger show animation
-        setTimeout(() => toast.classList.add("show"), 50);
+    // Trigger show animation
+    setTimeout(() => toast.classList.add("show"), 50);
 
-        // Auto-hide
-        const timer = setTimeout(() => {
-          toast.classList.remove("show");
-          setTimeout(() => toast.remove(), 400);
-        }, duration);
+    // Auto-hide
+    const timer = setTimeout(() => {
+      toast.classList.remove("show");
+      setTimeout(() => toast.remove(), 400);
+    }, duration);
 
-        // Close button
-        const closeBtn = toast.querySelector(".toast__close");
-        closeBtn.addEventListener("click", () => {
-          clearTimeout(timer);
-          toast.classList.remove("show");
-          setTimeout(() => toast.remove(), 400);
+    // Close button
+    const closeBtn = toast.querySelector(".toast__close");
+    closeBtn.addEventListener("click", () => {
+      clearTimeout(timer);
+      toast.classList.remove("show");
+      setTimeout(() => toast.remove(), 400);
+    });
+
+    return toast;
+  }
+
+  // Make showToast globally available
+  window.showToast = showToast;
+
+  // --- Dismiss PWA Prompt ---
+  const pwaPrompt = document.getElementById("ios-pwa-prompt");
+  const closePwaPromptBtn = document.getElementById("close-pwa-prompt");
+
+  if (pwaPrompt && closePwaPromptBtn) {
+    closePwaPromptBtn.addEventListener("click", () => {
+      pwaPrompt.style.display = "none";
+    });
+  }
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("../static/service-worker.js")
+        .then((registration) => {
+          console.log(
+            "ServiceWorker registration successful with scope: ",
+            registration.scope
+          );
+        })
+        .catch((error) => {
+          console.log("ServiceWorker registration failed: ", error);
         });
+    });
+  }
+</script>
+<script>
+  function showModal() {
+    document.getElementById("join-league-overlay").classList.remove("hidden");
+    document.body.style.overflow = "hidden"; // Prevent background scrolling
+  }
 
-        return toast;
+  function hideModal() {
+    document.getElementById("join-league-overlay").classList.add("hidden");
+    document.body.style.overflow = "auto"; // Re-enable background scrolling
+  }
+
+  // Close modal when clicking outside
+  document
+    .getElementById("join-league-overlay")
+    .addEventListener("click", function (e) {
+      if (e.target === this) {
+        hideModal();
+      }
+    });
+
+  // Close modal with Escape key
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      hideModal();
+    }
+  });
+
+  // Form submission demo
+  document
+    .getElementById("join-league-form")
+    .addEventListener("submit", function (e) {
+      e.preventDefault();
+      const code = document.getElementById("league-code").value;
+      const messageEl = document.getElementById("modal-message");
+
+      if (!code.trim()) {
+        messageEl.textContent = "Please enter a league code";
+        messageEl.className = "modal-message error";
+        return;
       }
 
-      // Make showToast globally available
-      window.showToast = showToast;
-
-      // --- Dismiss PWA Prompt ---
-      const pwaPrompt = document.getElementById("ios-pwa-prompt");
-      const closePwaPromptBtn = document.getElementById("close-pwa-prompt");
-
-      if (pwaPrompt && closePwaPromptBtn) {
-        closePwaPromptBtn.addEventListener("click", () => {
-          pwaPrompt.style.display = "none";
-        });
+      if (code.length !== 6) {
+        messageEl.textContent = "League code must be 6 characters";
+        messageEl.className = "modal-message error";
+        return;
       }
 
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker
-            .register("../static/service-worker.js")
-            .then((registration) => {
-              console.log(
-                "ServiceWorker registration successful with scope: ",
-                registration.scope
-              );
-            })
-            .catch((error) => {
-              console.log("ServiceWorker registration failed: ", error);
-            });
-        });
-      }
-    </script>
-    <script>
-      function showModal() {
-        document
-          .getElementById("join-league-overlay")
-          .classList.remove("hidden");
-        document.body.style.overflow = "hidden"; // Prevent background scrolling
-      }
+      // Simulate success
+      messageEl.textContent = "Successfully joined league!";
+      messageEl.className = "modal-message success";
 
-      function hideModal() {
-        document.getElementById("join-league-overlay").classList.add("hidden");
-        document.body.style.overflow = "auto"; // Re-enable background scrolling
-      }
+      setTimeout(() => {
+        hideModal();
+        messageEl.className = "modal-message";
+        messageEl.textContent = "";
+        document.getElementById("league-code").value = "";
+      }, 1500);
+    });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Simple script to trigger the fade-in animation
+    const sections = document.querySelectorAll(".fade-in-section");
 
-      // Close modal when clicking outside
-      document
-        .getElementById("join-league-overlay")
-        .addEventListener("click", function (e) {
-          if (e.target === this) {
-            hideModal();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
           }
         });
+      },
+      { threshold: 0.1 }
+    );
 
-      // Close modal with Escape key
-      document.addEventListener("keydown", function (e) {
-        if (e.key === "Escape") {
-          hideModal();
-        }
-      });
-
-      // Form submission demo
-      document
-        .getElementById("join-league-form")
-        .addEventListener("submit", function (e) {
-          e.preventDefault();
-          const code = document.getElementById("league-code").value;
-          const messageEl = document.getElementById("modal-message");
-
-          if (!code.trim()) {
-            messageEl.textContent = "Please enter a league code";
-            messageEl.className = "modal-message error";
-            return;
-          }
-
-          if (code.length !== 6) {
-            messageEl.textContent = "League code must be 6 characters";
-            messageEl.className = "modal-message error";
-            return;
-          }
-
-          // Simulate success
-          messageEl.textContent = "Successfully joined league!";
-          messageEl.className = "modal-message success";
-
-          setTimeout(() => {
-            hideModal();
-            messageEl.className = "modal-message";
-            messageEl.textContent = "";
-            document.getElementById("league-code").value = "";
-          }, 1500);
-        });
-    </script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        // Simple script to trigger the fade-in animation
-        const sections = document.querySelectorAll(".fade-in-section");
-
-        const observer = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              if (entry.isIntersecting) {
-                entry.target.classList.add("is-visible");
-              }
-            });
-          },
-          { threshold: 0.1 }
-        );
-
-        sections.forEach((section) => {
-          observer.observe(section);
-        });
-      });
-    </script>
-  </body>
-</html>
+    sections.forEach((section) => {
+      observer.observe(section);
+    });
+  });
+</script>
