@@ -1,36 +1,16 @@
 // Enhanced Service Worker for Fantasy Fairways
 // Handles push notifications, caching, and offline functionality
 
-const CACHE_NAME = 'fantasy-fairways-v1.2.0';
-const STATIC_CACHE = 'fantasy-fairways-static-v1.2.0';
-const DYNAMIC_CACHE = 'fantasy-fairways-dynamic-v1.2.0';
+const CACHE_NAME = 'fantasy-fairways-v1.0.0';
+const STATIC_CACHE = 'fantasy-fairways-static-v1.0.0';
 
 // Define what to cache
 const STATIC_ASSETS = [
     '/',
     '/static/css/style.css',
-    '/static/css/LeaguesView/league_view.css',
-    '/static/css/SharedSections/tour_leaderboard.css',
-    '/static/css/auth/professional_login.css',
-    '/static/css/form_style.css',
     '/static/js/main.js',
-    '/static/js/navigation.js',
-    '/static/js/ui.js',
-    '/static/js/views.js',
-    '/static/js/leaderboard.js',
-    '/static/js/api.js',
-    '/static/css/fa/css/fontawesome.css',
-    '/static/css/fa/css/brands.css',
-    '/static/css/fa/css/solid.css',
     '/static/manifest.json',
     '/offline'
-];
-
-// API endpoints that should be cached
-const API_CACHE_PATTERNS = [
-    /\/api\/live-leaderboard\/\w+/,
-    /\/api\/tour-schedule\/\w+/,
-    /\/league\/\d+/
 ];
 
 // Install event - cache static assets
@@ -38,18 +18,18 @@ self.addEventListener('install', event => {
     console.log('[SW] Installing service worker...');
 
     event.waitUntil(
-        Promise.all([
-            // Cache static assets
-            caches.open(STATIC_CACHE).then(cache => {
-                console.log('[SW] Caching static assets');
-                return cache.addAll(STATIC_ASSETS.map(url => {
-                    return new Request(url, { cache: 'reload' });
-                }));
-            }),
-            // Force activation
-            self.skipWaiting()
-        ])
+        caches.open(STATIC_CACHE).then(cache => {
+            console.log('[SW] Caching static assets');
+            return cache.addAll(STATIC_ASSETS.map(url => {
+                return new Request(url, { cache: 'reload' });
+            }));
+        }).catch(err => {
+            console.log('[SW] Cache install failed:', err);
+        })
     );
+
+    // Force activation
+    self.skipWaiting();
 });
 
 // Activate event - clean up old caches
@@ -62,7 +42,7 @@ self.addEventListener('activate', event => {
             caches.keys().then(cacheNames => {
                 return Promise.all(
                     cacheNames
-                        .filter(name => name !== STATIC_CACHE && name !== DYNAMIC_CACHE)
+                        .filter(name => name !== STATIC_CACHE && name.startsWith('fantasy-fairways-'))
                         .map(name => {
                             console.log('[SW] Deleting old cache:', name);
                             return caches.delete(name);
@@ -73,25 +53,6 @@ self.addEventListener('activate', event => {
             self.clients.claim()
         ])
     );
-});
-
-// Fetch event - serve from cache or network
-self.addEventListener('fetch', event => {
-    const { request } = event;
-    const url = new URL(request.url);
-
-    // Handle different request types
-    if (request.method === 'GET') {
-        if (isStaticAsset(request.url)) {
-            event.respondWith(handleStaticAsset(request));
-        } else if (isAPIRequest(request.url)) {
-            event.respondWith(handleAPIRequest(request));
-        } else if (isNavigationRequest(request)) {
-            event.respondWith(handleNavigationRequest(request));
-        } else {
-            event.respondWith(handleOtherRequests(request));
-        }
-    }
 });
 
 // Push notification event handler
@@ -125,25 +86,18 @@ self.addEventListener('push', event => {
     }
 
     event.waitUntil(
-        Promise.all([
-            // Show notification
-            self.registration.showNotification(notificationData.title, {
-                body: notificationData.body,
-                icon: notificationData.icon,
-                badge: notificationData.badge,
-                tag: notificationData.tag,
-                requireInteraction: notificationData.requireInteraction,
-                data: notificationData.data,
-                actions: notificationData.actions || [],
-                image: notificationData.image,
-                vibrate: notificationData.vibrate || [200, 100, 200],
-                sound: notificationData.sound,
-                timestamp: Date.now(),
-                renotify: true
-            }),
-            // Log analytics (optional)
-            logNotificationReceived(notificationData)
-        ])
+        self.registration.showNotification(notificationData.title, {
+            body: notificationData.body,
+            icon: notificationData.icon,
+            badge: notificationData.badge,
+            tag: notificationData.tag,
+            requireInteraction: notificationData.requireInteraction,
+            data: notificationData.data,
+            actions: notificationData.actions || [],
+            vibrate: notificationData.vibrate || [200, 100, 200],
+            timestamp: Date.now(),
+            renotify: true
+        })
     );
 });
 
@@ -169,172 +123,37 @@ self.addEventListener('notificationclick', event => {
 self.addEventListener('notificationclose', event => {
     console.log('[SW] Notification closed:', event.notification);
 
-    // Optional: Log notification dismissal analytics
+    // Log notification dismissal analytics
     const data = event.notification.data || {};
     logNotificationDismissed(data);
 });
 
-// Background sync for offline actions
-self.addEventListener('sync', event => {
-    console.log('[SW] Background sync triggered:', event.tag);
-
-    if (event.tag === 'league-join') {
-        event.waitUntil(syncLeagueJoin());
-    } else if (event.tag === 'score-update') {
-        event.waitUntil(syncScoreUpdates());
-    }
-});
-
-// Helper Functions
-
-function isStaticAsset(url) {
-    return STATIC_ASSETS.some(asset => url.includes(asset)) ||
-           url.includes('/static/') ||
-           url.includes('.css') ||
-           url.includes('.js') ||
-           url.includes('.png') ||
-           url.includes('.jpg') ||
-           url.includes('.ico');
-}
-
-function isAPIRequest(url) {
-    return API_CACHE_PATTERNS.some(pattern => pattern.test(url)) ||
-           url.includes('/api/');
-}
-
-function isNavigationRequest(request) {
-    return request.mode === 'navigate' ||
-           (request.method === 'GET' && request.headers.get('accept').includes('text/html'));
-}
-
-async function handleStaticAsset(request) {
-    try {
-        // Try cache first
-        const cachedResponse = await caches.match(request);
-        if (cachedResponse) {
-            return cachedResponse;
-        }
-
-        // Fetch from network and cache
-        const networkResponse = await fetch(request);
-        if (networkResponse.ok) {
-            const cache = await caches.open(STATIC_CACHE);
-            cache.put(request, networkResponse.clone());
-        }
-        return networkResponse;
-    } catch (error) {
-        console.error('[SW] Static asset fetch failed:', error);
-        return caches.match(request);
-    }
-}
-
-async function handleAPIRequest(request) {
-    try {
-        // Network first for API requests
-        const networkResponse = await fetch(request);
-
-        if (networkResponse.ok) {
-            // Cache successful API responses
-            const cache = await caches.open(DYNAMIC_CACHE);
-            cache.put(request, networkResponse.clone());
-        }
-
-        return networkResponse;
-    } catch (error) {
-        console.log('[SW] API request failed, trying cache:', error);
-
-        // Fallback to cache
-        const cachedResponse = await caches.match(request);
-        if (cachedResponse) {
-            return cachedResponse;
-        }
-
-        // Return offline indicator for API failures
-        return new Response(JSON.stringify({
-            error: 'Offline',
-            message: 'This content is not available offline'
-        }), {
-            status: 503,
-            headers: { 'Content-Type': 'application/json' }
-        });
-    }
-}
-
-async function handleNavigationRequest(request) {
-    try {
-        // Try network first
-        const networkResponse = await fetch(request);
-        return networkResponse;
-    } catch (error) {
-        console.log('[SW] Navigation request failed, trying cache:', error);
-
-        // Try to find cached page
-        const cachedResponse = await caches.match(request);
-        if (cachedResponse) {
-            return cachedResponse;
-        }
-
-        // Fallback to offline page
-        return caches.match('/offline') ||
-               new Response('Offline - Please check your connection', {
-                   status: 503,
-                   headers: { 'Content-Type': 'text/html' }
-               });
-    }
-}
-
-async function handleOtherRequests(request) {
-    try {
-        // Try cache first for other requests
-        const cachedResponse = await caches.match(request);
-        if (cachedResponse) {
-            return cachedResponse;
-        }
-
-        // Fetch from network
-        const networkResponse = await fetch(request);
-
-        // Cache if successful
-        if (networkResponse.ok) {
-            const cache = await caches.open(DYNAMIC_CACHE);
-            cache.put(request, networkResponse.clone());
-        }
-
-        return networkResponse;
-    } catch (error) {
-        console.error('[SW] Request failed:', error);
-        return new Response('Service Unavailable', { status: 503 });
-    }
-}
-
+// Helper function to enhance notifications
 function enhanceNotification(data) {
     const enhancements = {
         'league_update': {
             title: '🏆 League Update',
-            icon: '/static/images/league-icon.png',
+            icon: '/static/images/icon-192x192.png',
             requireInteraction: true,
             actions: [
                 {
                     action: 'view-league',
-                    title: 'View League',
-                    icon: '/static/images/action-view.png'
+                    title: 'View League'
                 },
                 {
                     action: 'dismiss',
-                    title: 'Dismiss',
-                    icon: '/static/images/action-dismiss.png'
+                    title: 'Dismiss'
                 }
             ]
         },
         'score_update': {
             title: '⛳ Score Update',
-            icon: '/static/images/score-icon.png',
+            icon: '/static/images/icon-192x192.png',
             vibrate: [100, 50, 100],
             actions: [
                 {
                     action: 'view-leaderboard',
-                    title: 'View Leaderboard',
-                    icon: '/static/images/action-leaderboard.png'
+                    title: 'View Leaderboard'
                 }
             ]
         },
@@ -345,13 +164,11 @@ function enhanceNotification(data) {
             actions: [
                 {
                     action: 'view-live',
-                    title: 'Watch Live',
-                    icon: '/static/images/action-live.png'
+                    title: 'Watch Live'
                 },
                 {
                     action: 'view-team',
-                    title: 'My Team',
-                    icon: '/static/images/action-team.png'
+                    title: 'My Team'
                 }
             ]
         },
@@ -362,8 +179,7 @@ function enhanceNotification(data) {
             actions: [
                 {
                     action: 'view-winnings',
-                    title: 'View Winnings',
-                    icon: '/static/images/action-money.png'
+                    title: 'View Winnings'
                 }
             ]
         }
@@ -410,11 +226,11 @@ async function handleNotificationClick(data) {
 
 async function handleNotificationAction(action, data) {
     const actions = {
-        'view-league': () => navigateToUrl(data.leagueUrl || '/dashboard#leagues'),
-        'view-leaderboard': () => navigateToUrl(data.leaderboardUrl || '/dashboard#leaderboards'),
-        'view-live': () => navigateToUrl(data.liveUrl || '/dashboard#leaderboards'),
-        'view-team': () => navigateToUrl(data.teamUrl || '/dashboard'),
-        'view-winnings': () => navigateToUrl(data.winningsUrl || '/dashboard#wallet'),
+        'view-league': () => navigateToUrl(data.url || '/dashboard'),
+        'view-leaderboard': () => navigateToUrl('/dashboard#leaderboards'),
+        'view-live': () => navigateToUrl('/dashboard#leaderboards'),
+        'view-team': () => navigateToUrl('/dashboard'),
+        'view-winnings': () => navigateToUrl('/dashboard'),
         'dismiss': () => Promise.resolve()
     };
 
@@ -444,67 +260,10 @@ async function navigateToUrl(url) {
     }
 }
 
-// Background sync functions
-async function syncLeagueJoin() {
-    try {
-        // Get pending league joins from IndexedDB
-        const pendingJoins = await getPendingLeagueJoins();
-
-        for (const join of pendingJoins) {
-            try {
-                const response = await fetch('/api/join-league', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': join.csrfToken
-                    },
-                    body: JSON.stringify({ league_code: join.leagueCode })
-                });
-
-                if (response.ok) {
-                    await removePendingLeagueJoin(join.id);
-
-                    // Show success notification
-                    await self.registration.showNotification('League Joined!', {
-                        body: `Successfully joined league: ${join.leagueCode}`,
-                        icon: '/static/images/success-icon.png',
-                        tag: 'league-join-success'
-                    });
-                }
-            } catch (error) {
-                console.error('[SW] Failed to sync league join:', error);
-            }
-        }
-    } catch (error) {
-        console.error('[SW] Sync league join failed:', error);
-    }
-}
-
-async function syncScoreUpdates() {
-    // Implementation for syncing score updates when back online
-    console.log('[SW] Syncing score updates...');
-}
-
 // Analytics functions
-async function logNotificationReceived(data) {
-    try {
-        await fetch('/api/analytics/notification-received', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                type: data.type,
-                timestamp: Date.now(),
-                tag: data.tag
-            })
-        });
-    } catch (error) {
-        console.log('[SW] Failed to log notification received:', error);
-    }
-}
-
 async function logNotificationClicked(data) {
     try {
-        await fetch('/api/analytics/notification-clicked', {
+        await fetch('/api/push/analytics/notification-clicked', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -520,7 +279,7 @@ async function logNotificationClicked(data) {
 
 async function logNotificationDismissed(data) {
     try {
-        await fetch('/api/analytics/notification-dismissed', {
+        await fetch('/api/push/analytics/notification-dismissed', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -536,7 +295,7 @@ async function logNotificationDismissed(data) {
 
 async function logNotificationAction(action, data) {
     try {
-        await fetch('/api/analytics/notification-action', {
+        await fetch('/api/push/analytics/notification-action', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -551,14 +310,11 @@ async function logNotificationAction(action, data) {
     }
 }
 
-// IndexedDB helper functions for offline storage
-async function getPendingLeagueJoins() {
-    // Implementation would use IndexedDB to get pending joins
-    return [];
-}
-
-async function removePendingLeagueJoin(id) {
-    // Implementation would remove from IndexedDB
-}
+// Listen for messages from main thread
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+});
 
 console.log('[SW] Service Worker registered successfully');

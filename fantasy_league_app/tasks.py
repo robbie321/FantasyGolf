@@ -1,11 +1,13 @@
 import logging
+from fantasy_league_app.extensions import db, celery
 from datetime import datetime, timedelta, timezone, date
 from collections import defaultdict
 import requests
 import os
 from sqlalchemy import func
-
-from . import db, mail, socketio, get_app, cache    # Make sure mail is imported if you use it in other tasks
+from typing import Dict, List, Optional, Any
+from fantasy_league_app.push.models import NotificationLog, NotificationTemplate
+from . import mail, socketio, get_app, cache    # Make sure mail is imported if you use it in other tasks
 from flask_mail import Message
 from flask import current_app
 
@@ -1014,6 +1016,7 @@ def cleanup_expired_caches():
     time_limit=720         # 12 minutes
 )
 def cleanup_expired_verification_tokens(self):
+
     """Clean up expired email verification tokens"""
     app = get_app()
 
@@ -1055,3 +1058,252 @@ def cleanup_expired_verification_tokens(self):
     except Exception as e:
         logger.error(f"TOKEN CLEANUP: Unexpected error: {e}")
         raise
+
+@celery.task(bind=True)
+def send_push_notification_task(
+    self,
+    user_ids: List[int],
+    notification_type: str,
+    title: str,
+    body: str,
+    data: Optional[Dict] = None,
+    url: Optional[str] = None,
+    icon: Optional[str] = None,
+    badge: Optional[str] = None,
+    actions: Optional[List[Dict]] = None,
+    require_interaction: bool = False,
+    tag: Optional[str] = None,
+    vibrate: Optional[List[int]] = None
+):
+    """
+    Celery task to send push notifications in the background
+    Integrates with your existing task system
+    """
+    try:
+        from fantasy_league_app.push.services import push_service
+
+        result = push_service.send_notification_sync(
+            user_ids=user_ids,
+            notification_type=notification_type,
+            title=title,
+            body=body,
+            data=data,
+            url=url,
+            icon=icon,
+            badge=badge,
+            actions=actions,
+            require_interaction=require_interaction,
+            tag=tag,
+            vibrate=vibrate
+        )
+
+        return {
+            'task_id': self.request.id,
+            'status': 'completed',
+            **result
+        }
+
+    except Exception as e:
+        self.retry(countdown=60, max_retries=3, exc=e)
+
+
+@celery.task
+def send_template_notification_task(
+    user_ids: List[int],
+    template_name: str,
+    template_data: Dict[str, Any],
+    **kwargs
+):
+    """Celery task to send template-based notifications"""
+    try:
+        from fantasy_league_app.push.services import push_service
+
+        return push_service.send_from_template(
+            user_ids=user_ids,
+            template_name=template_name,
+            template_data=template_data,
+            **kwargs
+        )
+
+    except Exception as e:
+        # Log error and don't retry template notifications
+        import logging
+        logging.error(f"Template notification failed: {e}")
+        return {'error': str(e), 'success': 0, 'failed': len(user_ids)}
+
+
+@celery.task
+def cleanup_old_push_subscriptions():
+    """Celery task to cleanup old/inactive subscriptions"""
+    from datetime import timedelta
+
+    try:
+        cutoff_date = datetime.utcnow() - timedelta(days=30)
+
+        # Only cleanup if the model has these fields
+        query = PushSubscription.query
+
+        if hasattr(PushSubscription, 'last_used') and hasattr(PushSubscription, 'is_active'):
+            old_subscriptions = query.filter(
+                PushSubscription.last_used < cutoff_date,
+                PushSubscription.is_active == False
+            ).all()
+        else:
+            # Fallback: cleanup very old subscriptions
+            if hasattr(PushSubscription, 'created_at'):
+                very_old_date = datetime.utcnow() - timedelta(days=90)
+                old_subscriptions = query.filter(
+                    PushSubscription.created_at < very_old_date
+                ).all()
+            else:
+                old_subscriptions = []
+
+        count = len(old_subscriptions)
+        for subscription in old_subscriptions:
+            db.session.delete(subscription)
+
+        db.session.commit()
+        return f"Cleaned up {count} old push subscriptions"
+
+    except Exception as e:
+        db.session.rollback()
+        return f"Failed to cleanup subscriptions: {e}"
+
+
+@celery.task
+def send_league_start_notifications():
+    """Send notifications when leagues start (integrate with your existing schedule)"""
+    try:
+        from fantasy_league_app.push.services import send_tournament_start_notification
+
+        # Get leagues starting today (adjust logic to match your needs)
+        today = datetime.utcnow().date()
+        starting_leagues = League.query.filter(
+            db.func.date(League.start_date) == today,
+            League.is_finalized == False
+        ).all()
+
+        notifications_sent = 0
+        for league in starting_leagues:
+            try:
+                # Get all users in this league
+                user_ids = [entry.user_id for entry in league.entries]
+
+                if user_ids:
+                    send_template_notification_task.delay(
+                        user_ids=user_ids,
+                        template_name='tournament_start',
+                        template_data={
+                            'tournament_name': league.name,
+                            'league_id': league.id
+                        },
+                        url=f'/league/{league.id}'
+                    )
+                    notifications_sent += 1
+
+            except Exception as e:
+                print(f"Failed to send notification for league {league.id}: {e}")
+
+        return f"Sent tournament start notifications for {notifications_sent} leagues"
+
+    except Exception as e:
+        return f"Failed to send league start notifications: {e}"
+
+
+@celery.task
+def send_rank_change_notifications():
+    """
+    Check for significant rank changes and send notifications
+    This would integrate with your existing score update tasks
+    """
+    try:
+        from fantasy_league_app.push.services import send_rank_change_notification
+
+        # This is pseudo-code - adapt to your rank change detection logic
+        # You might call this after score updates
+
+        notifications_sent = 0
+
+        # Get active leagues
+        active_leagues = League.query.filter_by(is_finalized=False).all()
+
+        for league in active_leagues:
+            try:
+                # Get current leaderboard
+                leaderboard = league.get_leaderboard()
+
+                for entry_data in leaderboard:
+                    user_id = entry_data['user_id']
+                    current_rank = entry_data['position']
+
+                    # Get entry to check previous rank
+                    entry = LeagueEntry.query.filter_by(
+                        league_id=league.id,
+                        user_id=user_id
+                    ).first()
+
+                    if entry and hasattr(entry, 'previous_rank'):
+                        previous_rank = entry.previous_rank
+
+                        # Check for significant changes
+                        if previous_rank and abs(previous_rank - current_rank) >= 5:
+                            send_rank_change_notification(
+                                user_id=user_id,
+                                league_name=league.name,
+                                new_rank=current_rank,
+                                old_rank=previous_rank
+                            )
+                            notifications_sent += 1
+
+                        # Update stored rank
+                        if hasattr(entry, 'update_rank_if_changed'):
+                            entry.update_rank_if_changed(current_rank)
+
+            except Exception as e:
+                print(f"Failed to process rank changes for league {league.id}: {e}")
+
+        return f"Processed rank changes, sent {notifications_sent} notifications"
+
+    except Exception as e:
+        return f"Failed to process rank change notifications: {e}"
+
+
+# Integration with your existing deadline reminder task
+def enhance_send_deadline_reminders():
+    """
+    Example of how to add push notifications to your existing deadline reminder task
+    Add this code to your existing send_deadline_reminders task
+    """
+
+    # Your existing email logic...
+
+    # Add push notifications
+    try:
+        # Get leagues with upcoming deadlines (12-24 hours)
+        from datetime import timedelta
+        now = datetime.utcnow()
+        deadline_start = now + timedelta(hours=12)
+        deadline_end = now + timedelta(hours=24)
+
+        upcoming_leagues = League.query.filter(
+            League.entry_deadline >= deadline_start,
+            League.entry_deadline <= deadline_end,
+            League.is_finalized == False
+        ).all()
+
+        for league in upcoming_leagues:
+            # Get users in this league
+            user_ids = [entry.user_id for entry in league.entries]
+
+            if user_ids:
+                send_template_notification_task.delay(
+                    user_ids=user_ids,
+                    template_name='league_update',
+                    template_data={
+                        'message': f'Entry deadline for {league.name} is in 12-24 hours!'
+                    },
+                    url=f'/league/{league.id}'
+                )
+
+    except Exception as e:
+        print(f"Failed to send push deadline reminders: {e}")

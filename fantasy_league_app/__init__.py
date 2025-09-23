@@ -1,82 +1,17 @@
 import os
 import stripe
 from flask import Flask, render_template
-from flask_caching import Cache
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_login import LoginManager
-from flask_wtf.csrf import CSRFProtect
-from flask_socketio import SocketIO
-from flask_mail import Mail
-from .config import config, Config
-from celery import Celery
-from celery.schedules import crontab
 import mimetypes
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-
-
-# --- Extension Initialization ---
-cache = Cache()
-db = SQLAlchemy()
-migrate = Migrate()
-mail = Mail()
-csrf = CSRFProtect()
-socketio = SocketIO()
-limiter = Limiter(key_func=get_remote_address)
-
-def make_celery(app=None):
-    """Create and configure Celery instance"""
-    redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
-
-    celery = Celery(
-        'fantasy_league_app',
-        broker=redis_url,
-        backend=redis_url,
-        include=['fantasy_league_app.tasks']
-
-    )
-    # IMPORTANT: Configure Celery to load from celeryconfig.py
-    celery.config_from_object('celeryconfig')
-
-    # Basic configuration - beat schedule will be loaded from celeryconfig.py
-    celery.conf.update(
-        broker_url=redis_url,
-        result_backend=redis_url,
-        task_serializer='json',
-        result_serializer='json',
-        accept_content=['json'],
-        timezone='UTC',
-        enable_utc=True,
-        broker_connection_retry_on_startup=True,
-        broker_connection_retry=True,
-        broker_connection_max_retries=10,
-        # Add debugging options
-        task_track_started=True,
-        task_send_sent_event=True,
-    )
-
-    if app is not None:
-        # Configure tasks to run with app context
-        class ContextTask(celery.Task):
-            """Make celery tasks work with Flask app context."""
-            def __call__(self, *args, **kwargs):
-                with app.app_context():
-                    return self.run(*args, **kwargs)
-
-        celery.Task = ContextTask
-
-    return celery
-
-# Create Celery instance without app initially
-celery = make_celery()
-
-login_manager = LoginManager()
-login_manager.login_view = 'auth.login_choice'
-login_manager.session_protection = "strong"
+from .cli import register_cli_commands
+from fantasy_league_app.push import push_bp
+# Import extensions from the new extensions file
+from .extensions import (
+    cache, db, migrate, mail, csrf, socketio, login_manager,
+    celery, limiter, init_extensions
+)
+from .config import config, Config
 
 _app_instance = None
-
 
 def create_app(config_name=None):
     """
@@ -97,38 +32,8 @@ def create_app(config_name=None):
         # New way: create_app('development') - use config dictionary
         app.config.from_object(config[config_name])
 
-    # --- Initialize Extensions with the App ---
-    db.init_app(app)
-    migrate.init_app(app, db)
-    csrf.init_app(app)
-    mail.init_app(app)
-    socketio.init_app(app)
-    cache.init_app(app)
-    login_manager.init_app(app)
-    Config.init_app(app)
-
-    # Properly configure Celery with app context
-    celery.conf.update(app.config)
-
-    # Initialize rate limiter
-    limiter = Limiter(
-    app,
-    storage_uri=os.environ.get('REDIS_URL', 'redis://localhost:6379/1'),
-    default_limits=["200 per day", "50 per hour"]
-)
-
-    # IMPORTANT: Explicitly set the beat schedule
-    from celery.schedules import crontab
-    celery.conf.beat_schedule = app.config.get('beat_schedule', {})
-
-    # Configure tasks to run with app context
-    class ContextTask(celery.Task):
-        """Make celery tasks work with Flask app context."""
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return self.run(*args, **kwargs)
-
-    celery.Task = ContextTask
+    # Initialize all extensions
+    init_extensions(app)
 
     # Import models and define user loaders before registering blueprints
     from .models import User, Club, SiteAdmin
@@ -169,12 +74,17 @@ def create_app(config_name=None):
     from .admin.routes import admin_bp
     from .player.routes import player_bp
     from .api.routes import api_bp
+
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(league_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(player_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(push_bp)
+
+    # Register CLI commands
+    register_cli_commands(app)
 
     return app
 

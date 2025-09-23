@@ -1,5 +1,5 @@
 from flask import current_app
-from fantasy_league_app import cache
+from fantasy_league_app.extensions import cache
 import json
 import hashlib
 from functools import wraps
