@@ -39,24 +39,66 @@ class PushNotificationService:
         return True
 
     def _convert_der_private_key(self, der_base64_key):
-        """Convert DER-encoded private key to raw bytes for pywebpush"""
+        """Convert VAPID private key - now supports base64url format"""
         try:
-            import base64
-            # Decode base64
-            der_bytes = base64.b64decode(der_base64_key)
+            current_app.logger.info(f"Converting VAPID key, input length: {len(der_base64_key)}")
 
-            # Extract the 32-byte private key from position 36-68 (as confirmed by your test)
-            private_key_bytes = der_bytes[36:68]
+            # Your key is in base64url format (modern VAPID key format)
+            # Add padding if necessary for base64url
+            missing_padding = len(der_base64_key) % 4
+            if missing_padding:
+                padded_key = der_base64_key + '=' * (4 - missing_padding)
+            else:
+                padded_key = der_base64_key
 
-            if len(private_key_bytes) != 32:
-                raise ValueError(f"Invalid private key length: {len(private_key_bytes)} (expected 32)")
+            # Convert base64url to regular base64
+            regular_b64 = padded_key.replace('-', '+').replace('_', '/')
+            raw_bytes = base64.b64decode(regular_b64)
 
-            current_app.logger.info("Successfully converted DER private key to raw bytes")
-            return private_key_bytes
+            if len(raw_bytes) != 32:
+                raise ValueError(f"Invalid private key length: {len(raw_bytes)} (expected 32)")
+
+            current_app.logger.info("✅ Successfully converted base64url VAPID key to 32-byte private key")
+            return raw_bytes
 
         except Exception as e:
             current_app.logger.error(f"Error converting private key: {e}")
             return None
+
+    def generate_new_vapid_keys():
+        """Generate new VAPID keys in base64url format"""
+        try:
+            from cryptography.hazmat.primitives.asymmetric import ec
+            from cryptography.hazmat.backends import default_backend
+            import base64
+
+            # Generate private key
+            private_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
+
+            # Get raw private key bytes (32 bytes)
+            private_numbers = private_key.private_numbers()
+            raw_private_bytes = private_numbers.private_value.to_bytes(32, byteorder='big')
+
+            # Get public key
+            public_key = private_key.public_key()
+            public_numbers = public_key.public_numbers()
+
+            # Convert public key to uncompressed format (65 bytes: 0x04 + 32 bytes X + 32 bytes Y)
+            x_bytes = public_numbers.x.to_bytes(32, byteorder='big')
+            y_bytes = public_numbers.y.to_bytes(32, byteorder='big')
+            raw_public_bytes = b'\x04' + x_bytes + y_bytes
+
+            # Encode as base64url (the modern format)
+            private_base64url = base64.urlsafe_b64encode(raw_private_bytes).decode('utf-8').rstrip('=')
+            public_base64url = base64.urlsafe_b64encode(raw_public_bytes).decode('utf-8').rstrip('=')
+
+            return private_base64url, public_base64url
+
+        except Exception as e:
+            print(f"Error generating VAPID keys: {e}")
+            return None, None
+
+
 
     def send_notification_sync(
         self,

@@ -1526,3 +1526,460 @@ def debug_vapid_keys():
         </body>
         </html>
         """
+
+# Add this route to your admin/routes.py file for debugging
+
+@admin_bp.route('/debug-vapid-conversion')
+@admin_required
+def debug_vapid_conversion():
+    """Debug VAPID key conversion - enhanced version"""
+    import base64
+
+    try:
+        private_key = current_app.config.get('VAPID_PRIVATE_KEY', '')
+        public_key = current_app.config.get('VAPID_PUBLIC_KEY', '')
+        claim_email = current_app.config.get('VAPID_CLAIM_EMAIL', '')
+
+        debug_info = {
+            'config_status': {
+                'private_key_exists': bool(private_key),
+                'private_key_length': len(private_key),
+                'private_key_preview': private_key[:30] + '...' if len(private_key) > 30 else private_key,
+                'public_key_exists': bool(public_key),
+                'public_key_length': len(public_key),
+                'public_key_preview': public_key[:30] + '...' if len(public_key) > 30 else public_key,
+                'claim_email': claim_email
+            },
+            'format_analysis': {},
+            'conversion_attempts': {}
+        }
+
+        if private_key:
+            # Analyze the key format
+            if len(private_key) < 100 and not private_key.startswith('MI'):
+                debug_info['format_analysis']['detected_format'] = 'Likely base64url (modern)'
+                debug_info['format_analysis']['expected_length'] = '43-44 characters for base64url'
+            elif len(private_key) > 100 or private_key.startswith('MI'):
+                debug_info['format_analysis']['detected_format'] = 'Likely DER encoded (traditional)'
+                debug_info['format_analysis']['expected_length'] = '100+ characters for DER'
+            else:
+                debug_info['format_analysis']['detected_format'] = 'Unknown format'
+
+            # Test different conversion methods
+            conversion_results = []
+
+            # Method 1: Base64url
+            try:
+                missing_padding = len(private_key) % 4
+                padded_key = private_key + ('=' * (4 - missing_padding) if missing_padding else '')
+                regular_b64 = padded_key.replace('-', '+').replace('_', '/')
+                raw_bytes = base64.b64decode(regular_b64)
+
+                conversion_results.append({
+                    'method': 'Base64url conversion',
+                    'success': len(raw_bytes) == 32,
+                    'result_length': len(raw_bytes),
+                    'expected': 32,
+                    'preview': list(raw_bytes[:8]) if raw_bytes else None,
+                    'error': None if len(raw_bytes) == 32 else f'Got {len(raw_bytes)} bytes, expected 32'
+                })
+            except Exception as e:
+                conversion_results.append({
+                    'method': 'Base64url conversion',
+                    'success': False,
+                    'error': str(e)
+                })
+
+            # Method 2: Cryptography library
+            try:
+                from cryptography.hazmat.primitives import serialization
+                from cryptography.hazmat.primitives.asymmetric import ec
+                from cryptography.hazmat.backends import default_backend
+
+                der_bytes = base64.b64decode(private_key)
+                private_key_obj = serialization.load_der_private_key(
+                    der_bytes, password=None, backend=default_backend()
+                )
+
+                if isinstance(private_key_obj, ec.EllipticCurvePrivateKey):
+                    private_numbers = private_key_obj.private_numbers()
+                    raw_bytes = private_numbers.private_value.to_bytes(32, byteorder='big')
+
+                    conversion_results.append({
+                        'method': 'Cryptography library (proper DER)',
+                        'success': True,
+                        'result_length': len(raw_bytes),
+                        'expected': 32,
+                        'preview': list(raw_bytes[:8]),
+                        'error': None
+                    })
+                else:
+                    conversion_results.append({
+                        'method': 'Cryptography library (proper DER)',
+                        'success': False,
+                        'error': f'Not an EC private key: {type(private_key_obj)}'
+                    })
+
+            except Exception as e:
+                conversion_results.append({
+                    'method': 'Cryptography library (proper DER)',
+                    'success': False,
+                    'error': str(e)
+                })
+
+            # Method 3: Manual DER extraction (multiple positions)
+            try:
+                der_bytes = base64.b64decode(private_key)
+                extraction_positions = [(36, 68), (7, 39), (8, 40), (9, 41)]
+
+                for start, end in extraction_positions:
+                    if end <= len(der_bytes):
+                        extracted = der_bytes[start:end]
+                        if len(extracted) == 32:
+                            # Check if it's not all zeros or all 255s
+                            is_valid = not all(b == 0 for b in extracted) and not all(b == 255 for b in extracted)
+
+                            conversion_results.append({
+                                'method': f'Manual DER extraction ({start}-{end})',
+                                'success': is_valid,
+                                'result_length': len(extracted),
+                                'expected': 32,
+                                'preview': list(extracted[:8]),
+                                'error': None if is_valid else 'Extracted bytes appear invalid (all same value)'
+                            })
+
+                            if is_valid:  # If we found a valid extraction, we can stop
+                                break
+
+            except Exception as e:
+                conversion_results.append({
+                    'method': 'Manual DER extraction',
+                    'success': False,
+                    'error': str(e)
+                })
+
+            # Method 4: Raw base64
+            try:
+                raw_bytes = base64.b64decode(private_key)
+                if len(raw_bytes) == 32:
+                    conversion_results.append({
+                        'method': 'Raw base64 (32-byte key)',
+                        'success': True,
+                        'result_length': len(raw_bytes),
+                        'expected': 32,
+                        'preview': list(raw_bytes[:8]),
+                        'error': None
+                    })
+                else:
+                    conversion_results.append({
+                        'method': 'Raw base64 (32-byte key)',
+                        'success': False,
+                        'result_length': len(raw_bytes),
+                        'expected': 32,
+                        'error': f'Got {len(raw_bytes)} bytes, expected 32'
+                    })
+            except Exception as e:
+                conversion_results.append({
+                    'method': 'Raw base64 (32-byte key)',
+                    'success': False,
+                    'error': str(e)
+                })
+
+            debug_info['conversion_attempts'] = conversion_results
+
+            # Find the working method
+            working_methods = [r for r in conversion_results if r['success']]
+            debug_info['working_methods'] = working_methods
+            debug_info['recommended_action'] = get_recommended_action(working_methods, debug_info['format_analysis'])
+
+        # Generate HTML response
+        html_response = generate_debug_html(debug_info)
+        return html_response
+
+    except Exception as e:
+        return f"""
+        <html>
+        <body>
+            <h1>Debug Error</h1>
+            <p style="color: red;">Error: {str(e)}</p>
+            <a href="{url_for('admin.admin_dashboard')}">← Back to Dashboard</a>
+        </body>
+        </html>
+        """, 500
+
+
+def get_recommended_action(working_methods, format_analysis):
+    """Get recommended action based on debug results"""
+    if not working_methods:
+        return {
+            'action': 'GENERATE_NEW_KEYS',
+            'description': 'No conversion methods worked. Generate new VAPID keys.',
+            'priority': 'HIGH'
+        }
+    elif len(working_methods) == 1:
+        method = working_methods[0]
+        return {
+            'action': 'UPDATE_CONVERSION_CODE',
+            'description': f'Use the {method["method"]} conversion method.',
+            'priority': 'MEDIUM',
+            'method': method['method']
+        }
+    else:
+        # Multiple methods work - prefer cryptography library if available
+        crypto_method = next((m for m in working_methods if 'Cryptography library' in m['method']), None)
+        if crypto_method:
+            return {
+                'action': 'USE_CRYPTOGRAPHY_LIBRARY',
+                'description': 'Use the cryptography library method (most reliable).',
+                'priority': 'LOW'
+            }
+        else:
+            return {
+                'action': 'USE_FIRST_WORKING_METHOD',
+                'description': f'Use the {working_methods[0]["method"]} method.',
+                'priority': 'MEDIUM',
+                'method': working_methods[0]['method']
+            }
+
+def generate_debug_html(debug_info):
+    """Generate HTML response for debug information"""
+
+    working_methods = debug_info.get('working_methods', [])
+    recommendation = debug_info.get('recommended_action', {})
+
+    # Create status indicators
+    status_color = '#27ae60' if working_methods else '#e74c3c'
+    status_text = f"✅ {len(working_methods)} working method(s) found" if working_methods else "❌ No working conversion methods"
+
+    html = f"""
+    <html>
+    <head>
+        <title>VAPID Key Debug Results</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 20px; background: #f5f7fa; }}
+            .container {{ max-width: 1000px; margin: 0 auto; }}
+            .card {{ background: white; border-radius: 10px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+            .header {{ text-align: center; color: #2c3e50; }}
+            .status {{ padding: 15px; border-radius: 8px; margin: 20px 0; font-weight: bold; color: white; background: {status_color}; }}
+            .section {{ margin: 30px 0; }}
+            .section h3 {{ color: #006a4e; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }}
+            .method {{ background: #f8f9fa; border-left: 4px solid #006a4e; padding: 15px; margin: 10px 0; border-radius: 0 5px 5px 0; }}
+            .method.success {{ border-left-color: #27ae60; }}
+            .method.failed {{ border-left-color: #e74c3c; }}
+            .code {{ background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; white-space: pre-wrap; overflow-x: auto; }}
+            .recommendation {{ background: #e8f5e8; border: 2px solid #006a4e; border-radius: 10px; padding: 20px; margin: 20px 0; }}
+            .btn {{ background: #006a4e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 5px; }}
+            .btn:hover {{ background: #004d3a; text-decoration: none; color: white; }}
+            .btn-generate {{ background: #e74c3c; }}
+            .btn-generate:hover {{ background: #c0392b; }}
+            table {{ width: 100%; border-collapse: collapse; }}
+            th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }}
+            th {{ background-color: #f8f9fa; font-weight: bold; }}
+            .success-text {{ color: #27ae60; font-weight: bold; }}
+            .error-text {{ color: #e74c3c; font-weight: bold; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="card header">
+                <h1>🔐 VAPID Key Debug Results</h1>
+                <div class="status">{status_text}</div>
+                <p>Comprehensive analysis of your current VAPID key configuration</p>
+            </div>
+    """
+
+    # Configuration Status
+    config = debug_info['config_status']
+    html += f"""
+            <div class="card">
+                <div class="section">
+                    <h3>📋 Configuration Status</h3>
+                    <table>
+                        <tr><th>Setting</th><th>Status</th><th>Value</th></tr>
+                        <tr>
+                            <td>Private Key</td>
+                            <td class="{'success-text' if config['private_key_exists'] else 'error-text'}">
+                                {'✅ Present' if config['private_key_exists'] else '❌ Missing'}
+                            </td>
+                            <td>{config['private_key_preview']}</td>
+                        </tr>
+                        <tr>
+                            <td>Public Key</td>
+                            <td class="{'success-text' if config['public_key_exists'] else 'error-text'}">
+                                {'✅ Present' if config['public_key_exists'] else '❌ Missing'}
+                            </td>
+                            <td>{config['public_key_preview']}</td>
+                        </tr>
+                        <tr>
+                            <td>Claim Email</td>
+                            <td class="{'success-text' if config['claim_email'] else 'error-text'}">
+                                {'✅ Set' if config['claim_email'] else '❌ Missing'}
+                            </td>
+                            <td>{config['claim_email'] or 'Not configured'}</td>
+                        </tr>
+                        <tr>
+                            <td>Key Length</td>
+                            <td>{config['private_key_length']} characters</td>
+                            <td>{debug_info['format_analysis'].get('detected_format', 'Unknown')}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+    """
+
+    # Conversion Test Results
+    html += """
+            <div class="card">
+                <div class="section">
+                    <h3>🧪 Conversion Method Test Results</h3>
+    """
+
+    for result in debug_info['conversion_attempts']:
+        success_class = 'success' if result['success'] else 'failed'
+        status_icon = '✅' if result['success'] else '❌'
+
+        html += f"""
+                    <div class="method {success_class}">
+                        <h4>{status_icon} {result['method']}</h4>
+        """
+
+        if result['success']:
+            html += f"""
+                        <p><strong>Result:</strong> Success! Extracted {result['result_length']}-byte key</p>
+                        <p><strong>Preview:</strong> {result['preview']}</p>
+            """
+        else:
+            html += f"""
+                        <p><strong>Error:</strong> {result.get('error', 'Unknown error')}</p>
+            """
+
+        html += "</div>"
+
+    html += "</div></div>"
+
+    # Recommendation Section
+    html += f"""
+            <div class="recommendation">
+                <h3>💡 Recommended Action: {recommendation.get('action', 'UNKNOWN')}</h3>
+                <p><strong>Priority:</strong> {recommendation.get('priority', 'UNKNOWN')}</p>
+                <p>{recommendation.get('description', 'No recommendation available')}</p>
+    """
+
+    if recommendation.get('action') == 'GENERATE_NEW_KEYS':
+        html += f"""
+                <a href="{url_for('admin.generate_vapid_keys')}" class="btn btn-generate">
+                    🔄 Generate New VAPID Keys
+                </a>
+        """
+    elif working_methods:
+        best_method = working_methods[0]
+        html += f"""
+                <div style="margin-top: 20px;">
+                    <h4>Recommended Conversion Code:</h4>
+                    <div class="code">
+def _convert_der_private_key(self, der_base64_key):
+    \"\"\"Convert VAPID private key using {best_method['method']}\"\"\"
+    try:
+        current_app.logger.info("Converting VAPID key using {best_method['method']}")
+        """
+
+        if 'Base64url' in best_method['method']:
+            html += """
+        # Base64url conversion
+        missing_padding = len(der_base64_key) % 4
+        if missing_padding:
+            padded_key = der_base64_key + '=' * (4 - missing_padding)
+        else:
+            padded_key = der_base64_key
+
+        regular_b64 = padded_key.replace('-', '+').replace('_', '/')
+        raw_bytes = base64.b64decode(regular_b64)
+
+        if len(raw_bytes) != 32:
+            raise ValueError(f"Invalid key length: {len(raw_bytes)}")
+
+        return raw_bytes
+            """
+        elif 'Cryptography library' in best_method['method']:
+            html += """
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric import ec
+        from cryptography.hazmat.backends import default_backend
+
+        der_bytes = base64.b64decode(der_base64_key)
+        private_key = serialization.load_der_private_key(
+            der_bytes, password=None, backend=default_backend()
+        )
+
+        private_numbers = private_key.private_numbers()
+        return private_numbers.private_value.to_bytes(32, byteorder='big')
+            """
+        elif 'Manual DER' in best_method['method']:
+            # Extract position from method name
+            import re
+            position_match = re.search(r'\((\d+)-(\d+)\)', best_method['method'])
+            if position_match:
+                start, end = position_match.groups()
+                html += f"""
+        der_bytes = base64.b64decode(der_base64_key)
+        raw_bytes = der_bytes[{start}:{end}]
+
+        if len(raw_bytes) != 32:
+            raise ValueError(f"Invalid key length: {{len(raw_bytes)}}")
+
+        return raw_bytes
+                """
+
+        html += """
+    except Exception as e:
+        current_app.logger.error(f"VAPID key conversion failed: {e}")
+        return None
+                    </div>
+                </div>
+        """
+
+    html += "</div>"
+
+    # Action Buttons
+    html += f"""
+            <div class="card" style="text-align: center;">
+                <a href="{url_for('admin.admin_dashboard')}" class="btn">← Back to Dashboard</a>
+                <a href="{url_for('admin.debug_vapid_keys')}" class="btn">🔍 View Detailed VAPID Info</a>
+                <a href="{url_for('admin.generate_vapid_keys')}" class="btn btn-generate">🔄 Generate New Keys</a>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    return html
+
+@admin_bp.route('/generate-vapid-keys')
+@admin_required
+def generate_vapid_keys():
+    """Admin route to generate new VAPID keys"""
+    try:
+        private_key, public_key = generate_new_vapid_keys()
+
+        if private_key and public_key:
+            return f"""
+            <html>
+            <head><title>New VAPID Keys</title></head>
+            <body style="font-family: Arial, sans-serif; margin: 40px;">
+                <h1>🔐 New VAPID Keys Generated</h1>
+                <div style="background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <h3>Add these to your config.py:</h3>
+                    <pre style="background: #fff; padding: 15px; border-radius: 5px; overflow-x: auto;">
+                        VAPID_PRIVATE_KEY = '{private_key}'
+                        VAPID_PUBLIC_KEY = '{public_key}'</pre>
+                </div>
+                <p><strong>⚠️ Important:</strong> Update your config and restart the application!</p>
+                <a href="{url_for('admin.admin_dashboard')}" style="background: #006a4e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Dashboard</a>
+            </body>
+            </html>
+            """
+        else:
+            return "Error generating keys", 500
+
+    except Exception as e:
+        return f"Error: {str(e)}", 500
