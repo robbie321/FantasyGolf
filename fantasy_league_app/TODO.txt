@@ -25,18 +25,27 @@ Tasks []
 [] complete settings
 [] add link to support where it opens email to info@
 [] feature for tee time timezone
+[✅] fix viewport width on dashboard. Can move from side to side when scrolling
 
 ###############
 ####SIGNUP ####
 ###############
-[✅]Fix user and club registration
+[]Fix user and club registration
 
 
+###############
+####Leaderboards ####
+###############
+[✅] Fix leaderboard css on the leaderboards tab. Total score and thru score are on the same line on mobile devices
+[] Fix league details option on the view league page
 
 
 ##############
 #### USER ####
 ##############
+[] add in profile section on the user dashboard
+[✅] fix join button on mobile navbar
+[✅] remove join button &welcome paragrapgh from dashboard header on mobile
 [✅] show vaild data on the 3 boxes on the user dashboard
 [✅] if player is overpar change total score background to green and add + before total score
 [✅] when a player misses the cut, add +10 to their score

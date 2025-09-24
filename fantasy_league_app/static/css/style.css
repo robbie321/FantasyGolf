@@ -54,6 +54,11 @@ body {
     line-height: 1.6;
 }
 
+html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
 /* Enhanced Typography */
 h1, h2, h3, h4 {
     color: var(--text-dark);
@@ -80,6 +85,8 @@ h4 { font-size: 1.1rem; }
     flex-grow: 1;
     overflow-y: auto;
     height: 100vh;
+    overflow-x: hidden;
+    /* max-width: calc(100vw - 280px); */
     background: var(--background-light);
 }
 
@@ -88,16 +95,16 @@ h4 { font-size: 1.1rem; }
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--surface-white);
+    color: var(--text-dark);
     text-decoration: none;
     font-weight: 500;
     padding: 0.75rem 1.25rem;
     background: rgba(255, 255, 255, 0.15);
     border-radius: var(--border-radius);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(105, 105, 105);
     transition: var(--transition);
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .back-link:hover {
@@ -491,9 +498,15 @@ h4 { font-size: 1.1rem; }
 /* Professional League Cards Grid */
 .leagues-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
     gap: 1.5rem;
     margin-bottom: 3rem;
+}
+
+.info-cards-grid,
+.wallet-grid,
+.settings-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
 }
 
 /* Enhanced League Card */
@@ -989,7 +1002,8 @@ h4 { font-size: 1.1rem; }
 
 /* Desktop sidebar - Only show on desktop */
 .sidebar {
-    display: none; /* Hidden by default - JavaScript will control visibility */
+    display: flex;
+    flex-direction: column;
 }
 
 /* Responsive Navigation Control */
@@ -1000,6 +1014,7 @@ h4 { font-size: 1.1rem; }
 
     .dashboard-content {
         margin-bottom: 80px !important;
+        max-width: 100vw;
     }
 
     .sidebar {
@@ -1015,10 +1030,6 @@ h4 { font-size: 1.1rem; }
 
     .mobile-nav {
         display: none !important;
-    }
-
-    .dashboard-content {
-        margin-bottom: 0 !important;
     }
 }
 
@@ -1176,10 +1187,6 @@ h4 { font-size: 1.1rem; }
         display: none;
     }
 
-    .dashboard-content {
-        margin-bottom: 80px; /* Account for mobile nav */
-    }
-
     .leagues-grid {
         grid-template-columns: 1fr;
     }
@@ -1281,6 +1288,14 @@ h4 { font-size: 1.1rem; }
         padding: 1.5rem 1rem;
     }
 
+    .dashboard-subheading {
+        display: none;
+    }
+
+    .join-league-box{
+        display: none;
+    }
+
     .user-info {
         grid-template-columns: 1fr;
         text-align: center;
@@ -1297,7 +1312,7 @@ h4 { font-size: 1.1rem; }
     .user-details {
         grid-column: 1;
         grid-row: 2;
-        text-align: center;
+        align-items: center;
     }
 
     .club-details {
@@ -1470,7 +1485,7 @@ h4 { font-size: 1.1rem; }
 
 .empty-content i {
     font-size: 4rem;
-    margin-bottom: 1.5rem;
+    /* margin-bottom: 1.5rem; */
     color: var(--text-muted);
     opacity: 0.5;
 }

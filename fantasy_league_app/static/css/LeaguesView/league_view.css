@@ -554,7 +554,7 @@ body {
 }
 
 /* Score Colors */
-.score-positive {
+.score-even {
     background-color: #dcfce7;
     color: #16a34a;
     border: 1px solid #bbf7d0;
@@ -566,7 +566,7 @@ body {
     border: 1px solid #fecaca;
 }
 
-.score-even {
+.score-positive {
     background-color: #f3f4f6;
     color: #374151;
     border: 1px solid #d1d5db;
