@@ -104,15 +104,15 @@ def user_dashboard():
         user_entries = LeagueEntry.query.filter_by(user_id=current_user.id).all()
 
         # Enhanced Statistics Calculation
-        leagues_played = len(user_entries)
-        leagues_won = League.query.filter_by(winner_id=current_user.id, is_finalized=True).count()
-        win_percentage = (leagues_won / leagues_played * 100) if leagues_played > 0 else 0
+        # leagues_played = len(user_entries)
+        # leagues_won = League.query.filter_by(winner_id=current_user.id, is_finalized=True).count()
+        # win_percentage = (leagues_won / leagues_played * 100) if leagues_played > 0 else 0
 
-        stats = {
-            'leagues_played': leagues_played,
-            'leagues_won': leagues_won,
-            'win_percentage': f"{win_percentage:.1f}%"
-        }
+        # stats = {
+        #     'leagues_played': leagues_played,
+        #     'leagues_won': leagues_won,
+        #     'win_percentage': f"{win_percentage:.1f}%"
+        # }
 
         # Categorize Leagues with cached leaderboards
         live_leagues = []
@@ -160,17 +160,26 @@ def user_dashboard():
             'live_leagues': live_leagues,
             'upcoming_leagues': upcoming_leagues,
             'past_leagues': past_leagues,
-            'stats': stats
+            # 'stats': stats
         }
 
     dashboard_data = get_user_dashboard_data()
+
+
+    profile_stats = calculate_user_stats(current_user.id)
+    league_history = get_enhanced_league_history(current_user.id)
+    recent_activity = get_recent_activity(current_user.id)
 
     return render_template('main/user_dashboard.html',
                          live_leagues=dashboard_data['live_leagues'],
                          upcoming_leagues=dashboard_data['upcoming_leagues'],
                          past_leagues=dashboard_data['past_leagues'],
-                         stats=dashboard_data['stats'],
-                         now=now)
+                         stats=profile_stats,
+                         now=now,
+                         user=current_user,
+                         league_history=league_history,
+                         recent_activity=recent_activity,
+                         is_own_profile=True)
 
 @main_bp.route('/club_dashboard')
 @user_required
