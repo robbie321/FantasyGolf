@@ -59,6 +59,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
+            const nav = document.querySelector('.mobile-nav');
+            if (nav) {
+                nav.style.transform = 'translateY(100%)';
+                requestAnimationFrame(() => {
+                    nav.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                    nav.style.transform = 'translateY(0)';
+                });
+            }
+
             if (targetId === '#leaderboards-section') {
                 const activeTab = document.querySelector('.leaderboard-tour-tabs .tab-button.active') || document.querySelector('.leaderboard-tour-tabs .tab-button');
                 if (activeTab) activeTab.click();
