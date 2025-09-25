@@ -17,6 +17,11 @@ from ..forms import LeagueForm, CreateUserLeagueForm, EditLeagueForm
 from ..utils import get_league_creation_status
 from ..auth.decorators import admin_required, user_required
 from fantasy_league_app.cache_utils import CacheManager, cache_result
+from ..main.routes import (
+    calculate_user_stats,
+    get_enhanced_league_history,
+    get_recent_activity
+)
 
 
 
@@ -814,11 +819,20 @@ def view_league(league_id):
         }
         print(f"DEBUG: Created current_user_entry: {current_user_entry}")
 
+    profile_stats = calculate_user_stats(current_user.id)
+    league_history = get_enhanced_league_history(current_user.id)
+    recent_activity = get_recent_activity(current_user.id)
+
     return render_template('league/view_league.html',
                          league=league,
                          leaderboard=leaderboard,
                          user_entry=current_user_entry,
-                         now=datetime.utcnow())
+                         now=datetime.utcnow(),
+                         user=current_user,
+                         stats=profile_stats,
+                         league_history=league_history,
+                         recent_activity=recent_activity,
+                         is_own_profile=True)
 # def view_league(league_id):
 #     """
 #     API endpoint that returns all data needed for the league view as JSON.
