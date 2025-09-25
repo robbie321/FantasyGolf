@@ -187,7 +187,7 @@ def login_user_account():
 
     # This block will only run if the form is submitted and valid
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
+        user = User.query.filter_by(email=form.email.data.lower().strip()).first()
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember_me.data)
             print(f"DEBUG: Logged in user. Object is: {user}, Type is: {type(user)}")
@@ -221,7 +221,7 @@ def login_club_account():
     # validate_on_submit() checks if it's a POST request and if the data is valid
     if form.validate_on_submit():
         # Find the club by the email provided in the form
-        club = Club.query.filter_by(email=form.email.data).first()
+        club = Club.query.filter_by(email=form.email.data.lower().strip()).first()
 
         # Check if the club exists and the password is correct
         if club and club.check_password(form.password.data):

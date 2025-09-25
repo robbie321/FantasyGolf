@@ -8,11 +8,17 @@
     <i class="fa-solid fa-table-cells-large"></i>
     <span>Dashboard</span>
   </a>
+  {% if current_user.is_club_admin %}
   <a href="{{ base_url }}#profiles-section" class="nav-item">
     <i class="fa-solid fa-user-group"></i>
     <span>Players</span>
   </a>
-  {% if current_user.is_club_admin %}
+  {% else %}
+  <a href="{{ url_for('main.my_profile') }}" class="nav-item">
+    <i class="fa-solid fa-user"></i>
+    My Profile
+  </a>
+  {% endif %} {% if current_user.is_club_admin %}
   <a
     href="{{ url_for('league.create_league') }}"
     class="nav-item nav-item-cta"
