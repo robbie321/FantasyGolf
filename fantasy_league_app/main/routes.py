@@ -222,29 +222,36 @@ def club_dashboard():
         now=datetime.utcnow()
     )
 
-
+@main_bp.route('/profile')
+@user_required
+def my_profile():
+    """Route for viewing own profile"""
+    return redirect(url_for('main.view_profile', user_id=current_user.id))
 
 # --- NEW: Route for User Profiles ---
 @main_bp.route('/profile/<int:user_id>')
 @user_required
 def view_profile(user_id):
-    # Basic user info
-    user = current_user
+    # Get the target user
+    target_user = User.query.get_or_404(user_id)
+    is_own_profile = current_user.id == user_id
 
     # Calculate comprehensive statistics
-    stats = calculate_user_stats(user.id)
+    stats = calculate_user_stats(target_user.id)
 
     # Get league history with enhanced data
-    league_history = get_enhanced_league_history(user.id)
+    league_history = get_enhanced_league_history(target_user.id)
 
     # Get recent activity
-    recent_activity = get_recent_activity(user.id)
+    recent_activity = get_recent_activity(target_user.id)
 
     return render_template('main/profile.html',
-                         user=user,
+                         user=target_user,
                          stats=stats,
                          league_history=league_history,
-                         recent_activity=recent_activity)
+                         recent_activity=recent_activity,
+                         is_own_profile=is_own_profile,
+                         current_user=current_user)
 
 
 def calculate_user_stats(user_id):

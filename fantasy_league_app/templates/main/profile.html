@@ -24,6 +24,21 @@
     margin: 0 auto;
   }
 
+  .profile-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .profile-actions .btn {
+    transition: all 0.3s ease;
+  }
+
+  .profile-actions .btn:hover {
+    transform: translateY(-2px);
+  }
+
   /* Header Section */
   .profile-header {
     background: linear-gradient(
@@ -34,7 +49,6 @@
     color: white;
     padding: 3rem 2rem;
     border-radius: 20px;
-    margin-bottom: 2rem;
     box-shadow: var(--shadow);
     position: relative;
     overflow: hidden;
@@ -499,6 +513,12 @@
   }
 </style>
 
+<!-- Professional Sidebar -->
+<!-- {% include 'main/_shared_side_navbar.html' with context %} -->
+
+<!-- Mobile Navigation -->
+{% include 'main/_shared_bottom_navbar.html' with context %}
+
 <div class="profile-wrapper">
   <div class="profile-container">
     <!-- Enhanced Profile Header -->
@@ -509,13 +529,34 @@
           user.full_name.split(' ')|length > 1 else '' }}
         </div>
         <h1 class="profile-name">{{ user.full_name }}</h1>
-        <p class="profile-subtitle">Fantasy Golf Player</p>
-        <div class="profile-level">
+        <p class="profile-subtitle">
+          {% if is_own_profile %} Your Fantasy Golf Profile {% else %} Fantasy
+          Golf Player {% endif %}
+        </p>
+        <!-- <div class="profile-level">
           <i class="fas fa-star"></i>
           <span style="margin-left: 0.5rem"
             >Level {{ stats.user_level or 1 }} Player</span
           >
+        </div> -->
+
+        {% if not is_own_profile %}
+        <div class="profile-actions" style="margin-top: 1rem">
+          <button
+            class="btn"
+            style="
+              background: var(--primary-green);
+              color: white;
+              padding: 0.5rem 1rem;
+              border: none;
+              border-radius: 5px;
+            "
+          >
+            <i class="fa-solid fa-user-plus"></i>
+            Follow Player
+          </button>
         </div>
+        {% endif %}
       </div>
     </div>
 
@@ -539,11 +580,13 @@
         <div class="stat-title">Win Rate</div>
       </div>
 
+      {% if is_own_profile %}
       <div class="stat-card">
         <div class="stat-icon"><i class="fas fa-euro-sign"></i></div>
         <div class="stat-value">€{{ stats.total_winnings or 0 }}</div>
         <div class="stat-title">Total Winnings</div>
       </div>
+      {% endif %}
 
       <div class="stat-card">
         <div class="stat-icon"><i class="fas fa-fire"></i></div>
@@ -552,6 +595,8 @@
       </div>
     </div>
 
+    <!-- Achievement System - Only show for own profile -->
+    {% if is_own_profile %}
     <!-- Achievement System -->
     <div class="achievements-section fade-in">
       <div class="section-header">
@@ -670,11 +715,16 @@
       </div>
     </div>
 
+    {% endif %}
+
     <!-- Recent Activity Feed -->
     <div class="activity-section fade-in">
       <div class="section-header">
         <div class="section-icon"><i class="fas fa-history"></i></div>
-        <h2 class="section-title">Recent Activity</h2>
+        <h2 class="section-title">
+          {% if is_own_profile %}Recent Activity{% else %}Recent Activity{%
+          endif %}
+        </h2>
       </div>
 
       <div class="activity-feed">
@@ -703,7 +753,9 @@
           <div class="activity-content">
             <div class="activity-title">No recent activity</div>
             <div class="activity-time">
-              Join a league to start building your activity feed!
+              {% if is_own_profile %} Join a league to start building your
+              activity feed! {% else %} This player hasn't been active recently.
+              {% endif %}
             </div>
           </div>
         </div>
@@ -718,18 +770,8 @@
         <h2 class="section-title">League History</h2>
       </div>
 
-      <div class="history-filters">
-        <button class="filter-btn active" onclick="filterHistory('all')">
-          All Leagues
-        </button>
-        <button class="filter-btn" onclick="filterHistory('won')">
-          Wins Only
-        </button>
-        <button class="filter-btn" onclick="filterHistory('recent')">
-          Recent
-        </button>
-      </div>
-
+      <!-- Keep existing league history table -->
+      <!-- The winnings column should be hidden for other users' profiles -->
       <div class="table-responsive">
         <table class="history-table">
           <thead>
@@ -737,7 +779,9 @@
               <th>League Name</th>
               <th style="text-align: center">Rank</th>
               <th style="text-align: center">Players</th>
+              {% if is_own_profile %}
               <th style="text-align: center">Winnings</th>
+              {% endif %}
               <th style="text-align: center">Date</th>
               <th>Action</th>
             </tr>
@@ -763,6 +807,7 @@
               <td style="text-align: center">
                 {{ item.total_players or 'N/A' }}
               </td>
+              {% if is_own_profile %}
               <td style="text-align: center">
                 <span
                   class="{{ 'winnings-positive' if item.winnings > 0 else 'winnings-zero' }}"
@@ -770,6 +815,7 @@
                   €{{ item.winnings or 0 }}
                 </span>
               </td>
+              {% endif %}
               <td style="text-align: center">
                 {{ item.date_finished or 'Ongoing' }}
               </td>
@@ -792,15 +838,16 @@
             {% else %}
             <tr>
               <td
-                colspan="6"
+                colspan="{% if is_own_profile %}6{% else %}5{% endif %}"
                 style="text-align: center; padding: 3rem; color: #6c757d"
               >
                 <i
                   class="fas fa-golf-ball"
                   style="font-size: 3rem; margin-bottom: 1rem; display: block"
                 ></i>
-                No league history yet. Join your first league to start building
-                your golf legacy!
+                {% if is_own_profile %} No league history yet. Join your first
+                league to start building your golf legacy! {% else %} This
+                player hasn't participated in any leagues yet. {% endif %}
               </td>
             </tr>
             {% endfor %}

@@ -32,12 +32,16 @@ Tasks []
 ###############
 []Fix user and club registration
 
+###############
+####LOGIN ####
+###############
+[]When logging in add in functionality to make email all lowercase
 
 ###############
 ####Leaderboards ####
 ###############
 [✅] Fix leaderboard css on the leaderboards tab. Total score and thru score are on the same line on mobile devices
-[] Fix league details option on the view league page
+[✅] Fix league details option on the view league page
 
 
 ##############
