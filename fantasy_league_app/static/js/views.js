@@ -199,7 +199,7 @@ export function renderProfessionalLeagueCards(leagues, container) {
         const endDate = league.end_date ? new Date(league.end_date).toLocaleDateString() : 'TBD';
 
         return `
-            <a href="/league/${league.id}" class="dashboard-league-card">
+            <a href="/view/${league.id}" class="dashboard-league-card">
                 <div class="card-header">
                     <div class="card-title-group">
                         <h3 class="league-name">${league.name}</h3>
@@ -301,7 +301,7 @@ export function renderEmptyState(container, type = 'leagues') {
             title: 'No upcoming leagues',
             description: 'You haven\'t joined any upcoming tournaments yet.',
             actionText: 'Browse Leagues',
-            actionId: 'browse-leagues-btn'
+            actionId: 'join-league-btn'
         },
         past: {
             icon: 'fa-solid fa-flag-checkered',
@@ -315,15 +315,13 @@ export function renderEmptyState(container, type = 'leagues') {
     const state = emptyStates[type] || emptyStates.leagues;
 
     container.innerHTML = `
-        <div class="empty-content">
-            <i class="${state.icon}"></i>
-            <h3>${state.title}</h3>
-            <p>${state.description}</p>
-            <button class="btn btn-primary" id="${state.actionId}">
-                <i class="fa-solid fa-plus"></i>
-                ${state.actionText}
-            </button>
-        </div>
+        <i class="${state.icon}"></i>
+        <h3>${state.title}</h3>
+        <p>${state.description}</p>
+        <button class="btn btn-primary" id="${state.actionId}">
+            <i class="fa-solid fa-plus" style="color:white"></i>
+            ${state.actionText}
+        </button>
     `;
 }
 

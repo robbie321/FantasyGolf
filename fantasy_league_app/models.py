@@ -47,6 +47,7 @@ class User(db.Model, UserMixin):
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
     email_verification_token = db.Column(db.String(100), unique=True, nullable=True)
     email_verification_sent_at = db.Column(db.DateTime, nullable=True)
+    email_rank_changes = db.Column(db.Boolean, default=True, nullable=False)
 
     #PROFILE ENHANCEMENT:
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
