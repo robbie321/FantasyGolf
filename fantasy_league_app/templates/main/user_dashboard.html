@@ -38,7 +38,7 @@
           </div>
 
           <div class="join-league-box">
-            <button class="join-league-hero-btn" id="join-league-btn">
+            <button class="join-league-hero-btn" id="join-league-hero-btn">
               <i class="fa-solid fa-plus"></i>
               Join a League
             </button>
@@ -214,10 +214,41 @@
   </main>
 </div>
 
-<!-- Professional JavaScript -->
-<script>
+<!-- Import and initialize the professional dashboard JavaScript -->
+<script type="module">
+  import { setupModalHandlers } from '{{ url_for("static", filename="js/ui.js") }}';
+  import {
+    renderProfessionalLeagueCards,
+    renderEmptyState,
+  } from '{{ url_for("static", filename="js/views.js") }}';
+
   document.addEventListener("DOMContentLoaded", function () {
     console.log("Professional User Dashboard Initialized");
+
+    // DEBUG: Check if the hero join league button exists
+    const joinLeagueHeroBtn = document.getElementById("join-league-hero-btn");
+    console.log("Join league HERO button found:", joinLeagueHeroBtn);
+
+    // DEBUG: Check if nav join league button exists
+    const joinLeagueNavBtn = document.getElementById("join-league-btn");
+    console.log("Join league NAV button found:", joinLeagueNavBtn);
+
+    // DEBUG: Check if the modal exists
+    const modal = document.getElementById("join-league-overlay");
+    console.log("Join league modal found:", modal);
+
+    // Initialize modal handlers from ui.js
+    console.log("Setting up modal handlers...");
+    setupModalHandlers();
+    console.log("Modal handlers setup complete");
+
+    // DEBUG: Manually test the HERO button click
+    if (joinLeagueHeroBtn) {
+      joinLeagueHeroBtn.addEventListener("click", function (e) {
+        console.log("Hero join league button clicked!");
+        e.preventDefault();
+      });
+    }
 
     // League data from server
     const liveLeagues = window.liveLeaguesData || [];
@@ -228,155 +259,11 @@
     const tabButtons = document.querySelectorAll(".tab-button");
     const leaguesGrid = document.getElementById("leagues-grid");
     const emptyState = document.getElementById("empty-state");
-    const joinLeagueBtn = document.getElementById("join-league-btn");
-    const joinFirstLeagueBtn = document.getElementById("join-first-league-btn");
 
     // Current active status
     let currentStatus = "live";
 
-    // League card template
-    function createLeagueCard(league) {
-      const isLive = currentStatus === "live";
-      const isUpcoming = currentStatus === "upcoming";
-      const isPast = currentStatus === "past";
-
-      // Determine rank badge
-      let rankBadge = "";
-      if (league.current_rank && (isLive || isPast)) {
-        let rankClass = "rank-standard";
-        let rankIcon = "";
-
-        if (league.current_rank === 1) {
-          rankClass = "rank-gold";
-          rankIcon = '<i class="fa-solid fa-crown"></i>';
-        } else if (league.current_rank === 2) {
-          rankClass = "rank-silver";
-          rankIcon = '<i class="fa-solid fa-medal"></i>';
-        } else if (league.current_rank === 3) {
-          rankClass = "rank-bronze";
-          rankIcon = '<i class="fa-solid fa-medal"></i>';
-        }
-
-        rankBadge = `
-                <div class="rank-badge ${rankClass}">
-                    ${rankIcon}
-                    Rank #${league.current_rank}
-                </div>
-            `;
-      }
-
-      // Determine status badge
-      let statusBadge = "";
-      let statusClass = "";
-      if (isLive) {
-        statusClass = "status-live";
-        statusBadge = '<i class="fa-solid fa-circle"></i> Live';
-      } else if (isUpcoming) {
-        statusClass = "status-upcoming";
-        statusBadge = '<i class="fa-solid fa-clock"></i> Upcoming';
-      } else {
-        statusClass = "status-completed";
-        statusBadge = '<i class="fa-solid fa-flag-checkered"></i> Completed';
-      }
-
-      // Format dates
-      const startDate = new Date(league.start_date).toLocaleDateString();
-      const endDate = new Date(league.end_date).toLocaleDateString();
-
-      return `
-            <a href="/view/${league.id}" class="dashboard-league-card">
-                <div class="card-header">
-                    <div class="card-title-group">
-                        <h3 class="league-name">${league.name}</h3>
-                        ${rankBadge}
-                    </div>
-                    <div class="status-and-tour">
-                        <span class="tour-tag-small">${league.tour.toUpperCase()}</span>
-                        <span class="status-badge ${statusClass}">${statusBadge}</span>
-                    </div>
-                </div>
-
-                <div class="card-info-grid">
-                    <div class="info-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="1" x2="12" y2="23"></line>
-                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                        </svg>
-                        <div class="info-text">
-                            <span class="label">Entry Fee</span>
-                            <span class="value">€${parseFloat(
-                              league.entry_fee || 0
-                            ).toFixed(2)}</span>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                        </svg>
-                        <div class="info-text">
-                            <span class="label">Participants</span>
-                            <span class="value">${
-                              league.total_entries || 0
-                            }</span>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                            <line x1="7" y1="7" x2="7.01" y2="7"></line>
-                        </svg>
-                        <div class="info-text">
-                            <span class="label">Prize Pool</span>
-                            <span class="value">€${parseFloat(
-                              league.prize_amount || 0
-                            ).toFixed(2)}</span>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                            <line x1="16" y1="2" x2="16" y2="6"></line>
-                            <line x1="8" y1="2" x2="8" y2="6"></line>
-                            <line x1="3" y1="10" x2="21" y2="10"></line>
-                        </svg>
-                        <div class="info-text">
-                            <span class="label">${
-                              isUpcoming ? "Starts" : "Tournament"
-                            }</span>
-                            <span class="value">${
-                              isUpcoming
-                                ? startDate
-                                : `${startDate} - ${endDate}`
-                            }</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-footer">
-                    <span>
-                        ${
-                          isPast
-                            ? "View Results"
-                            : isLive
-                            ? "View Leaderboard"
-                            : "View Details"
-                        }
-                    </span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                </div>
-            </a>
-        `;
-    }
-
-    // Render leagues function
+    // Render leagues function using views.js
     function renderLeagues(status) {
       let leagues = [];
 
@@ -396,38 +283,14 @@
         leaguesGrid.style.display = "none";
         emptyState.style.display = "block";
 
-        // Update empty state content based on status
-        const emptyContent = emptyState.querySelector(".empty-content");
-        const icon = emptyContent.querySelector("i");
-        const title = emptyContent.querySelector("h3");
-        const description = emptyContent.querySelector("p");
-
-        switch (status) {
-          case "live":
-            icon.className = "fa-solid fa-circle";
-            title.textContent = "No live leagues";
-            description.textContent =
-              "You don't have any active leagues at the moment.";
-            break;
-          case "upcoming":
-            icon.className = "fa-solid fa-clock";
-            title.textContent = "No upcoming leagues";
-            description.textContent =
-              "You haven't joined any upcoming tournaments yet.";
-            break;
-          case "past":
-            icon.className = "fa-solid fa-flag-checkered";
-            title.textContent = "No completed leagues";
-            description.textContent = "You haven't completed any leagues yet.";
-            break;
-        }
+        // Use the renderEmptyState function from views.js
+        renderEmptyState(emptyState.querySelector(".empty-content"), status);
       } else {
         leaguesGrid.style.display = "grid";
         emptyState.style.display = "none";
 
-        leaguesGrid.innerHTML = leagues
-          .map((league) => createLeagueCard(league))
-          .join("");
+        // Use the professional league card renderer from views.js
+        renderProfessionalLeagueCards(leagues, leaguesGrid);
       }
     }
 
@@ -444,48 +307,8 @@
       });
     });
 
-    // Join league functionality
-    function openJoinLeagueModal() {
-      const modal = document.getElementById("join-league-overlay");
-      if (modal) {
-        modal.classList.remove("hidden");
-      }
-    }
-
-    if (joinLeagueBtn) {
-      joinLeagueBtn.addEventListener("click", openJoinLeagueModal);
-    }
-
-    if (joinFirstLeagueBtn) {
-      joinFirstLeagueBtn.addEventListener("click", openJoinLeagueModal);
-    }
-
     // Initial render
     renderLeagues("live");
-
-    // Settings form handling
-    const profileForm = document.querySelector(".profile-form");
-    const notificationForm = document.querySelector(".notification-form");
-
-    if (profileForm) {
-      profileForm.addEventListener("submit", function (e) {
-        const submitBtn = profileForm.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML =
-          '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
-      });
-    }
-
-    if (notificationForm) {
-      notificationForm.addEventListener("submit", function (e) {
-        const submitBtn = notificationForm.querySelector(
-          'button[type="submit"]'
-        );
-        submitBtn.disabled = true;
-        submitBtn.innerHTML =
-          '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
-      });
-    }
 
     console.log(
       "Dashboard loaded with",

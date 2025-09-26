@@ -295,6 +295,8 @@
       .modal-footer {
         padding: 20px 24px 24px 24px;
         display: flex;
+        flex-direction: column;
+        justify-content: space-between;
         gap: 12px;
         border-top: 1px solid #f3f4f6;
         flex-shrink: 0; /* Don't shrink */
@@ -329,24 +331,6 @@
       .close-btn:hover {
         background: #f3f4f6;
         color: #6b7280;
-      }
-
-      /* Button Styling */
-      .btn {
-        padding: 12px 24px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border: none;
-        flex: 1;
-      }
-
-      .btn-outline {
-        background: white;
-        color: #6b7280;
-        border: 1px solid #d1d5db;
       }
 
       .btn-outline:hover {
@@ -552,7 +536,6 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline" onclick="hideModal()">Cancel</button>
           <button
             type="submit"
             form="join-league-form"

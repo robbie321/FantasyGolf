@@ -1,6 +1,6 @@
 Start App:
 flask --app fantasy_league_app:create_app run
-flask --app fantasy_league_app:create_app db migrate -m "Add database indexes for performance"
+flask --app fantasy_league_app:create_app db migrate -m "email rank notification added to user model"
 flask --app fantasy_league_app:create_app db upgrade
 source venv/Scripts/activate
 
@@ -18,7 +18,7 @@ Tasks []
 [] swap to info@ instead of robmalone7@ for sending emails
 [✅] check over finialised leagues payouts
 [✅] check that all scheduled tasks are running
-[] add player profiles
+[✅] add user profiles
 [] first time log in, display how to works to users
 [✅] add in stripe API key config vars heroku
 [✅] add back to dashboard on terms & condistions and privacy
@@ -30,18 +30,18 @@ Tasks []
 ###############
 ####SIGNUP ####
 ###############
-[]Fix user and club registration
+[✅]Fix user and club registration
 
 ###############
 ####LOGIN ####
 ###############
-[]When logging in add in functionality to make email all lowercase
+[✅]When logging in add in functionality to make email all lowercase
 
 ###############
 ####Leaderboards ####
 ###############
 [✅] Fix leaderboard css on the leaderboards tab. Total score and thru score are on the same line on mobile devices
-[✅] Fix league details option on the view league page
+[] Fix league details option on the view league page
 
 
 ##############

@@ -1,8 +1,15 @@
+
 import { joinLeague } from './api.js';
 
 export function setupModalHandlers() {
     // Professional Join League Modal
     const joinLeagueOverlay = document.getElementById('join-league-overlay');
+    const openModalBtns = [
+        document.getElementById('join-league-btn'),           // Nav button
+        document.getElementById('join-league-hero-btn'),      // Hero button (NEW)
+        document.getElementById('join-league-btn-mobile'),    // Mobile nav button
+        document.getElementById('join-first-league-btn')
+    ].filter(Boolean);
 
     const closeModalBtns = [
         document.getElementById('modal-close-btn'),
@@ -17,7 +24,7 @@ export function setupModalHandlers() {
     // Professional modal controls
     const openModal = () => {
         if (joinLeagueOverlay) {
-            joinLeagueOverlay.classList.remove('hidden');  // Remove hidden class
+            joinLeagueOverlay.classList.remove('hidden');
             joinLeagueOverlay.classList.add('active');
             document.body.style.overflow = 'hidden';
 
@@ -37,29 +44,21 @@ export function setupModalHandlers() {
     const closeModal = () => {
         if (joinLeagueOverlay) {
             joinLeagueOverlay.classList.remove('active');
-            joinLeagueOverlay.classList.add('hidden');     // Add hidden class back
+            joinLeagueOverlay.classList.add('hidden');
             document.body.style.overflow = '';
         }
     };
 
-    // Use EVENT DELEGATION instead of direct event listeners
-    // This will catch clicks on dynamically created buttons too
-    document.addEventListener('click', function(e) {
-        // Check if clicked element matches our join league button selectors
-        if (e.target.matches('#join-league-btn, #join-league-hero-btn, #join-league-btn-mobile, #join-first-league-btn') ||
-            e.target.closest('#join-league-btn, #join-league-hero-btn, #join-league-btn-mobile, #join-first-league-btn')) {
+    // Attach event listeners
+    openModalBtns.forEach(btn => {
+        if (btn) btn.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log('Join league button clicked via event delegation!');
             openModal();
-            return;
-        }
+        });
+    });
 
-        // Handle close buttons
-        if (e.target.matches('#modal-close-btn, #modal-cancel-btn') ||
-            e.target.closest('#modal-close-btn, #modal-cancel-btn')) {
-            closeModal();
-            return;
-        }
+    closeModalBtns.forEach(btn => {
+        if (btn) btn.addEventListener('click', closeModal);
     });
 
     // Close modal when clicking on overlay
