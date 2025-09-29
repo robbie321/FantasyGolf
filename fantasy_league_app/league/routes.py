@@ -470,7 +470,7 @@ def join_league():
 @league_bp.route('/add_entry/<int:league_id>', methods=['GET', 'POST'], strict_slashes=False)
 @login_required
 def add_entry(league_id):
-   """
+    """
     Allows a user to create a new entry for a specific league.
     """
     print(f"DEBUG: add_entry called with league_id={league_id}")
