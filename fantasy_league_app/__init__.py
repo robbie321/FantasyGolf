@@ -77,7 +77,7 @@ def create_app(config_name=None):
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
-    app.register_blueprint(league_bp)
+    app.register_blueprint(league_bp, url_prefix='/league')
     app.register_blueprint(admin_bp)
     app.register_blueprint(player_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
