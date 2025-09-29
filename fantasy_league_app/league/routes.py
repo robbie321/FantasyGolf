@@ -558,6 +558,8 @@ def add_entry(league_id):
     # The entry fee in cents
     entry_fee_cents = int(league.entry_fee * 100)
 
+    print(f"DEBUG: LEAGUE ID: {league.club_id}")
+
     club = Club.query.get_or_404(league.club_id)
 
 
