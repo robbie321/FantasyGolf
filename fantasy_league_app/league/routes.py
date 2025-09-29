@@ -560,7 +560,10 @@ def add_entry(league_id):
 
     print(f"DEBUG: LEAGUE ID: {league.club_id}")
 
-    club = Club.query.get_or_404(league.club_id)
+    if league.club_id:
+        club = Club.query.get_or_404(league.club_id)
+    else:
+        club = None
 
 
     # --- "No Favorites" Rule Logic ---
@@ -628,6 +631,13 @@ def add_entry(league_id):
 
                 stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
 
+                if club and club.stripe_account_id:
+                    # Use club's connected account
+                    stripe_account = club.stripe_account_id
+                else:
+                    # Use platform account for admin leagues
+                    stripe_account = None
+
                 checkout_session = stripe.checkout.Session.create(
                     line_items=[{
                         'price_data': {
@@ -640,7 +650,7 @@ def add_entry(league_id):
                     mode='payment',
                     success_url=url_for('league.success', _external=True),
                     cancel_url=url_for('league.cancel', _external=True),
-                    stripe_account=club.stripe_account_id
+                    stripe_account=stripe_account
 
                 )
                 return redirect(checkout_session.url, code=303)
