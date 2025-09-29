@@ -6,7 +6,7 @@
 // --- Fetch function for joining a league ---
 export async function joinLeague(leagueCode, csrfToken) {
     try {
-        const response = await fetch('/join', {
+        const response = await fetch('/league/join', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
