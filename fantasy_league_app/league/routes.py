@@ -485,6 +485,33 @@ def add_entry(league_id):
     league = League.query.get_or_404(league_id)
     print(f"DEBUG: League found: {league.name}")
 
+    print(f"DEBUG: Checking max entries...")
+    if league.max_entries and len(league.entries) >= league.max_entries:
+        print(f"DEBUG: League is full")
+        flash(f'This league is full and cannot accept new entries.', 'danger')
+        return redirect(url_for('main.user_dashboard'))
+
+    print(f"DEBUG: Checking deadline...")
+    if league.has_entry_deadline_passed and not is_testing_mode_active():
+        print(f"DEBUG: Deadline has passed")
+        flash('The deadline for joining this league has passed.', 'danger')
+        return redirect(url_for('main.user_dashboard'))
+
+    print(f"DEBUG: Checking existing entry...")
+    existing = LeagueEntry.query.filter_by(user_id=current_user.id, league_id=league.id).first()
+    if existing:
+        print(f"DEBUG: User already has entry")
+        flash('You have already created an entry for this league.', 'info')
+        return redirect(url_for('main.user_dashboard'))
+
+    print(f"DEBUG: Checking player bucket...")
+    if not league.player_bucket:
+        print(f"DEBUG: No player bucket found")
+        flash('This league does not have any players associated with it yet.', 'danger')
+        return redirect(url_for('main.user_dashboard'))
+
+    print(f"DEBUG: All checks passed, preparing to render template...")
+
 
 
     # league = League.query.get_or_404(league_id)
