@@ -467,20 +467,27 @@ def join_league():
     # return redirect(url_for('league.add_entry', league_id=league.id))
 
 # ---  add_entry ROUTE ---
-@league_bp.route('/add_entry/<int:league_id>', methods=['GET', 'POST'])
+@league_bp.route('/add_entry/<int:league_id>', methods=['GET', 'POST'], strict_slashes=False)
 @login_required
 def add_entry(league_id):
+   """
+    Allows a user to create a new entry for a specific league.
     """
-    All
-    ows a user to create a new entry for a specific league.
-    """
+    print(f"DEBUG: add_entry called with league_id={league_id}")
+    print(f"DEBUG: current_user={current_user}")
+    print(f"DEBUG: is_site_admin={getattr(current_user, 'is_site_admin', False)}")
+
     if getattr(current_user, 'is_site_admin', False):
         flash("Site admins cannot join leagues.", "danger")
         return redirect(url_for('admin.admin_dashboard'))
 
-
-
+    print(f"DEBUG: About to query league {league_id}")
     league = League.query.get_or_404(league_id)
+    print(f"DEBUG: League found: {league.name}")
+
+
+
+    # league = League.query.get_or_404(league_id)
 
     #  # Check if the user has connected a Stripe account at all.
     # if not club.stripe_account_id:
