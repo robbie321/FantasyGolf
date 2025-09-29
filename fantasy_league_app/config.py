@@ -102,7 +102,7 @@ class Config:
         },
         'update-buckets-weekly': {
             'task': 'fantasy_league_app.tasks.update_player_buckets',
-            'schedule': crontab(hour=10, minute=0, day_of_week='tuesday'),
+            'schedule': crontab(hour=13, minute=30, day_of_week='monday'),
         },
         'finalize-leagues-weekly': {
             'task': 'fantasy_league_app.tasks.finalize_finished_leagues',
