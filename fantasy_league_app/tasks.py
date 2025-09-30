@@ -786,6 +786,122 @@ def update_player_buckets(self):
         logger.error(f"BUCKET UPDATE: Unexpected error: {e}")
         raise
 
+@shared_task(
+    bind=True,
+    autoretry_for=(DatabaseConnectionError,),
+    retry_kwargs={'max_retries': 3, 'countdown': 300},
+    soft_time_limit=600,
+    time_limit=720
+)
+def substitute_withdrawn_players(self):
+    """
+    Check for withdrawn players and automatically substitute them if they haven't
+    started playing (no score recorded yet).
+    """
+    app = get_app()
+
+    try:
+        with app.app_context():
+            logger.info("WITHDRAWAL CHECK: Starting automatic substitution check")
+
+            now = datetime.utcnow()
+
+            # Get leagues where:
+            # 1. Deadline has passed (entries locked)
+            # 2. Tournament is ongoing
+            # 3. League not finalized
+            leagues = League.query.filter(
+                League.entry_deadline < now,
+                League.is_finalized == False
+            ).all()
+
+            logger.info(f"WITHDRAWAL CHECK: Found {len(leagues)} active leagues to check")
+
+            for league in leagues:
+                if not league.player_bucket:
+                    continue
+
+                logger.info(f"WITHDRAWAL CHECK: Checking league {league.id} - {league.name}")
+
+                # Get tournament field data with scores
+                data_golf_client = DataGolfClient()
+                field_data, error = data_golf_client.get_tournament_field_updates(league.tour)
+
+                if error or not field_data or not field_data.get('field'):
+                    logger.warning(f"WITHDRAWAL CHECK: Could not get field data for {league.tour}")
+                    continue
+
+                active_field = field_data.get('field', [])
+
+                # Create a map of player dg_id to their status/score
+                field_status = {}
+                for field_player in active_field:
+                    dg_id = field_player.get('dg_id')
+                    # Check if player has started playing (has a score or thru value)
+                    has_started = field_player.get('current_score') is not None or field_player.get('thru') not in [None, 0, '-']
+                    field_status[dg_id] = {
+                        'in_field': True,
+                        'has_started': has_started
+                    }
+
+                # Check each entry for withdrawn players
+                for entry in league.entries:
+                    substitutions_made = []
+
+                    # Check each of the 3 players
+                    for position in [1, 2, 3]:
+                        player_id = getattr(entry, f'player{position}_id')
+                        player = Player.query.get(player_id)
+
+                        if not player:
+                            continue
+
+                        player_status = field_status.get(player.dg_id, {'in_field': False, 'has_started': False})
+
+                        # Only substitute if:
+                        # 1. Player is not in field (withdrawn)
+                        # 2. Player hasn't started playing yet (no score)
+                        if not player_status['in_field'] and not player_status['has_started']:
+                            logger.info(f"WITHDRAWAL CHECK: Player {player.full_name()} withdrawn and hasn't started - eligible for substitution")
+
+                            # Find replacement player
+                            replacement = find_replacement_player(
+                                entry,
+                                player,
+                                league.player_bucket.players,
+                                active_field
+                            )
+
+                            if replacement:
+                                setattr(entry, f'player{position}_id', replacement.id)
+                                substitutions_made.append({
+                                    'old': player.full_name(),
+                                    'new': replacement.full_name(),
+                                    'position': position
+                                })
+                                logger.info(f"WITHDRAWAL CHECK: Substituted {player.full_name()} with {replacement.full_name()}")
+                        elif not player_status['in_field'] and player_status['has_started']:
+                            logger.info(f"WITHDRAWAL CHECK: Player {player.full_name()} withdrawn but has started playing - no substitution")
+
+                    if substitutions_made:
+                        # Recalculate total odds
+                        p1 = Player.query.get(entry.player1_id)
+                        p2 = Player.query.get(entry.player2_id)
+                        p3 = Player.query.get(entry.player3_id)
+                        entry.total_odds = p1.odds + p2.odds + p3.odds
+
+                        db.session.commit()
+
+                        # Send notification to user
+                        send_substitution_notification(entry.user, substitutions_made, league)
+
+            logger.info("WITHDRAWAL CHECK: Completed automatic substitution check")
+            return "Withdrawal check completed"
+
+    except Exception as e:
+        logger.error(f"WITHDRAWAL CHECK: Error during substitution check: {e}")
+        raise
+
 
 @shared_task(
     bind=True,

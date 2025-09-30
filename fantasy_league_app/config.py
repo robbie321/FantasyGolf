@@ -136,6 +136,10 @@ class Config:
         'task': 'fantasy_league_app.tasks.cleanup_old_push_subscriptions',
         'schedule': crontab(hour=2, minute=0, day_of_week='monday'),
         },
+        'check-player-withdrawals-thursday': {
+        'task': 'fantasy_league_app.tasks.substitute_withdrawn_players',
+        'schedule': crontab(minute='*/15', hour='6-14', day_of_week='thursday'),  # Every 15 min, 6am-2pm UTC on Thursdays
+        },
     }
 
 
