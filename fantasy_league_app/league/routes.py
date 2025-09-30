@@ -69,6 +69,7 @@ def _create_new_league(name, player_bucket_id, entry_fee_str,
 
     start_date = (today + timedelta(days=days_until_target)).replace(hour=6, minute=0, second=0, microsecond=0)
     end_date = start_date + timedelta(days=end_day_delta)
+    entry_deadline=tournament_start - timedelta(hours=12)
     # --- End of Date Logic ---
 
     # --- Validation ---
@@ -144,6 +145,7 @@ def _create_new_league(name, player_bucket_id, entry_fee_str,
         prize_amount=prize_amount,
         max_entries=max_entries,
         odds_limit=odds_limit,
+        entry_deadline=entry_deadline,
         rules=rules,
         prize_details=prize_details,
         no_favorites_rule=no_favorites_rule,
