@@ -376,6 +376,7 @@ class League(db.Model):
     tie_breaker_question = db.Column(db.String(255), nullable=False, default="Enter a question")
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
+    entry_deadline = db.Column(db.DateTime)
     winner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
     is_finalized = db.Column(db.Boolean, default=False, nullable=False)
@@ -425,10 +426,10 @@ class League(db.Model):
             return "Site Admin" #public league
 
     # deadline logic
-    @property
-    def entry_deadline(self):
-        """Calculates the deadline for entries (12 hours before start_date)."""
-        return self.start_date - timedelta(hours=12)
+    # @property
+    # def entry_deadline(self):
+    #     """Calculates the deadline for entries (12 hours before start_date)."""
+    #     return self.start_date - timedelta(hours=12)
 
     @property
     def has_entry_deadline_passed(self):
