@@ -199,7 +199,7 @@ export function renderProfessionalLeagueCards(leagues, container) {
         const endDate = league.end_date ? new Date(league.end_date).toLocaleDateString() : 'TBD';
 
         return `
-            <a href="/view/${league.id}" class="dashboard-league-card">
+            <a href="/league/view/${league.id}" class="dashboard-league-card">
                 <div class="card-header">
                     <div class="card-title-group">
                         <h3 class="league-name">${league.name}</h3>
