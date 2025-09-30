@@ -902,6 +902,98 @@ def substitute_withdrawn_players(self):
         logger.error(f"WITHDRAWAL CHECK: Error during substitution check: {e}")
         raise
 
+def find_replacement_player(entry, withdrawn_player, bucket_players, active_field):
+    """
+    Find a suitable replacement player with similar odds.
+
+    Args:
+        entry: The LeagueEntry being updated
+        withdrawn_player: The Player who withdrew
+        bucket_players: List of all players in the bucket
+        active_field: List of active players in the tournament
+
+    Returns:
+        Player object or None
+    """
+    import random
+
+    # Get currently selected player IDs
+    selected_ids = [entry.player1_id, entry.player2_id, entry.player3_id]
+
+    # Get active player IDs from field
+    active_player_dg_ids = [p.get('dg_id') for p in active_field]
+
+    # Filter available players:
+    # 1. Not already selected in this entry
+    # 2. Still in the tournament field
+    # 3. Not the withdrawn player
+    available_players = [
+        p for p in bucket_players
+        if p.id not in selected_ids
+        and p.dg_id in active_player_dg_ids
+        and p.id != withdrawn_player.id
+    ]
+
+    if not available_players:
+        logger.warning(f"No available replacement players for {withdrawn_player.full_name()}")
+        return None
+
+    # Find players with similar odds (within 20% range)
+    withdrawn_odds = withdrawn_player.odds
+    odds_range = withdrawn_odds * 0.2  # 20% range
+
+    similar_odds_players = [
+        p for p in available_players
+        if abs(p.odds - withdrawn_odds) <= odds_range
+    ]
+
+    # If we have players with similar odds, randomly pick one
+    if similar_odds_players:
+        return random.choice(similar_odds_players)
+
+    # Otherwise, pick the closest odds player
+    return min(available_players, key=lambda p: abs(p.odds - withdrawn_odds))
+
+
+def send_substitution_notification(user, substitutions, league):
+    """Send notification to user about automatic substitutions"""
+    try:
+        substitution_text = "\n".join([
+            f"Player {s['position']}: {s['old']} → {s['new']}"
+            for s in substitutions
+        ])
+
+        subject = f"Player Substitution in {league.name}"
+        body = f"""
+Hello {user.full_name},
+
+One or more players in your entry for "{league.name}" have withdrawn from the tournament.
+We've automatically substituted them with players of similar odds:
+
+{substitution_text}
+
+Your updated team is now active for the tournament.
+
+Good luck!
+
+Fantasy Fairway Team
+        """
+
+        # Send email using your existing mail setup
+        from flask_mail import Message
+        from fantasy_league_app.extensions import mail
+
+        msg = Message(
+            subject=subject,
+            recipients=[user.email],
+            body=body
+        )
+        mail.send(msg)
+
+        logger.info(f"Sent substitution notification to {user.email}")
+
+    except Exception as e:
+        logger.error(f"Failed to send substitution notification: {e}")
 
 @shared_task(
     bind=True,
