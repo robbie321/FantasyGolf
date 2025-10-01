@@ -20,7 +20,34 @@ migrate = Migrate()
 mail = Mail()
 csrf = CSRFProtect()
 socketio = SocketIO()
-sess = Session()  # Flask-Session
+sess = Session()
+
+# ===== SHARED REDIS CONNECTION POOL =====
+_redis_pool = None
+
+def get_redis_pool():
+    """Get or create the shared Redis connection pool"""
+    global _redis_pool
+    if _redis_pool is None:
+        redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
+
+        # Create connection pool with conservative settings
+        _redis_pool = redis.ConnectionPool.from_url(
+            redis_url,
+            max_connections=10,  # Limit total connections from Flask app
+            socket_keepalive=True,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+            retry_on_timeout=True,
+            health_check_interval=30,
+            decode_responses=False  # Flask-Session needs bytes
+        )
+    return _redis_pool
+
+def get_redis_client():
+    """Get a Redis client using the shared connection pool"""
+    return redis.Redis(connection_pool=get_redis_pool())
+# ===== END SHARED REDIS CONNECTION POOL =====
 
 def make_celery(app=None):
     """Create and configure Celery instance"""
@@ -33,10 +60,8 @@ def make_celery(app=None):
         include=['fantasy_league_app.tasks']
     )
 
-    # IMPORTANT: Configure Celery to load from celeryconfig.py
     celery.config_from_object('celeryconfig')
 
-    # Basic configuration - beat schedule will be loaded from celeryconfig.py
     celery.conf.update(
         broker_url=redis_url,
         result_backend=redis_url,
@@ -48,24 +73,21 @@ def make_celery(app=None):
         broker_connection_retry_on_startup=True,
         broker_connection_retry=True,
         broker_connection_max_retries=10,
-        # Add debugging options
         task_track_started=True,
         task_send_sent_event=True,
+        broker_pool_limit=5,  # Limit Celery broker connections
+        redis_max_connections=5,  # Limit Celery result backend connections
     )
 
     if app is not None:
-        # Configure tasks to run with app context
         class ContextTask(celery.Task):
-            """Make celery tasks work with Flask app context."""
             def __call__(self, *args, **kwargs):
                 with app.app_context():
                     return self.run(*args, **kwargs)
-
         celery.Task = ContextTask
 
     return celery
 
-# Create Celery instance without app initially
 celery = make_celery()
 
 # Login Manager setup
@@ -73,54 +95,52 @@ login_manager = LoginManager()
 login_manager.login_view = 'auth.login_choice'
 login_manager.session_protection = "strong"
 
-# Rate Limiter - configure with storage URI and defaults
-limiter = Limiter(
-    key_func=get_remote_address,
-)
+# Rate Limiter
+limiter = Limiter(key_func=get_remote_address)
 
 def init_extensions(app):
     """Initialize all extensions with the Flask app"""
     from .config import Config
 
-    # Initialize extensions with the app
     db.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
     mail.init_app(app)
     socketio.init_app(app)
-    cache.init_app(app)
     login_manager.init_app(app)
     Config.init_app(app)
 
-    # ===== Initialize Flask-Session with Redis =====
-    redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
-    # Create Redis connection for sessions
+    # ===== Initialize Flask-Session with SHARED Redis =====
     try:
-        app.config['SESSION_REDIS'] = redis.from_url(redis_url)
+        app.config['SESSION_REDIS'] = get_redis_client()
         sess.init_app(app)
-        app.logger.info(f"Flask-Session initialized with Redis: {redis_url}")
+        app.logger.info("✅ Flask-Session initialized with shared Redis pool")
     except Exception as e:
-        app.logger.error(f"Failed to initialize Flask-Session with Redis: {e}")
-        # Fallback to filesystem sessions if Redis fails
+        app.logger.error(f"❌ Flask-Session Redis init failed: {e}")
         app.config['SESSION_TYPE'] = 'filesystem'
         sess.init_app(app)
-        app.logger.warning("Flask-Session falling back to filesystem storage")
-    # ===== End Flask-Session Initialization =====
+        app.logger.warning("⚠️ Flask-Session using filesystem fallback")
 
-    # Properly configure Celery with app context
+    # ===== Initialize Cache with SHARED Redis =====
+    try:
+        if app.config.get('CACHE_TYPE') == 'RedisCache':
+            redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
+            app.config['CACHE_REDIS_URL'] = redis_url
+            # Use shared connection pool for cache
+            app.config['CACHE_OPTIONS'] = {
+                'connection_pool': get_redis_pool()
+            }
+            app.logger.info("✅ Flask-Caching initialized with shared Redis pool")
+        cache.init_app(app)
+    except Exception as e:
+        app.logger.error(f"❌ Cache initialization error: {e}")
+
     celery.conf.update(app.config)
-
-    # Initialize rate limiter (just pass the app)
     limiter.init_app(app)
-
-    # IMPORTANT: Explicitly set the beat schedule
     celery.conf.beat_schedule = app.config.get('beat_schedule', {})
 
-    # Configure tasks to run with app context
     class ContextTask(celery.Task):
-        """Make celery tasks work with Flask app context."""
         def __call__(self, *args, **kwargs):
             with app.app_context():
                 return self.run(*args, **kwargs)
-
     celery.Task = ContextTask
