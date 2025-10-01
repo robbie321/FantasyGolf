@@ -156,3 +156,22 @@
         grid-template-columns: 1fr;
     }
 }
+
+
+@media (prefers-color-scheme: dark) {
+    .prob-value {
+        color: var(--live-green);
+    }
+
+    .skill-rank{
+        color: var(--live-green);
+    }
+
+    .analytics-modal{
+        background: var(--background-light);
+    }
+
+    #analytics-player-name{
+        color: white;
+    }
+}
