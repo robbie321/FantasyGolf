@@ -93,9 +93,9 @@ def init_extensions(app):
     Config.init_app(app)
 
     # ===== Initialize Flask-Session with Redis =====
+    redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
     # Create Redis connection for sessions
     try:
-        redis_url = app.config.get('redis_url')
         app.config['SESSION_REDIS'] = redis.from_url(redis_url)
         sess.init_app(app)
         app.logger.info(f"Flask-Session initialized with Redis: {redis_url}")
