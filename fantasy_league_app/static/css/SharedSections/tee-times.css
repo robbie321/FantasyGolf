@@ -753,6 +753,8 @@
         filter: brightness(0.8);
     }
 
+
+
     .tee-time-group {
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
@@ -857,6 +859,12 @@
         color: #f7fafc;
         background: #4a5568;
         border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .player-odds {
+        color: var(--live-green);
+        background: rgba(174, 236, 188, 0.15);
+        border-color: rgba(174, 236, 188, 0.3);
     }
 
     .loading-state,
