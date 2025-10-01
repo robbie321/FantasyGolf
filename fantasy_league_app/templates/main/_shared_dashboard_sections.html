@@ -49,6 +49,57 @@
   </div>
 </section>
 
+<!-- Tee Times Section -->
+<section id="tee-times-section" class="page-section hidden">
+  <header class="dashboard-header">
+    <div>
+      <h1>Tournament Tee Times</h1>
+      <p class="subtitle">View starting times for today's round</p>
+    </div>
+  </header>
+
+  <!-- Tour Selection Tabs -->
+  <div class="tabs tee-times-tour-tabs">
+    <button class="tab-button active" data-tour="pga">PGA Tour</button>
+    <button class="tab-button" data-tour="euro">DP World Tour</button>
+  </div>
+
+  <!-- Tournament Info Card -->
+  <div class="form-card" id="tee-times-info-card">
+    <div class="tournament-info-header">
+      <h3 id="tee-times-event-name">Loading tournament...</h3>
+      <span class="tag tag-info" id="tee-times-round">Round -</span>
+    </div>
+  </div>
+
+  <!-- Tee Times Table -->
+  <div class="form-card">
+    <div class="tee-times-header">
+      <h4>Tee Times Schedule</h4>
+      <button class="btn btn-sm" id="refresh-tee-times-btn">
+        <i class="fa-solid fa-rotate"></i> Refresh
+      </button>
+    </div>
+
+    <div class="tee-times-container" id="tee-times-container">
+      <!-- Loading state -->
+      <div class="loading-state" id="tee-times-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <p>Loading tee times...</p>
+      </div>
+
+      <!-- Tee times will be populated here -->
+      <div id="tee-times-list" style="display: none"></div>
+
+      <!-- Empty state -->
+      <div class="empty-state" id="tee-times-empty" style="display: none">
+        <i class="fa-solid fa-calendar-xmark"></i>
+        <p>No tee times available for this tournament</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- Tour Leaderboards Section -->
 <section id="leaderboards-section" class="page-section hidden">
   <header class="dashboard-header">

@@ -1,0 +1,775 @@
+/* fantasy_league_app/static/css/tee-times.css */
+
+/* ~~~~~~~~~~~~~~~~~~ */
+/* TEE TIMES SECTION  */
+/* ~~~~~~~~~~~~~~~~~~ */
+
+#tee-times-section {
+    background: var(--surface-white);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--surface-border);
+}
+
+/* Dashboard Header */
+#tee-times-section .dashboard-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--surface-border);
+}
+
+#tee-times-section .dashboard-header h1 {
+    color: var(--text-primary);
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.025em;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+#tee-times-section .dashboard-header h1 i {
+    color: var(--primary-green);
+}
+
+#tee-times-section .dashboard-header .subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* Tour Selection Tabs */
+.tee-times-tour-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    padding: 0.5rem;
+    background: var(--surface-light);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--surface-border);
+}
+
+.tee-times-tour-tabs .tab-button {
+    flex: 1;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: calc(var(--border-radius) - 2px);
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tee-times-tour-tabs .tab-button:hover {
+    background: rgba(0, 106, 78, 0.1);
+    color: var(--text-primary);
+}
+
+.tee-times-tour-tabs .tab-button.active {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 106, 78, 0.3);
+}
+
+/* Tournament Info Card */
+#tee-times-info-card {
+    background: var(--surface-white);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--surface-border);
+    margin-bottom: 2rem;
+}
+
+.tournament-info-header {
+    background: var(--surface-light);
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--surface-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tournament-info-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.tag-info {
+    background: linear-gradient(135deg, #4299e1 0%, #63b3ed 100%);
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 8px rgba(66, 153, 225, 0.3);
+}
+
+/* Tee Times Header with Refresh Button */
+.tee-times-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--surface-border);
+}
+
+.tee-times-header h4 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#refresh-tee-times-btn {
+    background: var(--surface-light);
+    border: 1px solid var(--surface-border);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+#refresh-tee-times-btn:hover {
+    background: var(--primary-green);
+    color: white;
+    border-color: var(--primary-green);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 106, 78, 0.3);
+}
+
+#refresh-tee-times-btn i {
+    transition: transform 0.3s ease;
+}
+
+#refresh-tee-times-btn:hover i {
+    transform: rotate(180deg);
+}
+
+/* Tee Times Container */
+.tee-times-container {
+    min-height: 400px;
+    position: relative;
+}
+
+/* Loading State */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+
+.loading-state i {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    color: var(--primary-green);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.loading-state p {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 500;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    max-width: 400px;
+}
+
+/* Tee Time Groups */
+#tee-times-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.tee-time-group {
+    background: var(--surface-white);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    margin-bottom: 15px;
+}
+
+.tee-time-group:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-green);
+}
+
+/* Tee Time Header */
+.tee-time-header {
+    background: var(--primary-green);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--surface-border);
+}
+
+.time-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.time-display i {
+    color: var(--white);
+    font-size: 1.25rem;
+}
+
+.time-display .time {
+    color: var(--white);
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.025em;
+}
+
+.player-count {
+    color: var(--white);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.375rem 0.75rem;
+    background: rgba(0, 106, 78, 0.1);
+    border-radius: 9999px;
+}
+
+/* Tee Time Players Container */
+.tee-time-players {
+    padding: 0.75rem;
+    background: var(--background-light);
+}
+
+/* Individual Player Row */
+.tee-time-player {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background: var(--white);
+    margin-bottom: 0.75rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--surface-border);
+    transition: var(--transition);
+}
+
+.tee-time-player:last-child {
+    margin-bottom: 0;
+}
+
+.tee-time-player:hover {
+    background: var(--surface-light);
+    transform: translateX(4px);
+    border-color: var(--primary-green);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Player Info */
+.player-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    flex: 1;
+}
+
+.player-name {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 1.125rem;
+    letter-spacing: -0.025em;
+}
+
+.player-country {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.player-country::before {
+    content: '🌍';
+    font-size: 0.875rem;
+}
+
+/* Player Stats */
+.player-stats {
+    display: flex;
+    gap: 1.25rem;
+    align-items: center;
+}
+
+/* Player Score */
+.player-score {
+    font-weight: 700;
+    font-size: 1.25rem;
+    min-width: 50px;
+    text-align: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--border-radius);
+    border: 2px solid transparent;
+    transition: var(--transition);
+}
+
+.player-score.score-under {
+    color: #16a34a;
+    background: rgba(22, 163, 74, 0.1);
+    border-color: rgba(22, 163, 74, 0.2);
+}
+
+.player-score.score-over {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.1);
+    border-color: rgba(220, 38, 38, 0.2);
+}
+
+.player-score.score-even {
+    color: var(--text-primary);
+    background: var(--surface-light);
+    border-color: var(--surface-border);
+}
+
+/* Player Position */
+.player-pos {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    font-weight: 700;
+    min-width: 45px;
+    text-align: center;
+    padding: 0.375rem 0.75rem;
+    background: var(--surface-light);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--surface-border);
+}
+
+/* Player Odds */
+.player-odds {
+    font-size: 0.875rem;
+    color: var(--primary-green);
+    font-weight: 700;
+    padding: 0.5rem 0.75rem;
+    background: rgba(0, 106, 78, 0.1);
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(0, 106, 78, 0.2);
+    min-width: 60px;
+    text-align: center;
+}
+
+.player-odds::after {
+    content: ' HCAP';
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-left: 2px;
+}
+
+/* Animation for new content */
+.tee-time-group {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+.tee-time-group:nth-child(1) { animation-delay: 0s; }
+.tee-time-group:nth-child(2) { animation-delay: 0.05s; }
+.tee-time-group:nth-child(3) { animation-delay: 0.1s; }
+.tee-time-group:nth-child(4) { animation-delay: 0.15s; }
+.tee-time-group:nth-child(5) { animation-delay: 0.2s; }
+
+
+/* Country Flag Styling */
+.country-flag {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 0.5rem;
+    font-size: 1.125rem;
+    line-height: 1;
+}
+
+/* Flag icon styling */
+.country-flag-icon {
+    margin-right: 0.5rem;
+    font-size: 1.25rem;
+    width: 1.5em;
+    height: 1.125em;
+    border-radius: 2px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.player-name {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 1.125rem;
+    letter-spacing: -0.025em;
+    display: flex;
+    align-items: center;
+}
+
+/* Remove the globe emoji if using flags */
+.player-country::before {
+    content: '';
+}
+
+/* Or keep it and just update spacing */
+.player-country {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ~~~~~~~~~~~~~~~~~~ */
+/* RESPONSIVE DESIGN  */
+/* ~~~~~~~~~~~~~~~~~~ */
+
+@media (max-width: 1024px) {
+    #tee-times-section {
+        padding: 1.5rem;
+    }
+
+    .tee-time-player {
+        padding: 1rem 1.25rem;
+    }
+}
+
+@media (max-width: 768px) {
+    #tee-times-section {
+        padding: 1rem;
+        border-radius: var(--border-radius);
+    }
+
+    #tee-times-section .dashboard-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .tee-times-tour-tabs {
+        flex-direction: row;
+        gap: 0.25rem;
+    }
+
+    .tee-times-tour-tabs .tab-button {
+        padding: 0.625rem 1rem;
+        font-size: 0.8rem;
+    }
+
+    .tournament-info-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+        padding: 1rem 1.5rem;
+    }
+
+    .tournament-info-header h3 {
+        font-size: 1.25rem;
+    }
+
+    .tee-times-header {
+        margin-bottom: 1rem;
+    }
+
+    .tee-times-header h4 {
+        font-size: 1.125rem;
+    }
+
+    .tee-time-header {
+        padding: 1rem 1.25rem;
+    }
+
+    .time-display .time {
+        font-size: 1.125rem;
+    }
+
+    .player-count {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .tee-time-players {
+        padding: 0.5rem;
+    }
+
+    .tee-time-player {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .player-info {
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .player-name {
+        font-size: 1rem;
+    }
+
+    .player-stats {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+
+    .player-score {
+        font-size: 1.125rem;
+        min-width: 45px;
+        padding: 0.375rem 0.625rem;
+    }
+
+    .player-pos {
+        min-width: 40px;
+    }
+
+    .player-odds {
+        min-width: 55px;
+        font-size: 0.8rem;
+    }
+
+    .player-odds::after {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    #tee-times-section {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    #tee-times-section .dashboard-header {
+        margin-bottom: 1rem;
+    }
+
+    #tee-times-section .dashboard-header h1 {
+        font-size: 1.25rem;
+    }
+
+    #tee-times-section .dashboard-header .subtitle {
+        font-size: 0.9rem;
+    }
+
+    .tee-times-tour-tabs {
+        padding: 0.375rem;
+    }
+
+    .tee-times-tour-tabs .tab-button {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .tournament-info-header {
+        padding: 0.875rem 1rem;
+    }
+
+    .tournament-info-header h3 {
+        font-size: 1.125rem;
+    }
+
+    .tee-times-header {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: flex-start;
+        padding-bottom: 0.75rem;
+    }
+
+    .tee-times-header h4 {
+        font-size: 1rem;
+    }
+
+    #refresh-tee-times-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .tee-time-header {
+        padding: 0.875rem 1rem;
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: flex-start;
+    }
+
+    .time-display {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .time-display .time {
+        font-size: 1rem;
+    }
+
+    .player-count {
+        width: 100%;
+        text-align: center;
+    }
+
+    .tee-time-players {
+        padding: 0.375rem;
+    }
+
+    .tee-time-player {
+        padding: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .player-name {
+        font-size: 0.95rem;
+    }
+
+    .player-country {
+        font-size: 0.8rem;
+    }
+
+    .player-stats {
+        gap: 0.5rem;
+    }
+
+    .player-score {
+        font-size: 1rem;
+        min-width: 40px;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .player-pos {
+        min-width: 35px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .player-odds {
+        min-width: 50px;
+        padding: 0.375rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .loading-state,
+    .empty-state {
+        padding: 2rem 1rem;
+    }
+
+    .loading-state i,
+    .empty-state i {
+        font-size: 2.5rem;
+    }
+
+    .loading-state p,
+    .empty-state p {
+        font-size: 1rem;
+    }
+}
+
+/* ~~~~~~~~~~~~~~~~~~ */
+/* DARK MODE SUPPORT  */
+/* ~~~~~~~~~~~~~~~~~~ */
+
+@media (prefers-color-scheme: dark) {
+    .player-country::before {
+        filter: brightness(0.8);
+    }
+
+    .tee-time-group {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+}
+
+/* ~~~~~~~~~~~~~~~~~~ */
+/* HIGH CONTRAST MODE */
+/* ~~~~~~~~~~~~~~~~~~ */
+
+@media (prefers-contrast: high) {
+    .tee-time-group {
+        border-width: 2px;
+    }
+
+    .tee-time-player {
+        border-width: 2px;
+    }
+
+    .player-score {
+        border-width: 3px;
+    }
+}
+
+/* ~~~~~~~~~~~~~~~~~~ */
+/* REDUCED MOTION     */
+/* ~~~~~~~~~~~~~~~~~~ */
+
+@media (prefers-reduced-motion: reduce) {
+    .tee-time-group,
+    .tee-time-player,
+    .tab-button,
+    #refresh-tee-times-btn,
+    .loading-state i {
+        transition: none;
+        animation: none;
+    }
+}
