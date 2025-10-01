@@ -1457,7 +1457,7 @@
     statusMessage.className = "redis-status-message";
 
     try {
-      const response = await fetch("/admin/redis-stats");
+      const response = await fetch("/redis-stats");
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
