@@ -1,0 +1,123 @@
+<!-- Player Analytics Modal -->
+<div class="modal-overlay hidden" id="player-analytics-overlay">
+  <div class="modal analytics-modal">
+    <div class="modal-header">
+      <h3>
+        <i class="fa-solid fa-chart-line"></i>
+        <span id="analytics-player-name">Player Analytics</span>
+      </h3>
+      <button class="close-btn" onclick="closeAnalyticsModal()">&times;</button>
+    </div>
+
+    <div class="modal-body analytics-body">
+      <!-- Loading State -->
+      <div class="loading-state" id="analytics-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <p>Loading analytics...</p>
+      </div>
+
+      <!-- Analytics Content -->
+      <div id="analytics-content" style="display: none">
+        <!-- Win Probability Card -->
+        <div class="analytics-card">
+          <h4><i class="fa-solid fa-trophy"></i> Win Probability</h4>
+          <div class="probability-grid">
+            <div class="prob-item">
+              <span class="prob-label">Win</span>
+              <span class="prob-value" id="prob-win">-</span>
+            </div>
+            <div class="prob-item">
+              <span class="prob-label">Top 5</span>
+              <span class="prob-value" id="prob-top5">-</span>
+            </div>
+            <div class="prob-item">
+              <span class="prob-label">Top 10</span>
+              <span class="prob-value" id="prob-top10">-</span>
+            </div>
+            <div class="prob-item">
+              <span class="prob-label">Top 20</span>
+              <span class="prob-value" id="prob-top20">-</span>
+            </div>
+            <div class="prob-item">
+              <span class="prob-label">Make Cut</span>
+              <span class="prob-value" id="prob-cut">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skill Ratings Card -->
+        <div class="analytics-card">
+          <h4><i class="fa-solid fa-star"></i> Skill Rankings</h4>
+          <div class="skill-bars">
+            <div class="skill-item">
+              <div class="skill-header">
+                <span>Overall</span>
+                <span class="skill-rank" id="rank-overall">-</span>
+              </div>
+              <div class="skill-bar">
+                <div class="skill-fill" id="bar-overall"></div>
+              </div>
+            </div>
+            <div class="skill-item">
+              <div class="skill-header">
+                <span>Driving</span>
+                <span class="skill-rank" id="rank-driving">-</span>
+              </div>
+              <div class="skill-bar">
+                <div class="skill-fill" id="bar-driving"></div>
+              </div>
+            </div>
+            <div class="skill-item">
+              <div class="skill-header">
+                <span>Approach</span>
+                <span class="skill-rank" id="rank-approach">-</span>
+              </div>
+              <div class="skill-bar">
+                <div class="skill-fill" id="bar-approach"></div>
+              </div>
+            </div>
+            <div class="skill-item">
+              <div class="skill-header">
+                <span>Short Game</span>
+                <span class="skill-rank" id="rank-short">-</span>
+              </div>
+              <div class="skill-bar">
+                <div class="skill-fill" id="bar-short"></div>
+              </div>
+            </div>
+            <div class="skill-item">
+              <div class="skill-header">
+                <span>Putting</span>
+                <span class="skill-rank" id="rank-putting">-</span>
+              </div>
+              <div class="skill-bar">
+                <div class="skill-fill" id="bar-putting"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fantasy Projections Card -->
+        <div class="analytics-card">
+          <h4><i class="fa-solid fa-chart-bar"></i> Fantasy Projections</h4>
+          <div class="course-fit-grid">
+            <div class="fit-item">
+              <span class="fit-label">Projected Points</span>
+              <span class="fit-value" id="fit-baseline">-</span>
+            </div>
+            <div class="fit-item">
+              <span class="fit-label">Value (Points/1K Salary)</span>
+              <span class="fit-value" id="fit-field">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeAnalyticsModal()">
+        Close
+      </button>
+    </div>
+  </div>
+</div>

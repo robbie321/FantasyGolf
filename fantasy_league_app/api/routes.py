@@ -47,7 +47,6 @@ def get_player_stats(dg_id):
     else:
         return jsonify({'error': f'Live stats not found for this player.'}), 404
 
-
 @api_bp.route('/tee-times/<string:tour>')
 @login_required
 def get_tee_times(tour):
@@ -94,6 +93,7 @@ def get_tee_times(tour):
                     db_player = Player.query.filter_by(dg_id=dg_id).first()
 
                     player_info = {
+                        'dg_id': dg_id,
                         'name': player.get('player_name', 'Unknown'),
                         'country': player.get('country', ''),
                         'current_score': player.get('current_score'),
@@ -252,6 +252,199 @@ def get_tournament_details(bucket_id):
 
     if 'error' in result:
         return jsonify(result), 404 if 'not found' in result['error'].lower() else 500
+
+    return jsonify(result)
+
+@api_bp.route('/player-analytics/<int:dg_id>')
+@login_required
+def get_player_analytics(dg_id):
+    """
+    Comprehensive analytics for a specific player.
+    Returns skill ratings, recent form, course history, and predictions.
+    Accepts optional 'tour' query parameter (defaults to 'pga').
+    """
+    from flask import request
+
+    # Get tour from query parameter, default to 'pga'
+    tour = request.args.get('tour', 'pga').lower()
+
+    # Validate tour parameter
+    if tour not in ['pga', 'euro', 'kft', 'alt']:
+        tour = 'pga'
+
+    @cache_result('api_data',
+                  key_func=lambda dg_id, tour: CacheManager.make_key('player_analytics', dg_id, tour),
+                  timeout=3600)  # 1 hour cache
+    def fetch_player_analytics(dg_id, tour):  # ADD tour parameter here
+        client = DataGolfClient()
+
+        # Get player from database
+        player = Player.query.filter_by(dg_id=dg_id).first()
+        if not player:
+            return {'error': 'Player not found'}
+
+        analytics = {
+            'player': {
+                'name': player.full_name(),
+                'dg_id': player.dg_id,
+                'odds': player.odds,
+                'current_score': player.current_score
+            },
+            'skill_ratings': {},
+            'recent_form': [],
+            'course_fit': {},
+            'predictions': {}
+        }
+
+        # Fetch skill ratings (not tour-specific)
+        try:
+            skill_data, skill_error = client.get_player_skill_ratings()
+            if not skill_error and skill_data and isinstance(skill_data, list):
+                player_skill = next((p for p in skill_data if p.get('dg_id') == dg_id), None)
+                if player_skill:
+                    analytics['skill_ratings'] = {
+                        'overall': player_skill.get('sg_total'),
+                        'driving': player_skill.get('sg_ott'),  # Strokes Gained: Off the Tee
+                        'approach': player_skill.get('sg_app'),  # Strokes Gained: Approach
+                        'short_game': player_skill.get('sg_arg'),  # Strokes Gained: Around the Green
+                        'putting': player_skill.get('sg_putt')
+                    }
+        except Exception as e:
+            current_app.logger.warning(f"Could not fetch skill ratings: {e}")
+
+        # Fetch baseline history fit (tour-specific)
+        try:
+            fantasy_data, fantasy_error = client.get_fantasy_projections(tour, site='draftkings')
+            if not fantasy_error and fantasy_data and isinstance(fantasy_data, list):
+                player_fantasy = next((p for p in fantasy_data if p.get('dg_id') == dg_id), None)
+                if player_fantasy:
+                    analytics['fantasy_projections'] = {
+                        'proj_points_total': player_fantasy.get('proj_points_total'),
+                        'proj_points_finish': player_fantasy.get('proj_points_finish'),
+                        'proj_points_scoring': player_fantasy.get('proj_points_scoring'),
+                        'proj_ownership': player_fantasy.get('proj_ownership'),
+                        'salary': player_fantasy.get('salary'),
+                        'value': player_fantasy.get('value'),
+                        'r1_teetime': player_fantasy.get('r1_teetime')
+                    }
+        except Exception as e:
+            current_app.logger.warning(f"Could not fetch fantasy projections for tour {tour}: {e}")
+
+        # Fetch pre-tournament predictions (tour-specific)
+        try:
+            pred_data, pred_error = client.get_pre_tournament_predictions(tour)
+
+            if not pred_error and pred_data:
+                # Ensure pred_data is a list
+                if isinstance(pred_data, dict) and 'baseline' in pred_data:
+                    pred_data = pred_data['baseline']
+                elif isinstance(pred_data, dict) and 'data' in pred_data:
+                    pred_data = pred_data['data']
+
+                if isinstance(pred_data, list):
+                    player_pred = next((p for p in pred_data if p.get('dg_id') == dg_id), None)
+                    if player_pred:
+                        # Convert decimal odds to probability percentage
+                        # Probability = (1 / decimal_odds) * 100
+                        analytics['predictions'] = {
+                            'win_prob': (1 / player_pred.get('win', 999)) * 100 if player_pred.get('win') else 0,
+                            'top5_prob': (1 / player_pred.get('top_5', 999)) * 100 if player_pred.get('top_5') else 0,
+                            'top10_prob': (1 / player_pred.get('top_10', 999)) * 100 if player_pred.get('top_10') else 0,
+                            'top20_prob': (1 / player_pred.get('top_20', 999)) * 100 if player_pred.get('top_20') else 0,
+                            'make_cut_prob': (1 / player_pred.get('make_cut', 999)) * 100 if player_pred.get('make_cut') else 0
+                        }
+        except Exception as e:
+            current_app.logger.warning(f"Could not fetch predictions for tour {tour}: {e}")
+
+        return analytics
+
+    result = fetch_player_analytics(dg_id, tour)  # PASS tour here
+
+    if isinstance(result, dict) and 'error' in result:
+        return jsonify(result), 404
+
+    return jsonify(result)
+
+
+@api_bp.route('/player-form/<int:dg_id>')
+@login_required
+def get_player_form(dg_id):
+    """
+    Get recent tournament form for a player (last 10 events).
+    """
+    @cache_result('api_data',
+                  key_func=lambda dg_id: CacheManager.make_key('player_form', dg_id),
+                  timeout=1800)  # 30 minute cache
+    def fetch_player_form(dg_id):
+        client = DataGolfClient()
+
+        player = Player.query.filter_by(dg_id=dg_id).first()
+        if not player:
+            return {'error': 'Player not found'}
+
+        form_data, error = client.get_player_recent_form(dg_id)
+        if error or not form_data:
+            return {'error': 'Could not retrieve form data'}
+
+        # Process and return last 10 events
+        recent_events = form_data[:10] if isinstance(form_data, list) else []
+
+        return {
+            'player_name': player.full_name(),
+            'recent_form': recent_events
+        }
+
+    result = fetch_player_form(dg_id)
+
+    if isinstance(result, dict) and 'error' in result:
+        return jsonify(result), 404
+
+    return jsonify(result)
+
+
+@api_bp.route('/leaderboard-insights/<string:tour>')
+@login_required
+def get_leaderboard_insights(tour):
+    """
+    Enhanced leaderboard with skill ratings and probabilities.
+    """
+    @cache_result('api_data',
+                  key_func=lambda tour: CacheManager.make_key('leaderboard_insights', tour),
+                  timeout=300)  # 5 minute cache
+    def fetch_leaderboard_insights(tour):
+        client = DataGolfClient()
+
+        # Get live leaderboard
+        leaderboard_data, lb_error = client.get_in_play_stats(tour)
+        if lb_error or not leaderboard_data:
+            return {'error': 'Could not retrieve leaderboard'}
+
+        # Get predictions
+        pred_data, pred_error = client.get_pre_tournament_predictions(tour)
+        pred_map = {}
+        if not pred_error and pred_data:
+            pred_map = {p.get('dg_id'): p for p in pred_data}
+
+        # Enhance leaderboard with insights
+        enhanced_leaderboard = []
+        for player in leaderboard_data[:50]:  # Top 50 players
+            dg_id = player.get('dg_id')
+            predictions = pred_map.get(dg_id, {})
+
+            enhanced_player = {
+                **player,
+                'win_prob': round(predictions.get('win_prob', 0) * 100, 2),
+                'top5_prob': round(predictions.get('top_5_prob', 0) * 100, 2),
+                'top10_prob': round(predictions.get('top_10_prob', 0) * 100, 2)
+            }
+            enhanced_leaderboard.append(enhanced_player)
+
+        return enhanced_leaderboard
+
+    result = fetch_leaderboard_insights(tour)
+
+    if isinstance(result, dict) and 'error' in result:
+        return jsonify(result), 500
 
     return jsonify(result)
 

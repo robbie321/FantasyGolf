@@ -1,0 +1,158 @@
+/* Player Analytics Modal Styling */
+.analytics-modal {
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.analytics-body {
+    padding: 0;
+}
+
+.analytics-card {
+    background: var(--surface-white);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.analytics-card:last-child {
+    margin-bottom: 0;
+}
+
+.analytics-card h4 {
+    margin: 0 0 1.5rem 0;
+    color: var(--text-primary);
+    font-size: 1.125rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.analytics-card h4 i {
+    color: var(--primary-green);
+}
+
+/* Win Probability Grid */
+.probability-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1rem;
+}
+
+.prob-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1rem;
+    background: var(--surface-light);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--surface-border);
+}
+
+.prob-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.prob-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-green);
+}
+
+/* Skill Bars */
+.skill-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.skill-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.skill-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.skill-header span:first-child {
+    color: var(--text-primary);
+}
+
+.skill-rank {
+    color: var(--primary-green);
+    font-weight: 700;
+}
+
+.skill-bar {
+    height: 8px;
+    background: var(--surface-light);
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.skill-fill {
+    height: 100%;
+    background: var(--primary-gradient);
+    border-radius: 9999px;
+    transition: width 0.6s ease-out;
+}
+
+/* Course Fit Grid */
+.course-fit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.fit-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--surface-light);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--surface-border);
+}
+
+.fit-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.fit-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .analytics-modal {
+        max-width: 95vw;
+        margin: 1rem;
+    }
+
+    .probability-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .course-fit-grid {
+        grid-template-columns: 1fr;
+    }
+}

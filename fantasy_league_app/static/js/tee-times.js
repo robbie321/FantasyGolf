@@ -159,8 +159,15 @@ export class TeeTimesManager {
         }
     }
 
+
     renderTeeTimes(teeTimesData) {
         const container = document.getElementById('tee-times-list');
+
+        // DEBUG: Log the first player to see what fields are available
+        if (teeTimesData.length > 0 && teeTimesData[0].players.length > 0) {
+            console.log('DEBUG - First player object:', teeTimesData[0].players[0]);
+            console.log('DEBUG - Available player fields:', Object.keys(teeTimesData[0].players[0]));
+        }
 
         const html = teeTimesData.map(group => `
             <div class="tee-time-group">
@@ -172,7 +179,13 @@ export class TeeTimesManager {
                     <span class="player-count">${group.players.length} player(s)</span>
                 </div>
                 <div class="tee-time-players">
-                    ${group.players.map(player => `
+                    ${group.players.map(player => {
+                        // Get player ID from the data
+                        const playerId = player.dg_id;
+                        const playerName = this.formatPlayerName(player.name).replace(/'/g, "\\'");
+                        const currentTour = this.currentTour;
+
+                        return `
                         <div class="tee-time-player">
                             <div class="player-info">
                                 <span class="player-name">
@@ -193,9 +206,17 @@ export class TeeTimesManager {
                                 ${player.odds ? `
                                     <span class="player-odds">${Math.round(player.odds)}</span>
                                 ` : ''}
+                                ${playerId ? `
+                                    <button class="btn-analytics"
+                                            onclick="showPlayerAnalytics(${playerId}, '${playerName}', '${currentTour}')"
+                                            title="View Player Analytics">
+                                        <i class="fa-solid fa-chart-line"></i>
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </div>
             </div>
         `).join('');
@@ -203,11 +224,12 @@ export class TeeTimesManager {
         container.innerHTML = html;
     }
 
+
     getCountryFlag(countryCode) {
         // Map 3-letter codes to 2-letter ISO codes for flag-icons
         const countryMap = {
             'USA': 'us',
-            'ENG': 'eng',
+            'ENG': 'gb-eng',
             'GBR': 'gb',
             'IRL': 'ie',
             'ESP': 'es',

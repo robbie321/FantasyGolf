@@ -27,17 +27,6 @@ class DataGolfClient:
             return [], error
         return data.get('rankings', []), None
 
-    # def get_live_player_stats(self, tour='pga'):
-    #     """
-    #     Fetches detailed live tournament stats for all players, including all
-    #     strokes gained categories, distance, and accuracy.
-    #     """
-    #     endpoint = f"preds/live-tournament-stats?stats=sg_putt,sg_app,sg_ott,sg_total,distance,accuracy,total&display=value&tour={tour}"
-    #     data, error = self._make_request(endpoint)
-    #     if error:
-    #         return None, error
-    #     return data, None
-
     def get_in_play_stats(self, tour):
         """
         Fetches live in-play prediction stats for a given tour.
@@ -124,75 +113,79 @@ class DataGolfClient:
         return data, None
 
 
-    def get_player_profiles(self):
+    def get_player_skill_ratings(self):
         """
-        Fetches the 2025 PGA player profiles from the Sportradar API.
-        Note: This uses a different API and key.
+        Fetches skill ratings and decompositions for all players.
+        Includes overall skill, driving, approach, short game, putting.
         """
-        # Get the dedicated API key for Sportradar
-        sportradar_key = current_app.config.get('SPORTRADAR_API_KEY')
-        if not sportradar_key:
-            return None, "Sportradar API key is not configured."
+        endpoint = "preds/skill-ratings?display=rank&file_format=json"
+        data, error = self._make_request(endpoint)
+        if error:
+            return [], error
+        return data.get('players', []), None
 
-        url = "https://api.sportradar.com/golf/trial/pga/v3/en/2025/players/profiles.json"
-        headers = {
-            "accept": "application/json",
-            "x-api-key": sportradar_key
-        }
-
-        try:
-            response = requests.get(url, headers=headers)
-            response.raise_for_status() # Raises an error for bad responses
-            # Assuming the player data is in a 'players' key in the JSON
-            return response.json().get('players', []), None
-        except requests.exceptions.RequestException as e:
-            print(f"Sportradar API Request Error: {e}")
-            return None, str(e)
-
-    # --- NEW METHOD FOR SPORDRADAR SINGLE PLAYER PROFILE ---
-    def get_player_profile(self, player_id):
+    def get_player_skill_decompositions(self):
         """
-        Fetches a single player's detailed profile and history from the Sportradar API.
+        Fetches detailed skill decompositions (sg_ott, sg_app, sg_arg, sg_putt).
         """
-        sportradar_key = current_app.config.get('SPORTRADAR_API_KEY')
-        if not sportradar_key:
-            return None, "Sportradar API key is not configured."
+        endpoint = "preds/skill-decompositions?file_format=json"
+        data, error = self._make_request(endpoint)
+        if error:
+            return [], error
+        return data.get('rankings', []), None
 
-        # The endpoint uses the player_id from Sportradar
-        url = f"https://api.sportradar.com/golf/trial/pga/v3/en/2025/players/{player_id}/profile.json"
-        headers = {
-            "accept": "application/json",
-            "x-api-key": sportradar_key
-        }
-
-        try:
-            response = requests.get(url, headers=headers)
-            response.raise_for_status()
-            # The API returns the full player profile object directly
-            return response.json(), None
-        except requests.exceptions.RequestException as e:
-            print(f"Sportradar API Request Error for player {player_id}: {e}")
-            return None, str(e)
-
-     # --- NEW METHOD FOR SPORTRADAR SINGLE PLAYER PROFILE ---
-    def get_sportradar_profile(self, player_id):
+    def get_player_course_history(self, event_id):
         """
-        Fetches a single player's detailed profile and history from the Sportradar API.
+        Fetches historical performance at a specific course/event.
         """
-        sportradar_key = current_app.config.get('SPORTRADAR_API_KEY')
-        if not sportradar_key:
-            return None, "Sportradar API key is not configured."
+        endpoint = f"historical-raw-data/event-results?event_id={event_id}&file_format=json"
+        data, error = self._make_request(endpoint)
+        if error:
+            return [], error
+        return data, None
 
-        url = f"https://api.sportradar.com/golf/trial/pga/v3/en/2025/players/{player_id}/profile.json"
-        headers = {
-            "accept": "application/json",
-            "x-api-key": sportradar_key
-        }
+    def get_fantasy_projections(self, tour='pga', site='draftkings'):
+        """
+        Fetches fantasy projections for the current tournament.
+        """
+        endpoint = f"preds/fantasy-projection-defaults?tour={tour}&site={site}&slate=main&file_format=json"
+        data, error = self._make_request(endpoint)
+        if error:
+            return [], error
 
-        try:
-            response = requests.get(url, headers=headers)
-            response.raise_for_status()
-            return response.json(), None
-        except requests.exceptions.RequestException as e:
-            print(f"Sportradar API Request Error for player {player_id}: {e}")
-            return None, str(e)
+        # Extract the projections list from the response
+        if isinstance(data, dict):
+            return data.get('projections', []), None
+        elif isinstance(data, list):
+            return data, None
+
+        return [], None
+
+    def get_player_recent_form(self, player_id=None):
+        """
+        Fetches recent tournament results and form.
+        """
+        endpoint = "historical-raw-data/player-results?file_format=json"
+        if player_id:
+            endpoint += f"&player_id={player_id}"
+        data, error = self._make_request(endpoint)
+        if error:
+            return [], error
+        return data, None
+
+    def get_pre_tournament_predictions(self, tour='pga'):
+        """
+        Fetches pre-tournament predictions including finish probabilities.
+        """
+        endpoint = f"preds/pre-tournament?tour={tour}&odds_format=decimal&dead_heat=no&file_format=json"
+        data, error = self._make_request(endpoint)
+        if error:
+            return [], error
+
+        # Extract the baseline list from the response
+        if isinstance(data, dict):
+            return data.get('baseline', []), None
+        elif isinstance(data, list):
+            return data, None
+
+        return [], None
