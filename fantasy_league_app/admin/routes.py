@@ -201,6 +201,7 @@ def manual_finalize_leagues():
 def redis_stats():
     """Check Redis connection stats"""
     from fantasy_league_app.extensions import get_redis_client
+    import json
 
     try:
         client = get_redis_client()
