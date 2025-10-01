@@ -8,8 +8,10 @@ from flask_socketio import SocketIO
 from flask_mail import Mail
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_session import Session
 from celery import Celery
 from celery.schedules import crontab
+import redis
 
 # --- Extension Initialization ---
 cache = Cache()
@@ -18,6 +20,7 @@ migrate = Migrate()
 mail = Mail()
 csrf = CSRFProtect()
 socketio = SocketIO()
+sess = Session()  # Flask-Session
 
 def make_celery(app=None):
     """Create and configure Celery instance"""
@@ -88,6 +91,21 @@ def init_extensions(app):
     cache.init_app(app)
     login_manager.init_app(app)
     Config.init_app(app)
+
+    # ===== Initialize Flask-Session with Redis =====
+    # Create Redis connection for sessions
+    try:
+        redis_url = app.config.get('redis_url')
+        app.config['SESSION_REDIS'] = redis.from_url(redis_url)
+        sess.init_app(app)
+        app.logger.info(f"Flask-Session initialized with Redis: {redis_url}")
+    except Exception as e:
+        app.logger.error(f"Failed to initialize Flask-Session with Redis: {e}")
+        # Fallback to filesystem sessions if Redis fails
+        app.config['SESSION_TYPE'] = 'filesystem'
+        sess.init_app(app)
+        app.logger.warning("Flask-Session falling back to filesystem storage")
+    # ===== End Flask-Session Initialization =====
 
     # Properly configure Celery with app context
     celery.conf.update(app.config)

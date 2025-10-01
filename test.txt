@@ -108,6 +108,7 @@ class Config:
 
     # Celery Beat Schedule
     beat_schedule = {
+        beat_schedule = {
         'schedule-live-score-updates': {
             'task': 'fantasy_league_app.tasks.schedule_score_updates_for_the_week',
             'schedule': crontab(hour=14, minute=50, day_of_week='thu,fri,sat,sun'),
