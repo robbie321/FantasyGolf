@@ -1211,6 +1211,51 @@ h4 { font-size: 1.1rem; }
     box-shadow: var(--shadow-xl);
 }
 
+@media (prefers-color-scheme: dark) {
+    .more-options-menu {
+        background: #2d3748;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .menu-header {
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .menu-header h4 {
+        color: #f7fafc;
+    }
+
+    #close-menu-btn {
+        color: #a0aec0;
+    }
+
+    #close-menu-btn:hover {
+        background: #4a5568;
+        color: #f7fafc;
+    }
+
+    .menu-list li a {
+        color: #f7fafc;
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .menu-list li a:hover {
+        color: #6b9e86;
+    }
+
+    .menu-list li a i {
+        color: #a0aec0;
+    }
+
+    .menu-list .logout-link {
+        color: #fc8181;
+    }
+
+    .menu-list .logout-link:hover {
+        color: #feb2b2;
+    }
+}
+
 .more-options-menu.open {
     transform: translateY(0);
 }
