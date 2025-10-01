@@ -756,6 +756,117 @@
     .tee-time-group {
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
+
+    #tee-times-section {
+        background: #2d3748;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    #tee-times-section .dashboard-header {
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    #tee-times-section .dashboard-header h1 {
+        color: #f7fafc;
+    }
+
+    #tee-times-section .dashboard-header .subtitle {
+        color: #e2e8f0;
+    }
+
+    .tee-times-tour-tabs {
+        background: #1a202c;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .tee-times-tour-tabs .tab-button {
+        color: #a0aec0;
+    }
+
+    .tee-times-tour-tabs .tab-button:hover {
+        color: #f7fafc;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    #tee-times-info-card {
+        background: #2d3748;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .tournament-info-header {
+        background: #1a202c;
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .tournament-info-header h3 {
+        color: #f7fafc;
+    }
+
+    .tee-times-header {
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .tee-times-header h4 {
+        color: #f7fafc;
+    }
+
+    #refresh-tee-times-btn {
+        background: #4a5568;
+        border-color: rgba(255, 255, 255, 0.1);
+        color: #f7fafc;
+    }
+
+    #refresh-tee-times-btn:hover {
+        background: var(--primary-green);
+        border-color: var(--primary-green);
+    }
+
+    .tee-time-group {
+        background: #2d3748;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .tee-time-players {
+        background: #1a202c;
+    }
+
+    .tee-time-player {
+        background: #2d3748;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .tee-time-player:hover {
+        background: #4a5568;
+    }
+
+    .player-name {
+        color: #f7fafc;
+    }
+
+    .player-country {
+        color: #a0aec0;
+    }
+
+    .player-score.score-even {
+        color: #f7fafc;
+        background: #4a5568;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .player-pos {
+        color: #f7fafc;
+        background: #4a5568;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .loading-state,
+    .empty-state {
+        color: #a0aec0;
+    }
+
+    .empty-state p {
+        color: #e2e8f0;
+    }
 }
 
 /* ~~~~~~~~~~~~~~~~~~ */
