@@ -194,6 +194,30 @@ def manual_finalize_leagues():
     flash("League finalization process has been started. This may take a few moments.", "info")
     return redirect(url_for('admin.admin_dashboard'))
 
+###### MONITOR REDIS CONNECTIONS ######
+
+@admin_bp.route('/redis-stats')
+@admin_required
+def redis_stats():
+    """Check Redis connection stats"""
+    from fantasy_league_app.extensions import get_redis_client
+
+    try:
+        client = get_redis_client()
+        info = client.info('clients')
+
+        stats = {
+            'connected_clients': info.get('connected_clients', 0),
+            'blocked_clients': info.get('blocked_clients', 0),
+            'max_connections': 100,
+            'usage_percentage': round((info.get('connected_clients', 0) / 100) * 100, 1)
+        }
+
+        return f"<pre>{json.dumps(stats, indent=2)}</pre>"
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
 # --- Routes for API Tournament Import ---
 
 
