@@ -196,6 +196,8 @@ def manual_finalize_leagues():
 
 ###### MONITOR REDIS CONNECTIONS ######
 
+###### MONITOR REDIS CONNECTIONS ######
+
 @admin_bp.route('/redis-stats')
 @admin_required
 def redis_stats():
@@ -216,7 +218,15 @@ def redis_stats():
 
         return f"<pre>{json.dumps(stats, indent=2)}</pre>"
     except Exception as e:
-        return f"Error: {str(e)}", 500
+        import json  # Also add here in case only exception path is taken
+        error_response = {
+            'error': str(e),
+            'connected_clients': 0,
+            'blocked_clients': 0,
+            'max_connections': 100,
+            'usage_percentage': 0
+        }
+        return f"<pre>{json.dumps(error_response, indent=2)}</pre>", 500
 
 
 # --- Routes for API Tournament Import ---
