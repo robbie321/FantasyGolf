@@ -427,8 +427,251 @@
     background: var(--accent-red);
   }
 
+  /* Redis Monitor Section */
+  .redis-monitor-section {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    box-shadow: var(--shadow);
+    border-left: 5px solid #3498db;
+  }
+
+  .monitor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--light-gray);
+  }
+
+  .monitor-header h2 {
+    color: var(--dark-gray);
+    margin: 0;
+    font-family: "Merriweather", serif;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .monitor-badge {
+    background: var(--primary-green);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .monitor-badge.live {
+    animation: pulse-badge 2s infinite;
+  }
+
+  .monitor-badge i {
+    animation: pulse-dot 2s infinite;
+  }
+
+  @keyframes pulse-badge {
+    0%,
+    100% {
+      background: var(--primary-green);
+    }
+    50% {
+      background: #27ae60;
+    }
+  }
+
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+
+  .redis-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .redis-stat-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid var(--light-gray);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .redis-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-green);
+  }
+
+  .redis-stat-card.warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+    border-color: var(--accent-orange);
+  }
+
+  .redis-stat-card.danger {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    border-color: var(--accent-red);
+  }
+
+  .redis-stat-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-green);
+    color: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    flex-shrink: 0;
+  }
+
+  .redis-stat-card.warning .redis-stat-icon {
+    background: var(--accent-orange);
+  }
+
+  .redis-stat-card.danger .redis-stat-icon {
+    background: var(--accent-red);
+  }
+
+  .redis-stat-content {
+    flex: 1;
+  }
+
+  .redis-stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--dark-gray);
+    margin-bottom: 0.25rem;
+  }
+
+  .redis-stat-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #495057;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .redis-stat-sublabel {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+  }
+
+  .usage-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  .usage-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-green), #27ae60);
+    transition: width 0.6s ease, background 0.3s ease;
+  }
+
+  .usage-bar-fill.warning {
+    background: linear-gradient(90deg, var(--accent-orange), #e67e22);
+  }
+
+  .usage-bar-fill.danger {
+    background: linear-gradient(90deg, var(--accent-red), #c0392b);
+  }
+
+  .redis-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .redis-status-message {
+    background: var(--light-green);
+    border: 2px solid #27ae60;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    color: #155724;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .redis-status-message.error {
+    background: #f8d7da;
+    border-color: var(--accent-red);
+    color: #721c24;
+  }
+
+  .redis-status-message.warning {
+    background: #fff3cd;
+    border-color: var(--accent-orange);
+    color: #856404;
+  }
+
+  /* Loading animation for refresh button */
+  .action-btn .fa-sync-alt {
+    transition: transform 0.3s ease;
+  }
+
+  .action-btn.loading .fa-sync-alt {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   /* Responsive Design */
   @media (max-width: 768px) {
+    .redis-stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .monitor-header {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .redis-actions {
+      flex-direction: column;
+    }
+
+    .action-btn {
+      width: 100%;
+    }
     .admin-wrapper {
       padding: 1rem 0.5rem;
     }
@@ -561,6 +804,100 @@
             >All Time</a
           >
         </div>
+      </div>
+    </div>
+
+    <!-- Add this right after the stats-dashboard closing </div> and before debug-section -->
+
+    <!-- Redis Connection Monitor -->
+    <div class="redis-monitor-section">
+      <div class="monitor-header">
+        <h2><i class="fas fa-database"></i> Redis Connection Monitor</h2>
+        <span class="monitor-badge live">
+          <i class="fas fa-circle"></i> Live
+        </span>
+      </div>
+
+      <div class="redis-stats-grid">
+        <div class="redis-stat-card" id="connected-clients-card">
+          <div class="redis-stat-icon">
+            <i class="fas fa-plug"></i>
+          </div>
+          <div class="redis-stat-content">
+            <div class="redis-stat-value" id="connected-clients">--</div>
+            <div class="redis-stat-label">Connected Clients</div>
+            <div class="redis-stat-sublabel">Active connections</div>
+          </div>
+        </div>
+
+        <div class="redis-stat-card" id="max-connections-card">
+          <div class="redis-stat-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div class="redis-stat-content">
+            <div class="redis-stat-value" id="max-connections">--</div>
+            <div class="redis-stat-label">Connection Limit</div>
+            <div class="redis-stat-sublabel">Plan maximum</div>
+          </div>
+        </div>
+
+        <div class="redis-stat-card" id="usage-card">
+          <div class="redis-stat-icon">
+            <i class="fas fa-tachometer-alt"></i>
+          </div>
+          <div class="redis-stat-content">
+            <div class="redis-stat-value" id="usage-percentage">--%</div>
+            <div class="redis-stat-label">Usage</div>
+            <div class="redis-stat-sublabel">Current utilization</div>
+          </div>
+          <div class="usage-bar">
+            <div
+              class="usage-bar-fill"
+              id="usage-bar-fill"
+              style="width: 0%"
+            ></div>
+          </div>
+        </div>
+
+        <div class="redis-stat-card" id="blocked-clients-card">
+          <div class="redis-stat-icon">
+            <i class="fas fa-pause-circle"></i>
+          </div>
+          <div class="redis-stat-content">
+            <div class="redis-stat-value" id="blocked-clients">--</div>
+            <div class="redis-stat-label">Blocked Clients</div>
+            <div class="redis-stat-sublabel">Waiting connections</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="redis-actions">
+        <button
+          onclick="refreshRedisStats()"
+          class="action-btn"
+          id="refresh-btn"
+        >
+          <i class="fas fa-sync-alt"></i> Refresh Stats
+        </button>
+        <a
+          href="{{ url_for('admin.redis_stats') }}"
+          target="_blank"
+          class="action-btn btn-warning"
+        >
+          <i class="fas fa-external-link-alt"></i> View Full Details
+        </a>
+        <button
+          onclick="toggleAutoRefresh()"
+          class="action-btn btn-success"
+          id="auto-refresh-btn"
+        >
+          <i class="fas fa-toggle-on"></i> Auto-Refresh: ON
+        </button>
+      </div>
+
+      <div class="redis-status-message" id="redis-status-message">
+        <i class="fas fa-info-circle"></i>
+        Click "Refresh Stats" to load current Redis connection data
       </div>
     </div>
 
@@ -1102,6 +1439,156 @@
         element.title = text;
       }
     });
+  });
+
+  // Redis Stats Management
+  let autoRefreshInterval = null;
+  let autoRefreshEnabled = true;
+
+  async function refreshRedisStats() {
+    const refreshBtn = document.getElementById("refresh-btn");
+    const statusMessage = document.getElementById("redis-status-message");
+
+    // Add loading state
+    refreshBtn.classList.add("loading");
+    refreshBtn.disabled = true;
+    statusMessage.innerHTML =
+      '<i class="fas fa-spinner fa-spin"></i> Loading Redis statistics...';
+    statusMessage.className = "redis-status-message";
+
+    try {
+      const response = await fetch("/admin/redis-stats");
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const html = await response.text();
+
+      // Extract JSON from the <pre> tag
+      const match = html.match(/<pre>([\s\S]*?)<\/pre>/);
+      if (!match) {
+        throw new Error("Could not parse response");
+      }
+
+      const data = JSON.parse(match[1]);
+
+      // Update UI with data
+      updateRedisUI(data);
+
+      // Update status message
+      const timestamp = new Date().toLocaleTimeString();
+      statusMessage.innerHTML = `<i class="fas fa-check-circle"></i> Last updated: ${timestamp}`;
+      statusMessage.className = "redis-status-message";
+    } catch (error) {
+      console.error("Error fetching Redis stats:", error);
+      statusMessage.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: ${error.message}`;
+      statusMessage.className = "redis-status-message error";
+    } finally {
+      refreshBtn.classList.remove("loading");
+      refreshBtn.disabled = false;
+    }
+  }
+
+  function updateRedisUI(data) {
+    const connected = data.connected_clients || 0;
+    const max = data.max_connections || 30;
+    const blocked = data.blocked_clients || 0;
+    const usage = data.usage_percentage || 0;
+
+    // Update values
+    document.getElementById("connected-clients").textContent = connected;
+    document.getElementById("max-connections").textContent = max;
+    document.getElementById("blocked-clients").textContent = blocked;
+    document.getElementById("usage-percentage").textContent = usage + "%";
+
+    // Update usage bar
+    const usageBar = document.getElementById("usage-bar-fill");
+    usageBar.style.width = usage + "%";
+
+    // Update card states based on usage
+    const connectedCard = document.getElementById("connected-clients-card");
+    const usageCard = document.getElementById("usage-card");
+    const blockedCard = document.getElementById("blocked-clients-card");
+
+    // Remove all status classes
+    [connectedCard, usageCard, blockedCard].forEach((card) => {
+      card.classList.remove("warning", "danger");
+    });
+    usageBar.classList.remove("warning", "danger");
+
+    // Apply status classes based on thresholds
+    if (usage >= 90) {
+      connectedCard.classList.add("danger");
+      usageCard.classList.add("danger");
+      usageBar.classList.add("danger");
+    } else if (usage >= 70) {
+      connectedCard.classList.add("warning");
+      usageCard.classList.add("warning");
+      usageBar.classList.add("warning");
+    }
+
+    if (blocked > 0) {
+      blockedCard.classList.add("warning");
+    }
+
+    // Show warning if usage is high
+    if (usage >= 90) {
+      const statusMessage = document.getElementById("redis-status-message");
+      statusMessage.innerHTML =
+        '<i class="fas fa-exclamation-triangle"></i> <strong>Critical:</strong> Redis connection usage is at ' +
+        usage +
+        "%! Consider upgrading your Redis plan.";
+      statusMessage.className = "redis-status-message error";
+    } else if (usage >= 70) {
+      const statusMessage = document.getElementById("redis-status-message");
+      statusMessage.innerHTML =
+        '<i class="fas fa-exclamation-circle"></i> <strong>Warning:</strong> Redis connection usage is at ' +
+        usage +
+        "%. Monitor closely.";
+      statusMessage.className = "redis-status-message warning";
+    }
+  }
+
+  function toggleAutoRefresh() {
+    const btn = document.getElementById("auto-refresh-btn");
+    autoRefreshEnabled = !autoRefreshEnabled;
+
+    if (autoRefreshEnabled) {
+      btn.innerHTML = '<i class="fas fa-toggle-on"></i> Auto-Refresh: ON';
+      btn.classList.remove("btn-danger");
+      btn.classList.add("btn-success");
+
+      // Start auto-refresh every 10 seconds
+      autoRefreshInterval = setInterval(refreshRedisStats, 10000);
+      refreshRedisStats(); // Immediate refresh
+    } else {
+      btn.innerHTML = '<i class="fas fa-toggle-off"></i> Auto-Refresh: OFF';
+      btn.classList.remove("btn-success");
+      btn.classList.add("btn-danger");
+
+      // Stop auto-refresh
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+      }
+    }
+  }
+
+  // Initialize on page load
+  document.addEventListener("DOMContentLoaded", function () {
+    // Auto-load Redis stats on page load
+    refreshRedisStats();
+
+    // Start auto-refresh by default
+    autoRefreshInterval = setInterval(refreshRedisStats, 10000);
+  });
+
+  // Cleanup on page unload
+  window.addEventListener("beforeunload", function () {
+    if (autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+    }
   });
 </script>
 
