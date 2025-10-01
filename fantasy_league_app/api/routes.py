@@ -48,6 +48,84 @@ def get_player_stats(dg_id):
         return jsonify({'error': f'Live stats not found for this player.'}), 404
 
 
+@api_bp.route('/tee-times/<string:tour>')
+@login_required
+def get_tee_times(tour):
+    """
+    API endpoint to fetch tee times for a specific tour's current tournament.
+    Returns organized tee time data with player information.
+    """
+    @cache_result('api_data',
+                  key_func=lambda tour: CacheManager.make_key('tee_times', tour),
+                  timeout=900)  # 15 minute cache
+    def fetch_tee_times_data(tour):
+        client = DataGolfClient()
+        field_data, error = client.get_tee_times(tour)
+
+        if error or not field_data:
+            return {'error': 'Could not retrieve tee times data'}
+
+        # Get current round
+        current_round = field_data.get('current_round', 1)
+        event_name = field_data.get('event_name', 'Current Tournament')
+
+        # Organize players by tee time
+        tee_time_key = f'r{current_round}_teetime'
+        tee_times = {}
+
+        for player in field_data.get('field', []):
+            tee_time_str = player.get(tee_time_key)
+
+            if tee_time_str:
+                # Parse tee time
+                try:
+                    tee_time_dt = datetime.strptime(tee_time_str, '%Y-%m-%d %H:%M')
+                    time_key = tee_time_dt.strftime('%H:%M')
+
+                    if time_key not in tee_times:
+                        tee_times[time_key] = {
+                            'time': time_key,
+                            'datetime': tee_time_dt.isoformat(),
+                            'players': []
+                        }
+
+                    # Get player info from your database
+                    dg_id = player.get('dg_id')
+                    db_player = Player.query.filter_by(dg_id=dg_id).first()
+
+                    player_info = {
+                        'name': player.get('player_name', 'Unknown'),
+                        'country': player.get('country', ''),
+                        'current_score': player.get('current_score'),
+                        'current_pos': player.get('current_pos', '-'),
+                        'odds': db_player.odds if db_player else None,
+                        'status': player.get('status', 'active')
+                    }
+
+                    tee_times[time_key]['players'].append(player_info)
+
+                except (ValueError, TypeError) as e:
+                    continue
+
+        # Sort tee times chronologically
+        sorted_tee_times = sorted(tee_times.values(), key=lambda x: x['time'])
+
+        return {
+            'event_name': event_name,
+            'tour': tour.upper(),
+            'current_round': current_round,
+            'tee_times': sorted_tee_times,
+            'total_groups': len(sorted_tee_times)
+        }
+
+    result = fetch_tee_times_data(tour)
+
+    if isinstance(result, dict) and 'error' in result:
+        return jsonify(result), 500
+
+    return jsonify(result)
+
+
 # --- Live Leaderboard API Endpoint ---
 @api_bp.route('/live-leaderboard/<string:tour>')
 @login_required
@@ -95,43 +173,6 @@ def get_live_leaderboard(tour):
         return jsonify(result), 503 if 'Failed to fetch' in result['error'] else 500
 
     return jsonify(result)
-
-    # api_key = current_app.config.get('DATA_GOLF_API_KEY')
-    # if not api_key:
-    #     return jsonify({'error': 'API key not configured'}), 500
-
-    # url = f"https://feeds.datagolf.com/preds/in-play?tour={tour}&dead_heat=no&odds_format=percent&key={api_key}"
-
-    # try:
-    #     response = requests.get(url)
-    #     response.raise_for_status()  # Raise an exception for bad status codes
-    #     data = response.json()
-
-    #     # Check for the 'data' key in the response
-    #     if 'data' in data:
-    #         def get_sort_key(player):
-    #             """Helper function to extract a number from the position string."""
-    #             pos = player.get('current_pos', '999')
-    #             # Find all numbers in the string (e.g., 'T21' -> '21')
-    #             numbers = re.findall(r'\d+', pos)
-    #             if numbers:
-    #                 return int(numbers[0])
-    #             # Return a large number for non-standard positions like 'CUT' or 'WD'
-    #             return 999
-
-    #         sorted_data = sorted(data['data'], key=get_sort_key)
-    #         return jsonify(sorted_data)
-    #     else:
-    #         # Handle cases where the API returns a valid response but no data
-    #         # (e.g., tournament not live)
-    #         return jsonify([])
-
-    # except requests.exceptions.RequestException as e:
-    #     current_app.logger.error(f"Failed to fetch live leaderboard for tour '{tour}': {e}")
-    #     return jsonify({'error': 'Failed to fetch data from external API'}), 503
-    # except Exception as e:
-    #     current_app.logger.error(f"An unexpected error occurred: {e}")
-    #     return jsonify({'error': 'An internal server error occurred'}), 500
 
 @api_bp.route('/tour-schedule/<string:tour>')
 @login_required
@@ -213,39 +254,7 @@ def get_tournament_details(bucket_id):
         return jsonify(result), 404 if 'not found' in result['error'].lower() else 500
 
     return jsonify(result)
-    # bucket = PlayerBucket.query.get_or_404(bucket_id)
-    # if not bucket.tour:
-    #     return jsonify({'error': 'Player bucket has no associated tour.'}), 404
 
-    # client = DataGolfClient()
-    # field_data, error = client.get_tournament_field_updates(bucket.tour)
-
-    # if error or not field_data or 'field' not in field_data:
-    #     return jsonify({'error': 'Could not retrieve tournament data.'}), 500
-
-    # event_name = field_data.get('event_name', 'N/A')
-    # earliest_tee_time = None
-
-    # # Iterate through the 'field' list to find the earliest r1_teetime
-    # for player in field_data.get('field', []):
-    #     tee_time_str = player.get('r1_teetime')
-    #     if tee_time_str:
-    #         try:
-    #             tee_time = datetime.strptime(tee_time_str, '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
-    #             if earliest_tee_time is None or tee_time < earliest_tee_time:
-    #                 earliest_tee_time = tee_time
-    #         except (ValueError, TypeError):
-    #             continue
-
-    # # Format the data for the frontend
-    # start_date_str = earliest_tee_time.strftime('%d %b %Y') if earliest_tee_time else "TBC"
-    # formatted_tee_time = earliest_tee_time.strftime('%I:%M %p %Z') if earliest_tee_time else "TBC"
-
-    # return jsonify({
-    #     'event_name': event_name,
-    #     'start_date': start_date_str,
-    #     'tee_time': formatted_tee_time
-    # })
 
 @api_bp.route('/vapid_public_key', methods=['GET'])
 def vapid_public_key():

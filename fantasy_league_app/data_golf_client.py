@@ -104,6 +104,17 @@ class DataGolfClient:
             return [], error
         return data.get('schedule', []), None
 
+    def get_tee_times(self, tour):
+        """
+        Fetches tee times for the current tournament on the specified tour.
+        Returns player field data including tee times.
+        """
+        endpoint = f"field-updates?tour={tour}&file_format=json"
+        data, error = self._make_request(endpoint)
+        if error:
+            return None, error
+        return data, None
+
     def get_tournament_field_updates(self, tour):
         """Fetches the player field for a specific tournament."""
         endpoint = f"field-updates?tour={tour}"
