@@ -27,6 +27,12 @@ class Config:
     # Redis URL
     redis_url = os.environ.get('REDISCLOUD_URL') or os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
 
+    # ===== REDIS CONNECTION POOL SETTINGS =====
+    REDIS_MAX_CONNECTIONS = 10  # Per web dyno
+    REDIS_SOCKET_KEEPALIVE = True
+    REDIS_SOCKET_CONNECT_TIMEOUT = 5
+    REDIS_HEALTH_CHECK_INTERVAL = 30
+
     # ===== SESSION CONFIGURATION =====
     # Session Configuration
     SESSION_TYPE = 'redis'  # Using Redis for sessions (you already have it configured)
