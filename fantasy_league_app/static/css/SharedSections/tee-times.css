@@ -477,6 +477,23 @@
     gap: 0.375rem;
 }
 
+
+.btn-analytics {
+    padding: 0.5rem 0.75rem;
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.875rem;
+}
+
+.btn-analytics:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 106, 78, 0.3);
+}
+
 @keyframes fadeInUp {
     from {
         opacity: 0;
