@@ -189,8 +189,18 @@ def login_user_account():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data.lower().strip()).first()
         if user and user.check_password(form.password.data):
-            login_user(user, remember=form.remember_me.data)
-            print(f"DEBUG: Logged in user. Object is: {user}, Type is: {type(user)}")
+           # Check if email is verified
+            if not user.email_verified:
+                flash('Please verify your email address before logging in.', 'warning')
+                return redirect(url_for('auth.email_verification_pending'))
+
+            # Check if account is active
+            if not user.is_active:
+                flash('Your account has been deactivated. Please contact support.', 'danger')
+                return redirect(url_for('auth.login_choice'))
+
+            # LOGIN WITH REMEMBER ME
+            login_user(user, remember=form.remember_me.data)  # USE THE FORM FIELD
 
             # Check if the user was trying to join a league
             league_code = form.league_code.data
@@ -225,20 +235,14 @@ def login_club_account():
 
         # Check if the club exists and the password is correct
         if club and club.check_password(form.password.data):
-            # Check if email is verified
-            if not user.email_verified:
-                flash('Please verify your email address before logging in.', 'warning')
-                return redirect(url_for('auth.email_verification_pending'))
-
             # Check if account is active
-            if not user.is_active:
-                flash('Your account has been deactivated. Please contact support.', 'danger')
-                return redirect(url_for('auth.login'))
+            if not club.is_active:
+                flash('Your club account has been deactivated. Please contact support.', 'danger')
+                return redirect(url_for('auth.login_choice'))
 
-            login_user(club, remember=form.remember_me.data)
-            flash(f'Welcome back, {user.full_name}!', 'success')
-            # A league_code might be present if they clicked "Join" on the
-            # landing page, but clubs can't join leagues. We can safely ignore it.
+            # LOGIN WITH REMEMBER ME
+            login_user(club, remember=form.remember_me.data)  # USE THE FORM FIELD
+            flash(f'Welcome back, {club.club_name}!', 'success')
 
             next_page = request.args.get('next')
             return redirect(next_page or url_for('main.club_dashboard'))
@@ -291,12 +295,15 @@ def login_site_admin():
     if request.method == 'POST':
         username = request.form['username'].strip()
         password = request.form['password']
+        remember = request.form.get('remember_me', False)
 
         admin, error = _authenticate_and_login(SiteAdmin, 'username', username, password)
 
         if error:
             flash(error, 'danger')
             return redirect(url_for('auth.login_site_admin'))
+
+        login_user(admin, remember=bool(remember))
 
         flash('Logged in successfully as Site Admin!', 'success')
         next_page = request.args.get('next')
