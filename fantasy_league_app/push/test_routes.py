@@ -490,9 +490,15 @@ def test_dashboard():
 
                 // Not registered yet, register it
                 log.info('Registering new Service Worker...');
-                log.info('Looking for service worker at: /static/js/service-worker.js');
 
-                registration = await navigator.serviceWorker.register('/static/js/service-worker.js', {
+                // Force HTTPS URL for service worker
+                const swUrl = window.location.protocol === 'https:'
+                    ? 'https://' + window.location.host + '/static/js/service-worker.js'
+                    : '/static/js/service-worker.js';
+
+                log.info(`Looking for service worker at: ${swUrl}`);
+
+                registration = await navigator.serviceWorker.register(swUrl, {
                     scope: '/'
                 });
 

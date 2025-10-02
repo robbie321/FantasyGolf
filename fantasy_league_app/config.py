@@ -223,6 +223,9 @@ class ProductionConfig(Config):
     """Production configuration - uses Redis and requires HTTPS"""
     DEBUG = False
 
+    # Force HTTPS
+    PREFERRED_URL_SCHEME = 'https'
+
     # Use Redis for production caching
     CACHE_TYPE = 'RedisCache'
     CACHE_REDIS_URL = Config.redis_url
@@ -236,6 +239,9 @@ class StagingConfig(Config):
     """Staging configuration - mirrors production but separate"""
     DEBUG = False
     TESTING = False
+
+    # Force HTTPS
+    PREFERRED_URL_SCHEME = 'https'
 
     # Use Redis for staging caching
     CACHE_TYPE = 'RedisCache'
