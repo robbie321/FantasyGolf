@@ -28,6 +28,23 @@ def privacy_policy():
     """Renders the privacy policy page."""
     return render_template('main/privacy_policy.html', title="Privacy Policy")
 
+@app.route('/service-worker.js')
+def service_worker():
+    """Serve service worker from root for proper scope"""
+    from flask import send_from_directory
+    import os
+
+    response = send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'service-worker.js',
+        mimetype='application/javascript'
+    )
+
+    # Add headers to prevent caching
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Service-Worker-Allowed'] = '/'
+
+    return response
 
 @main_bp.route('/')
 @main_bp.route('/index')
