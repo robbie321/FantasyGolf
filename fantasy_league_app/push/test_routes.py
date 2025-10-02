@@ -7,11 +7,11 @@ import json
 import base64
 
 test_bp = Blueprint('push_test', __name__, url_prefix='/push-test')
-
+test_bp.url_defaults({'_external': False})
 # ===== EXEMPT CSRF FOR ALL PUSH ROUTES =====
 csrf.exempt(test_bp)
 
-@test_bp.route('/')
+@test_bp.route('/', strict_slashes=False)
 @login_required
 def test_dashboard():
     """Comprehensive push notification test dashboard"""
