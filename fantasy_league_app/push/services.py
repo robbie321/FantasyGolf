@@ -38,31 +38,31 @@ class PushNotificationService:
 
         return True
 
-    def _convert_der_private_key(self, der_base64_key):
-        """Convert VAPID private key - now supports base64url format"""
+    def _convert_der_private_key(self, base64url_key):
+        """Convert base64url VAPID key to bytes - simple conversion"""
         try:
-            current_app.logger.info(f"Converting VAPID key, input length: {len(der_base64_key)}")
+            current_app.logger.info(f"Converting VAPID key, length: {len(base64url_key)}")
 
-            # Your key is in base64url format (modern VAPID key format)
-            # Add padding if necessary for base64url
-            missing_padding = len(der_base64_key) % 4
+            # Add padding if needed
+            missing_padding = len(base64url_key) % 4
             if missing_padding:
-                padded_key = der_base64_key + '=' * (4 - missing_padding)
-            else:
-                padded_key = der_base64_key
+                base64url_key += '=' * (4 - missing_padding)
 
-            # Convert base64url to regular base64
-            regular_b64 = padded_key.replace('-', '+').replace('_', '/')
-            raw_bytes = base64.b64decode(regular_b64)
+            # Convert base64url to standard base64
+            standard_b64 = base64url_key.replace('-', '+').replace('_', '/')
 
-            if len(raw_bytes) != 32:
-                raise ValueError(f"Invalid private key length: {len(raw_bytes)} (expected 32)")
+            # Decode to bytes
+            key_bytes = base64.b64decode(standard_b64)
 
-            current_app.logger.info("✅ Successfully converted base64url VAPID key to 32-byte private key")
-            return raw_bytes
+            # Should be 32 bytes for P-256
+            if len(key_bytes) != 32:
+                raise ValueError(f"Invalid key length: {len(key_bytes)}, expected 32")
+
+            current_app.logger.info("✅ VAPID key converted successfully")
+            return key_bytes
 
         except Exception as e:
-            current_app.logger.error(f"Error converting private key: {e}")
+            current_app.logger.error(f"Key conversion failed: {e}")
             return None
 
     def generate_new_vapid_keys():

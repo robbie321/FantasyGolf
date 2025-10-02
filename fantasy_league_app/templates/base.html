@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="apple-touch-icon" href="/static/images/icon-180x180.png" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Fantasy Fairways" />
+    <meta name="apple-mobile-web-app-title" content="Fantasy Golf" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>Fantasy Fairways</title>
     <!-- Add Google Fonts Link -->
@@ -65,6 +66,10 @@
     <script
       type="module"
       src="{{ url_for('static', filename='js/push-notifications.js') }}"
+    ></script>
+    <script
+      type="module"
+      src="{{ url_for('static', filename='js/push-manager-ios.js') }}"
     ></script>
 
     <!-- Professional Toast Notification Styles -->

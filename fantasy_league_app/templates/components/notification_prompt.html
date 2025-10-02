@@ -637,22 +637,52 @@
       }
 
       try {
-        // Use the existing push manager if available
-        if (window.pushManager) {
-          await window.pushManager.requestPermission();
-        } else {
-          // Fallback for direct permission request
-          const permission = await Notification.requestPermission();
-          console.log("Permission result:", permission);
+        // Check if iOS and not standalone
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isStandalone =
+          window.navigator.standalone ||
+          window.matchMedia("(display-mode: standalone)").matches;
+
+        if (isIOS && !isStandalone) {
+          // Show iOS-specific instructions
+          alert(
+            'To enable notifications on iOS:\n\n1. Tap the Share button\n2. Tap "Add to Home Screen"\n3. Open the app from your Home Screen\n4. Then try enabling notifications again'
+          );
+
+          if (enableBtn) {
+            enableBtn.disabled = false;
+            enableBtn.innerHTML =
+              '<i class="fas fa-bell"></i> <span>Enable Notifications</span>';
+          }
+          return;
         }
 
-        // Hide the prompt
-        this.hidePrompt();
+        // Use the global push manager
+        if (window.pushManager) {
+          const success = await window.pushManager.subscribe();
 
-        // Update status
-        this.updateNotificationStatus();
+          if (success) {
+            // Hide the prompt
+            if (window.notificationPromptManager) {
+              window.notificationPromptManager.hidePrompt();
+            }
+
+            // Update status
+            if (window.notificationPromptManager) {
+              window.notificationPromptManager.updateNotificationStatus();
+            }
+
+            // Show success message
+            alert("✅ Notifications enabled successfully!");
+          } else {
+            throw new Error("Subscription failed");
+          }
+        } else {
+          throw new Error("Push manager not initialized");
+        }
       } catch (error) {
         console.error("Failed to enable notifications:", error);
+        alert("❌ Failed to enable notifications. Please try again.");
 
         if (enableBtn) {
           enableBtn.disabled = false;

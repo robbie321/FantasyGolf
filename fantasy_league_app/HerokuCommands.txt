@@ -1,0 +1,26 @@
+# View staging logs
+heroku logs --tail --app fantasy-fairways-staging
+
+# View worker logs specifically
+heroku logs --tail --dyno=worker --app fantasy-fairways-staging
+
+# Run commands on staging
+heroku run python --app fantasy-fairways-staging
+
+# Run Flask commands
+heroku run flask db upgrade --app fantasy-fairways-staging
+
+# Check staging database
+heroku pg:info --app fantasy-fairways-staging
+
+# Access staging database
+heroku pg:psql --app fantasy-fairways-staging
+
+# Restart staging app
+heroku restart --app fantasy-fairways-staging
+
+# Restart just the worker
+heroku ps:restart worker --app fantasy-fairways-staging
+
+# Trigger score updates on staging
+heroku run python -c "from fantasy_league_app import create_app; from fantasy_league_app.tasks import schedule_score_updates_for_the_week; app = create_app(); app.app_context().push(); result = schedule_score_updates_for_the_week.delay(); print(f'Task started: {result.id}')" --app fantasy-fairways-staging
