@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fantasy Golf Platform - Feature Roadmap</title>
+    <style>
+      @page {
+        margin: 1.5cm;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #2c3e50;
+        max-width: 210mm;
+        margin: 0 auto;
+        padding: 20px;
+        background: white;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 3px solid #27ae60;
+      }
+
+      h1 {
+        color: #27ae60;
+        font-size: 32px;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        color: #7f8c8d;
+        font-size: 14px;
+      }
+
+      .section {
+        margin-bottom: 35px;
+        page-break-inside: avoid;
+      }
+
+      .section-header {
+        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        color: white;
+        padding: 12px 15px;
+        border-radius: 8px;
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .feature {
+        margin-bottom: 25px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-left: 4px solid #27ae60;
+        border-radius: 4px;
+      }
+
+      .feature-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 8px;
+      }
+
+      .feature-status {
+        display: inline-block;
+        padding: 3px 8px;
+        background: #3498db;
+        color: white;
+        border-radius: 3px;
+        font-size: 11px;
+        margin-left: 8px;
+      }
+
+      .feature-content {
+        margin: 10px 0;
+        color: #555;
+      }
+
+      .feature-list {
+        margin: 10px 0 10px 20px;
+      }
+
+      .feature-list li {
+        margin: 5px 0;
+      }
+
+      .why-box {
+        background: #e8f8f5;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 10px;
+        font-style: italic;
+      }
+
+      .why-label {
+        font-weight: bold;
+        color: #27ae60;
+      }
+
+      .top-recommendations {
+        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 10px;
+        margin-top: 40px;
+      }
+
+      .top-recommendations h2 {
+        margin-top: 0;
+        font-size: 24px;
+      }
+
+      .recommendation-item {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 12px;
+        margin: 10px 0;
+        border-radius: 6px;
+        border-left: 4px solid white;
+      }
+
+      .recommendation-number {
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      code {
+        background: #ecf0f1;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+      }
+
+      @media print {
+        body {
+          padding: 0;
+        }
+        .section {
+          page-break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>⛳ Fantasy Golf Platform</h1>
+      <h2 style="color: #27ae60; margin: 10px 0">
+        Product Roadmap & Feature Recommendations
+      </h2>
+      <div class="subtitle">
+        30 Strategic Features to Drive Revenue, Engagement & Growth
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">🔥 High Priority - Revenue & Engagement</div>
+
+      <div class="feature">
+        <div class="feature-title">
+          1. Live Scoring Push Notifications<span class="feature-status"
+            >Partially Implemented</span
+          >
+        </div>
+        <div class="feature-content">
+          You have the infrastructure, but enhance it:
+          <ul class="feature-list">
+            <li>Shot-by-shot alerts for your picked players</li>
+            <li>Leaderboard position changes with custom thresholds</li>
+            <li>Eagle/Birdie/Hole-in-one notifications</li>
+            <li>Critical moments (player on 18th hole in contention)</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Keeps users engaged throughout the
+          tournament, drives app opens
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">
+          2. Player Performance Analytics & Insights
+        </div>
+        <div class="feature-content">
+          New features to add:
+          <ul class="feature-list">
+            <li>Course history for each player</li>
+            <li>Recent form (last 5 tournaments)</li>
+            <li>Head-to-head comparisons</li>
+            <li>Strokes gained statistics breakdown</li>
+            <li>Weather impact analysis</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Helps users make informed picks,
+          increases perceived value
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">3. In-App Wallet & Instant Withdrawals</div>
+        <div class="feature-content">
+          You have Stripe integrated, but add:
+          <ul class="feature-list">
+            <li>User balance display</li>
+            <li>Instant withdrawal to bank account</li>
+            <li>Transaction history</li>
+            <li>Bonus credits system</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Reduces friction, increases trust,
+          enables promotions
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">4. Social Features & Rivalries</div>
+        <div class="feature-content">
+          Tables to add:
+          <ul class="feature-list">
+            <li>Friendships/Following system</li>
+            <li>Private chat within leagues</li>
+            <li>Trash talk board</li>
+            <li>Head-to-head challenges</li>
+            <li>Share picks on social media</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Social proof, viral growth,
+          increased retention
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">💰 Revenue Generators</div>
+
+      <div class="feature">
+        <div class="feature-title">5. Multiple Entry Types</div>
+        <div class="feature-content">
+          Expand beyond 3-player picks:
+          <ul class="feature-list">
+            <li>Pick 6 Format (higher entry fees)</li>
+            <li>Salary Cap Format (budget management)</li>
+            <li>Survivor Pools (pick one player per week)</li>
+            <li>Props Bets (will there be a hole-in-one?)</li>
+            <li>Daily Fantasy (single-day contests)</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Caters to different player types,
+          increases ARPU
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">6. Premium Features / Subscription</div>
+        <div class="feature-content">
+          Premium tier ($9.99/month):
+          <ul class="feature-list">
+            <li>Advanced statistics</li>
+            <li>Expert picks & analysis</li>
+            <li>Early access to leagues</li>
+            <li>Custom league branding</li>
+            <li>Priority support</li>
+            <li>Ad-free experience</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Recurring revenue, higher LTV
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">7. Affiliate Program for Clubs</div>
+        <div class="feature-content">
+          Add to Club model:
+          <ul class="feature-list">
+            <li>referral_code</li>
+            <li>total_referrals</li>
+            <li>commission_earned</li>
+            <li>payout_threshold</li>
+          </ul>
+          Track club referrals, give commission on referred user entries
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> User acquisition, club engagement,
+          word-of-mouth growth
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">📊 User Experience Enhancements</div>
+
+      <div class="feature">
+        <div class="feature-title">8. Enhanced Player Selection Interface</div>
+        <div class="feature-content">
+          <ul class="feature-list">
+            <li>Filters: Odds range, form, course history, nationality</li>
+            <li>Favorites system (star players for quick access)</li>
+            <li>Comparison tool (side-by-side stats)</li>
+            <li>AI recommendations based on user history</li>
+            <li>Undo last pick before deadline</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Reduces decision fatigue, improves
+          UX
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">9. Live Leaderboard Enhancements</div>
+        <div class="feature-content">
+          Add real-time features:
+          <ul class="feature-list">
+            <li>Projected final positions (based on current scores)</li>
+            <li>"You need X under to win" calculator</li>
+            <li>Animated position changes</li>
+            <li>Virtual ticker showing all league updates</li>
+            <li>"Watch mode" for specific players</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Increases engagement, keeps users
+          in app longer
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">10. Tournament Center / Hub</div>
+        <div class="feature-content">
+          Central page for each tournament with:
+          <ul class="feature-list">
+            <li>Live scoring</li>
+            <li>Course map with hole-by-hole breakdown</li>
+            <li>Weather conditions</li>
+            <li>Field strength analysis</li>
+            <li>Historical tournament data</li>
+            <li>Video highlights (YouTube API)</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Makes your app the go-to
+          destination, not just entry platform
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">🎮 Gamification & Retention</div>
+
+      <div class="feature">
+        <div class="feature-title">11. Achievement System (Expand Current)</div>
+        <div class="feature-content">
+          You have basic achievements, add more:
+          <ul class="feature-list">
+            <li>Streaks: Win 3 weekends in a row</li>
+            <li>Course Master: Win same tournament 3 times</li>
+            <li>Bracket Buster: Pick underdog winner</li>
+            <li>Perfect Pick: All 3 players finish top 10</li>
+            <li>Iron Man: Enter 20 consecutive tournaments</li>
+            <li>Display badges on profile</li>
+            <li>Leaderboard for achievement points</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Drives engagement, creates
+          completionist users
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">
+          12. Seasonal Leaderboards & Championships
+        </div>
+        <div class="feature-content">
+          Track points across entire season, award championship prizes. Example
+          Season model with name, start/end dates, and championship prize
+          fields.
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Long-term engagement, gives losing
+          users reason to keep playing
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">13. Tutorial & Onboarding Flow</div>
+        <div class="feature-content">
+          <ul class="feature-list">
+            <li>Interactive tutorial for first-time users</li>
+            <li>Demo league with fake money</li>
+            <li>"Recommended for beginners" leagues</li>
+            <li>In-app tips and strategy guides</li>
+            <li>Video tutorials</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Reduces churn, increases
+          activation rate
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">📱 Mobile-Specific Features</div>
+
+      <div class="feature">
+        <div class="feature-title">14. Offline Mode</div>
+        <div class="feature-content">
+          <ul class="feature-list">
+            <li>Cache league standings</li>
+            <li>View past results offline</li>
+            <li>Queue picks when offline, sync when online</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Better mobile experience, works in
+          poor connectivity
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">15. Apple/Google Wallet Integration</div>
+        <div class="feature-content">
+          <ul class="feature-list">
+            <li>Add league entry pass to wallet</li>
+            <li>Tournament countdown timer</li>
+            <li>Quick access from lock screen</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Increases visibility, reduces
+          forgotten entries
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">🤖 Advanced/AI Features</div>
+
+      <div class="feature">
+        <div class="feature-title">16. AI-Powered Pick Assistant</div>
+        <div class="feature-content">
+          ML model features to predict player performance based on:
+          <ul class="feature-list">
+            <li>Recent form</li>
+            <li>Course history</li>
+            <li>Weather conditions</li>
+            <li>Playing partners</li>
+            <li>Time of day tee time</li>
+            <li>Generate optimal lineups</li>
+            <li>Risk/reward analysis</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Helps casual users compete,
+          premium feature potential
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">17. Smart Alerts & Recommendations</div>
+        <div class="feature-content">
+          <ul class="feature-list">
+            <li>"Your player is about to tee off"</li>
+            <li>"Similar users are picking [player]"</li>
+            <li>"League deadline in 2 hours - spots filling fast"</li>
+            <li>"Your friend just joined a league"</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> FOMO, drives conversions
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">18. Predictive Analytics Dashboard</div>
+        <div class="feature-content">
+          Show users:
+          <ul class="feature-list">
+            <li>Win probability based on current scores</li>
+            <li>"If X shoots Y, you'll finish in Z position"</li>
+            <li>
+              Historical data: "Players in your position won 23% of the time"
+            </li>
+            <li>Monte Carlo simulations for final standings</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Engaging, keeps users checking app
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">🏆 Club-Specific Features</div>
+
+      <div class="feature">
+        <div class="feature-title">
+          19. Club Management Portal (Enhance Current)
+        </div>
+        <div class="feature-content">
+          You have basics, add:
+          <ul class="feature-list">
+            <li>Member management (invite, remove, roles)</li>
+            <li>Club statistics (most successful members)</li>
+            <li>Club leaderboards (across all club leagues)</li>
+            <li>Automated weekly leagues (recurring setup)</li>
+            <li>Custom branding (club logo, colors)</li>
+            <li>Email templates for league invitations</li>
+            <li>Club chat/bulletin board</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Makes clubs stickier, increases
+          club retention
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">20. White Label Solution</div>
+        <div class="feature-content">
+          Allow larger clubs to have their own branded version:
+          <ul class="feature-list">
+            <li>Custom domain (fantasygolf.clubname.com)</li>
+            <li>Custom branding throughout</li>
+            <li>Their own payment processing</li>
+            <li>Higher revenue share</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> B2B revenue, larger contracts,
+          stability
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">📈 Analytics & Business Intelligence</div>
+
+      <div class="feature">
+        <div class="feature-title">21. User Analytics Dashboard</div>
+        <div class="feature-content">
+          For site admins:
+          <ul class="feature-list">
+            <li>User cohort analysis</li>
+            <li>Retention metrics</li>
+            <li>Revenue per user</li>
+            <li>Most popular leagues</li>
+            <li>Churn prediction</li>
+            <li>A/B testing framework</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Data-driven decisions, optimize
+          conversions
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">22. Export & Reporting Tools</div>
+        <div class="feature-content">
+          For clubs:
+          <ul class="feature-list">
+            <li>League results export (PDF, Excel)</li>
+            <li>Financial reports</li>
+            <li>Tax documents (Form 1099 for US users)</li>
+            <li>Member activity reports</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Professionalism, reduces support
+          burden
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">🔐 Trust & Safety</div>
+
+      <div class="feature">
+        <div class="feature-title">23. Enhanced Security Features</div>
+        <div class="feature-content">
+          <ul class="feature-list">
+            <li>Two-factor authentication</li>
+            <li>Biometric login (Face ID, fingerprint)</li>
+            <li>Suspicious activity detection</li>
+            <li>Account recovery flow</li>
+            <li>Session management (view active sessions)</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Trust, prevents account takeover,
+          regulatory compliance
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">24. Responsible Gaming Features</div>
+        <div class="feature-content">
+          Add to User model: daily/weekly spend limits, self-exclusion, reality
+          check frequency
+          <ul class="feature-list">
+            <li>Deposit limits</li>
+            <li>Time limits</li>
+            <li>Self-exclusion options</li>
+            <li>Reality checks ("You've been playing for 2 hours")</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Regulatory compliance, ethical,
+          builds trust
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">🌍 Expansion Features</div>
+
+      <div class="feature">
+        <div class="feature-title">25. Multi-Language Support</div>
+        <div class="feature-content">
+          <ul class="feature-list">
+            <li>Spanish, French, German initially</li>
+            <li>Based on user's club location</li>
+            <li>Different odds formats (decimal, fractional, American)</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> International expansion, larger
+          market
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">26. Multi-Tournament Support</div>
+        <div class="feature-content">
+          Allow users to:
+          <ul class="feature-list">
+            <li>Enter multiple tournaments simultaneously</li>
+            <li>Cross-tournament leaderboards</li>
+            <li>"Fantasy FedEx Cup" season-long format</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Increased engagement, more entry
+          opportunities
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">27. Corporate Leagues</div>
+        <div class="feature-content">
+          B2B offering for companies:
+          <ul class="feature-list">
+            <li>Team-building tool</li>
+            <li>Corporate branding</li>
+            <li>Bulk user management</li>
+            <li>Invoice billing (not credit card)</li>
+            <li>Client entertainment packages</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Larger contracts, stable revenue,
+          new market
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">🎁 Marketing & Growth</div>
+
+      <div class="feature">
+        <div class="feature-title">28. Referral Program</div>
+        <div class="feature-content">
+          Add to User model: referral_code, referred_by_id,
+          referral_bonus_earned, referrals_count
+          <br /><br />
+          Give users credit for referring friends:
+          <ul class="feature-list">
+            <li>€5 credit for referrer and referee</li>
+            <li>Track viral coefficient</li>
+            <li>Leaderboard for top referrers</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Viral growth, lower CAC
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">29. Free-to-Play Option</div>
+        <div class="feature-content">
+          <ul class="feature-list">
+            <li>Free leagues with smaller prizes</li>
+            <li>Sponsored by advertisers</li>
+            <li>"Freemium" model</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Lower barrier to entry, larger
+          funnel
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">30. Email Marketing Automation</div>
+        <div class="feature-content">
+          <ul class="feature-list">
+            <li>Welcome series</li>
+            <li>Weekly tournament preview</li>
+            <li>"You haven't played in a while" re-engagement</li>
+            <li>Win/loss follow-ups</li>
+            <li>Personalized recommendations</li>
+          </ul>
+        </div>
+        <div class="why-box">
+          <span class="why-label">Why:</span> Retention, reactivation, CLV
+          increase
+        </div>
+      </div>
+    </div>
+
+    <div class="top-recommendations">
+      <h2>🎯 Top 5 Recommendations to Implement First</h2>
+
+      <div class="recommendation-item">
+        <div class="recommendation-number">1. Player Analytics & Insights</div>
+        <div>Increases perceived value, helps users make better picks</div>
+      </div>
+
+      <div class="recommendation-item">
+        <div class="recommendation-number">2. Enhanced Push Notifications</div>
+        <div>Low effort, high engagement impact</div>
+      </div>
+
+      <div class="recommendation-item">
+        <div class="recommendation-number">3. Multiple Entry Formats</div>
+        <div>Revenue diversification, appeals to different user types</div>
+      </div>
+
+      <div class="recommendation-item">
+        <div class="recommendation-number">4. Referral Program</div>
+        <div>Growth engine, compounds over time</div>
+      </div>
+
+      <div class="recommendation-item">
+        <div class="recommendation-number">5. Seasonal Championships</div>
+        <div>Long-term retention, gives users reason to keep playing</div>
+      </div>
+    </div>
+
+    <div
+      style="
+        margin-top: 40px;
+        padding: 20px;
+        background: #ecf0f1;
+        border-radius: 8px;
+        text-align: center;
+        color: #7f8c8d;
+        font-size: 12px;
+      "
+    >
+      <p><strong>Fantasy Golf Platform - Product Roadmap</strong></p>
+      <p>
+        This document outlines 30 strategic features designed to drive revenue,
+        engagement, and sustainable growth.
+      </p>
+    </div>
+  </body>
+</html>

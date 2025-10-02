@@ -114,9 +114,10 @@ class Config:
 
     # Celery Beat Schedule
     beat_schedule = {
+        # In config.py, change this:
         'schedule-live-score-updates': {
             'task': 'fantasy_league_app.tasks.schedule_score_updates_for_the_week',
-            'schedule': crontab(hour=14, minute=50, day_of_week='thu,fri,sat,sun'),
+            'schedule': crontab(hour=5, minute=0, day_of_week='thu,fri,sat,sun'),
         },
         'reset-player-scores-weekly': {
             'task': 'fantasy_league_app.tasks.reset_player_scores',
