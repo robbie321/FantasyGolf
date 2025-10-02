@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 
-from fantasy_league_app.extensions import db, limiter
+from fantasy_league_app.extensions import db, limiter, csrf
 from fantasy_league_app.models import PushSubscription
 from .models import NotificationLog, NotificationPreference
 from .services import push_service
@@ -12,6 +12,8 @@ from .services import push_service
 # Create blueprint
 push_bp = Blueprint('push', __name__, url_prefix='/api/push')
 
+# ===== EXEMPT CSRF FOR ALL PUSH ROUTES =====
+csrf.exempt(push_bp)
 
 @push_bp.route('/subscribe', methods=['POST'])
 @login_required
