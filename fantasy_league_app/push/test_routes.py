@@ -491,15 +491,17 @@ def test_dashboard():
                 // Not registered yet, register it
                 log.info('Registering new Service Worker...');
 
-                // Force HTTPS URL for service worker
+                // Force HTTPS URL for service worker - USE CORRECT PATH with cache busting
+                const timestamp = new Date().getTime();
                 const swUrl = window.location.protocol === 'https:'
-                    ? 'https://' + window.location.host + '/static/js/service-worker.js'
-                    : '/static/js/service-worker.js';
+                    ? 'https://' + window.location.host + '/static/service-worker.js?v=' + timestamp
+                    : '/static/service-worker.js?v=' + timestamp;
 
                 log.info(`Looking for service worker at: ${swUrl}`);
 
                 registration = await navigator.serviceWorker.register(swUrl, {
-                    scope: '/'
+                    scope: '/',
+                    updateViaCache: 'none'  // Don't cache the service worker
                 });
 
                 log.success('✅ Service Worker registered!');
