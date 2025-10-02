@@ -232,6 +232,28 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SECURE = True  # Require HTTPS in production
     REMEMBER_COOKIE_SECURE = True  # Require HTTPS in production
 
+class StagingConfig(Config):
+    """Staging configuration - mirrors production but separate"""
+    DEBUG = False
+    TESTING = False
+
+    # Use Redis for staging caching
+    CACHE_TYPE = 'RedisCache'
+    CACHE_REDIS_URL = Config.redis_url
+    CACHE_DEFAULT_TIMEOUT = 300
+
+    # Session security
+    SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True
+
+# Update config dictionary
+config = {
+    'development': DevelopmentConfig,
+    'staging': StagingConfig,
+    'production': ProductionConfig,
+    'testing': TestingConfig,
+    'default': DevelopmentConfig
+}
 
 class TestingConfig(Config):
     """Testing configuration - for running tests"""
