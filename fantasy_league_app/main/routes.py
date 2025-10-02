@@ -658,12 +658,12 @@ def stripe_connect_refresh():
 #     """Serves the service worker file with the correct MIME type."""
 #     return send_from_directory(current_app.static_folder, 'service-worker.js', mimetype='application/javascript')
 
-    @main_bp.route('/service-worker.js')
+@main_bp.route('/service-worker.js')
 def service_worker():
     """Serve service worker from root for proper scope"""
 
     response = send_from_directory(
-        os.path.join(app.root_path, 'static'),
+        os.path.join(current_app.root_path, 'static'),
         'service-worker.js',
         mimetype='application/javascript'
     )
