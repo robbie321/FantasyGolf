@@ -30,21 +30,7 @@ def privacy_policy():
     """Renders the privacy policy page."""
     return render_template('main/privacy_policy.html', title="Privacy Policy")
 
-@main_bp.route('/service-worker.js')
-def service_worker():
-    """Serve service worker from root for proper scope"""
 
-    response = send_from_directory(
-        os.path.join(app.root_path, 'static'),
-        'service-worker.js',
-        mimetype='application/javascript'
-    )
-
-    # Add headers to prevent caching
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response.headers['Service-Worker-Allowed'] = '/'
-
-    return response
 
 @main_bp.route('/')
 @main_bp.route('/index')
@@ -671,6 +657,22 @@ def stripe_connect_refresh():
 # def service_worker():
 #     """Serves the service worker file with the correct MIME type."""
 #     return send_from_directory(current_app.static_folder, 'service-worker.js', mimetype='application/javascript')
+
+    @main_bp.route('/service-worker.js')
+def service_worker():
+    """Serve service worker from root for proper scope"""
+
+    response = send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'service-worker.js',
+        mimetype='application/javascript'
+    )
+
+    # Add headers to prevent caching
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Service-Worker-Allowed'] = '/'
+
+    return response
 
 @main_bp.route('/health/cache')
 def cache_health():
