@@ -30,7 +30,7 @@ def privacy_policy():
     """Renders the privacy policy page."""
     return render_template('main/privacy_policy.html', title="Privacy Policy")
 
-@app.route('/service-worker.js')
+@main_bp.route('/service-worker.js')
 def service_worker():
     """Serve service worker from root for proper scope"""
 
