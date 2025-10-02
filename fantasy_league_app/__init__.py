@@ -3,7 +3,7 @@ import stripe
 from flask import Flask, render_template
 import mimetypes
 from .cli import register_cli_commands
-from fantasy_league_app.push import push_bp
+
 # Import extensions from the new extensions file
 from .extensions import (
     cache, db, migrate, mail, csrf, socketio, login_manager,
@@ -81,7 +81,10 @@ def create_app(config_name=None):
     app.register_blueprint(admin_bp)
     app.register_blueprint(player_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
-    app.register_blueprint(push_bp)
+
+
+    from fantasy_league_app.push import init_push
+    init_push(app)
 
     # Register CLI commands
     register_cli_commands(app)

@@ -1,15 +1,15 @@
-# fantasy_league_app/push/test_routes.py
-# Add this new file for comprehensive notification testing
-
-from flask import Blueprint, request, jsonify, render_template_string, current_app
+from flask import Blueprint, request, jsonify, render_template_string, current_app, make_response
 from flask_login import login_required, current_user
-from fantasy_league_app.extensions import db
-from fantasy_league_app.models import PushSubscription
+from fantasy_league_app.extensions import db, csrf
+from fantasy_league_app.models import PushSubscription, User
 from .services import push_service
 import json
+import base64
 
 test_bp = Blueprint('push_test', __name__, url_prefix='/push-test')
 
+# ===== EXEMPT CSRF FOR ALL PUSH ROUTES =====
+csrf.exempt(test_bp)
 
 @test_bp.route('/')
 @login_required
@@ -689,3 +689,473 @@ def test_dashboard():
                                  is_ios=is_ios,
                                  is_android=is_android,
                                  is_safari=is_safari)
+
+
+@test_bp.route('/api/check-config')
+@login_required
+def check_config():
+    """API endpoint to check server-side configuration"""
+
+    vapid_private = current_app.config.get('VAPID_PRIVATE_KEY')
+    vapid_public = current_app.config.get('VAPID_PUBLIC_KEY')
+    vapid_email = current_app.config.get('VAPID_CLAIM_EMAIL')
+
+    return jsonify({
+        'vapid_configured': bool(vapid_private and vapid_public and vapid_email),
+        'vapid_private_length': len(vapid_private) if vapid_private else 0,
+        'vapid_public_length': len(vapid_public) if vapid_public else 0,
+        'vapid_email': vapid_email,
+        'vapid_public_preview': vapid_public[:20] + '...' if vapid_public else None,
+        'redis_configured': bool(current_app.config.get('REDIS_URL')),
+        'mail_configured': bool(current_app.config.get('MAIL_SERVER')),
+        'environment': 'production' if not current_app.debug else 'development'
+    })
+
+
+@test_bp.route('/api/subscriptions')
+@login_required
+def list_subscriptions():
+    """List all subscriptions for current user"""
+
+    subscriptions = PushSubscription.query.filter_by(user_id=current_user.id).all()
+
+    sub_list = []
+    for sub in subscriptions:
+        sub_data = sub.to_dict()
+        sub_list.append({
+            'id': sub.id,
+            'endpoint': sub.get_endpoint()[:80] + '...' if hasattr(sub, 'get_endpoint') else 'N/A',
+            'created_at': sub.created_at.isoformat() if hasattr(sub, 'created_at') else None,
+            'is_active': sub.is_active if hasattr(sub, 'is_active') else True,
+            'has_valid_data': bool(sub_data)
+        })
+
+    return jsonify({
+        'count': len(subscriptions),
+        'subscriptions': sub_list
+    })
+
+
+@test_bp.route('/api/send-custom', methods=['POST'])
+@login_required
+def send_custom_notification():
+    """Send a custom notification for testing"""
+
+    data = request.get_json()
+
+    title = data.get('title', 'Test Notification')
+    body = data.get('body', 'This is a test')
+    url = data.get('url', '/')
+    icon = data.get('icon')
+    require_interaction = data.get('requireInteraction', False)
+
+    result = push_service.send_notification_sync(
+        user_ids=[current_user.id],
+        notification_type='test',
+        title=title,
+        body=body,
+        url=url,
+        icon=icon,
+        require_interaction=require_interaction
+    )
+
+    return jsonify(result)
+
+
+@test_bp.route('/api/broadcast', methods=['POST'])
+@login_required
+def broadcast_test():
+    """Broadcast notification to all users (admin only)"""
+
+    # Check if user is admin
+    if not getattr(current_user, 'is_site_admin', False):
+        return jsonify({'error': 'Admin access required'}), 403
+
+    data = request.get_json()
+
+    # Get all active users
+    all_users = User.query.filter_by(is_active=True).all()
+    user_ids = [u.id for u in all_users]
+
+    result = push_service.send_notification_sync(
+        user_ids=user_ids,
+        notification_type='broadcast',
+        title=data.get('title', 'Broadcast Test'),
+        body=data.get('body', 'This is a broadcast test notification'),
+        url=data.get('url', '/')
+    )
+
+    return jsonify(result)
+
+
+@test_bp.route('/api/clear-subscriptions', methods=['POST'])
+@login_required
+def clear_subscriptions():
+    """Clear all subscriptions for current user (for testing)"""
+
+    try:
+        deleted = PushSubscription.query.filter_by(user_id=current_user.id).delete()
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'deleted': deleted,
+            'message': f'Deleted {deleted} subscription(s)'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@test_bp.route('/api/vapid-info')
+@login_required
+def vapid_info():
+    """Get VAPID key information for debugging"""
+
+    vapid_public = current_app.config.get('VAPID_PUBLIC_KEY')
+    vapid_private = current_app.config.get('VAPID_PRIVATE_KEY')
+
+    def analyze_key(key):
+        if not key:
+            return {'error': 'Key not configured'}
+
+        try:
+            # Try to decode as base64url
+            missing_padding = len(key) % 4
+            if missing_padding:
+                key_padded = key + '=' * (4 - missing_padding)
+            else:
+                key_padded = key
+
+            # Convert to standard base64
+            standard_b64 = key_padded.replace('-', '+').replace('_', '/')
+
+            try:
+                decoded = base64.b64decode(standard_b64)
+                return {
+                    'format': 'base64url',
+                    'length_encoded': len(key),
+                    'length_decoded': len(decoded),
+                    'is_valid': len(decoded) in [32, 65],  # 32 for private, 65 for public
+                    'preview': key[:20] + '...'
+                }
+            except:
+                # Try standard base64
+                try:
+                    decoded = base64.b64decode(key)
+                    return {
+                        'format': 'base64_standard',
+                        'length_encoded': len(key),
+                        'length_decoded': len(decoded),
+                        'is_valid': len(decoded) in [32, 65],
+                        'preview': key[:20] + '...'
+                    }
+                except:
+                    return {
+                        'format': 'unknown',
+                        'length': len(key),
+                        'error': 'Could not decode',
+                        'preview': key[:20] + '...'
+                    }
+        except Exception as e:
+            return {
+                'error': str(e)
+            }
+
+    return jsonify({
+        'public_key': analyze_key(vapid_public),
+        'private_key': analyze_key(vapid_private),
+        'vapid_email': current_app.config.get('VAPID_CLAIM_EMAIL'),
+        'recommendation': 'Keys should be base64url format, 32 bytes for private, 65 bytes for public'
+    })
+
+
+@test_bp.route('/manifest.json')
+def manifest():
+    """Serve PWA manifest for testing"""
+
+    manifest_data = {
+        "name": "Fantasy Golf",
+        "short_name": "Fantasy Golf",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#ffffff",
+        "theme_color": "#006a4e",
+        "icons": [
+            {
+                "src": "/static/images/icon-192x192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any maskable"
+            },
+            {
+                "src": "/static/images/icon-512x512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable"
+            }
+        ]
+    }
+
+    response = make_response(jsonify(manifest_data))
+    response.headers['Content-Type'] = 'application/manifest+json'
+    return response
+
+
+@test_bp.route('/help')
+def help_page():
+    """Show help and troubleshooting information"""
+
+    html = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Push Notification Help</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #006a4e;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #006a4e;
+            margin-top: 24px;
+        }
+        h3 {
+            color: #555;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin: 16px 0;
+        }
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 12px;
+            margin: 16px 0;
+        }
+        .error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 12px;
+            margin: 16px 0;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background: #2d3748;
+            color: #68d391;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        ul {
+            margin-left: 20px;
+        }
+        li {
+            margin: 8px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #006a4e;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 10px 10px 10px 0;
+        }
+        .btn:hover {
+            background: #005a3e;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔔 Push Notification Help & Troubleshooting</h1>
+
+        <div class="success">
+            <strong>Quick Links:</strong><br>
+            <a href="/push-test" class="btn">Test Dashboard</a>
+            <a href="/push-test/api/check-config" class="btn">Check Config</a>
+            <a href="/push-test/api/vapid-info" class="btn">VAPID Info</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📱 iOS Setup (Most Common Issue)</h2>
+
+        <div class="warning">
+            <strong>⚠️ iOS ONLY works in PWA mode!</strong><br>
+            Safari browser tab does NOT support push notifications.
+        </div>
+
+        <h3>Required Steps for iOS:</h3>
+        <ol>
+            <li><strong>Add to Home Screen:</strong>
+                <ul>
+                    <li>Open site in Safari</li>
+                    <li>Tap Share button (box with arrow up)</li>
+                    <li>Scroll down and tap "Add to Home Screen"</li>
+                    <li>Tap "Add"</li>
+                </ul>
+            </li>
+            <li><strong>Open from Home Screen:</strong>
+                <ul>
+                    <li>Close Safari completely</li>
+                    <li>Find the app icon on your Home Screen</li>
+                    <li>Tap to open (this runs in PWA mode)</li>
+                </ul>
+            </li>
+            <li><strong>Enable Notifications:</strong>
+                <ul>
+                    <li>Now tap "Enable Notifications"</li>
+                    <li>Tap "Allow" when prompted</li>
+                </ul>
+            </li>
+        </ol>
+
+        <div class="error">
+            <strong>If permission was denied:</strong><br>
+            Go to: Settings → Safari → [Your Site] → Allow Notifications
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>🤖 Android Setup</h2>
+
+        <h3>Chrome on Android:</h3>
+        <ol>
+            <li>Visit the site in Chrome</li>
+            <li>Tap "Enable Notifications"</li>
+            <li>Tap "Allow" in the permission dialog</li>
+        </ol>
+
+        <div class="warning">
+            <strong>Note:</strong> Android works in both browser and PWA mode
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>🔧 Common Issues & Solutions</h2>
+
+        <h3>Issue: Button does nothing when clicked</h3>
+        <ul>
+            <li>✅ iOS: Ensure app is added to Home Screen and opened from there</li>
+            <li>✅ Check browser console for errors (F12 or inspect)</li>
+            <li>✅ Verify you're on HTTPS (or localhost)</li>
+            <li>✅ Try clearing browser cache and reloading</li>
+        </ul>
+
+        <h3>Issue: Permission immediately denied</h3>
+        <ul>
+            <li>✅ You previously denied - need to reset in browser settings</li>
+            <li>✅ iOS: Settings → Safari → [Site] → Notifications</li>
+            <li>✅ Android: Site Settings → Notifications → Allow</li>
+            <li>✅ Desktop: Browser settings → Privacy → Notifications</li>
+        </ul>
+
+        <h3>Issue: Subscription fails with error</h3>
+        <ul>
+            <li>✅ Check VAPID keys are configured correctly</li>
+            <li>✅ Verify service worker is registered</li>
+            <li>✅ Check server logs for backend errors</li>
+            <li>✅ Try the test dashboard at <code>/push-test</code></li>
+        </ul>
+
+        <h3>Issue: Notifications not received</h3>
+        <ul>
+            <li>✅ Verify subscription saved (check test dashboard)</li>
+            <li>✅ Send test notification from <code>/push-test</code></li>
+            <li>✅ Check device notification settings</li>
+            <li>✅ Ensure device has internet connection</li>
+            <li>✅ Check server logs for push delivery errors</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>🔍 Debugging Steps</h2>
+
+        <h3>1. Check Browser Support:</h3>
+        <pre>console.log('Notification' in window);        // Should be true
+console.log('serviceWorker' in navigator);   // Should be true
+console.log('PushManager' in window);         // Should be true</pre>
+
+        <h3>2. Check Permission Status:</h3>
+        <pre>console.log(Notification.permission);        // granted, denied, or default</pre>
+
+        <h3>3. Check Service Worker:</h3>
+        <pre>navigator.serviceWorker.getRegistration().then(reg => {
+    console.log('Registered:', !!reg);
+    if (reg) console.log('Scope:', reg.scope);
+});</pre>
+
+        <h3>4. Check Subscription:</h3>
+        <pre>navigator.serviceWorker.ready.then(reg => {
+    return reg.pushManager.getSubscription();
+}).then(sub => {
+    console.log('Subscribed:', !!sub);
+});</pre>
+
+        <h3>5. Check Standalone Mode (iOS):</h3>
+        <pre>console.log('Standalone:', window.navigator.standalone);
+console.log('Display mode:', window.matchMedia('(display-mode: standalone)').matches);</pre>
+    </div>
+
+    <div class="card">
+        <h2>⚙️ Server Configuration Checklist</h2>
+
+        <ul>
+            <li>✅ VAPID keys configured in base64url format (not DER)</li>
+            <li>✅ VAPID_CLAIM_EMAIL set to valid mailto: URL</li>
+            <li>✅ Service worker accessible at /static/js/service-worker.js</li>
+            <li>✅ manifest.json accessible</li>
+            <li>✅ HTTPS enabled (production only)</li>
+            <li>✅ Push service properly initialized</li>
+            <li>✅ Database models created (PushSubscription table exists)</li>
+        </ul>
+
+        <div class="success">
+            <strong>Check server config:</strong><br>
+            Visit <a href="/push-test/api/check-config">/push-test/api/check-config</a> for detailed info
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📚 Additional Resources</h2>
+
+        <ul>
+            <li><a href="https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/" target="_blank">Apple's Web Push Guide</a></li>
+            <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Push_API" target="_blank">MDN Push API Documentation</a></li>
+            <li><a href="https://web.dev/push-notifications-overview/" target="_blank">Web.dev Push Notifications Guide</a></li>
+        </ul>
+    </div>
+</body>
+</html>
+    '''
+
+    return html
