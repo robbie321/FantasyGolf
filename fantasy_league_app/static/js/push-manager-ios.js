@@ -113,10 +113,10 @@ To enable notifications on iOS:
 
             const swUrl = window.location.protocol === 'https:'
             ? `https://${window.location.host}/static/service-worker.js`
-            : '/static/js/service-worker.js';
+            : '/static/service-worker.js';
 
             const registration = await navigator.serviceWorker.register(
-                '/static/js/service-worker.js',
+                '/static/service-worker.js',
                 { scope: '/' }
             );
 
