@@ -246,14 +246,6 @@ class StagingConfig(Config):
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
 
-# Update config dictionary
-config = {
-    'development': DevelopmentConfig,
-    'staging': StagingConfig,
-    'production': ProductionConfig,
-    'testing': TestingConfig,
-    'default': DevelopmentConfig
-}
 
 class TestingConfig(Config):
     """Testing configuration - for running tests"""
@@ -275,9 +267,10 @@ class TestingConfig(Config):
     REMEMBER_COOKIE_SECURE = False
 
 
-# Configuration dictionary for easy selection
+# Update config dictionary
 config = {
     'development': DevelopmentConfig,
+    'staging': StagingConfig,
     'production': ProductionConfig,
     'testing': TestingConfig,
     'default': DevelopmentConfig
