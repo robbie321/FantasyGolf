@@ -32,6 +32,15 @@ def create_app(config_name=None):
         # New way: create_app('development') - use config dictionary
         app.config.from_object(config[config_name])
 
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(
+        app.wsgi_app,
+        x_for=1,
+        x_proto=1,
+        x_host=1,
+        x_prefix=1
+    )
+
     # Initialize all extensions
     init_extensions(app)
 
@@ -86,13 +95,6 @@ def create_app(config_name=None):
     from fantasy_league_app.push import init_push
     init_push(app)
 
-    # DEBUG: Print all registered routes
-    if app.debug or os.environ.get('ENABLE_PUSH_TEST'):
-        print("\n=== REGISTERED ROUTES ===")
-        for rule in app.url_map.iter_rules():
-            if 'push' in str(rule):
-                print(f"{rule.methods} {rule.rule} -> {rule.endpoint}")
-        print("=== END ROUTES ===\n")
 
     # Register CLI commands
     register_cli_commands(app)
