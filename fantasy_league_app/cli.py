@@ -63,6 +63,14 @@ def register_cli_commands(app):
         click.echo('✅ CLI commands are working properly')
 
 
+    @click.command('trigger-scores')
+    def trigger_score_updates():
+        """Manually trigger score updates for active tournaments"""
+        from fantasy_league_app.tasks import schedule_score_updates_for_the_week
+        result = schedule_score_updates_for_the_week.delay()
+        click.echo(f"Score update task triggered: {result.id}")
+
+
     @app.cli.command('list-users')
     @click.option('--limit', default=5, help='Number of users to show')
     def list_users(limit):
