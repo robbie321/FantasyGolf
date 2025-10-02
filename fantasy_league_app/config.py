@@ -242,9 +242,19 @@ class StagingConfig(Config):
     CACHE_REDIS_URL = Config.redis_url
     CACHE_DEFAULT_TIMEOUT = 300
 
+    # Session configuration - explicitly set for staging
+    SESSION_TYPE = 'redis'
+    SESSION_REDIS = None  # Will be set by init_extensions
+    SESSION_PERMANENT = True
+    SESSION_USE_SIGNER = True
+
     # Session security
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+
+    # Make sure CSRF is enabled
+    WTF_CSRF_ENABLED = True
 
 
 class TestingConfig(Config):
