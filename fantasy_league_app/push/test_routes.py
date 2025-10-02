@@ -289,6 +289,9 @@ def test_dashboard():
                 <button class="btn" id="check-support-btn" onclick="checkSupport()">
                     1️⃣ Check Browser Support
                 </button>
+                <button class="btn" id="register-sw-btn" onclick="registerServiceWorker()">
+                    📝 Register Service Worker
+                </button>
                 <button class="btn" id="request-permission-btn" onclick="requestPermission()">
                     2️⃣ Request Permission
                 </button>
@@ -443,12 +446,92 @@ def test_dashboard():
                 } else {
                     log.warning('⚠️ Service Worker not registered yet');
                     updateStatus('sw-status', '⚠️ Not Registered');
+                    log.info('👉 Click "Register Service Worker" button to register it');
                 }
             } catch (error) {
                 log.error(`Error checking Service Worker: ${error.message}`);
             }
 
             return true;
+        }
+
+        async function registerServiceWorker() {
+            log.info('=== REGISTERING SERVICE WORKER ===');
+
+            if (!('serviceWorker' in navigator)) {
+                log.error('❌ Service Workers not supported in this browser');
+                return false;
+            }
+
+            try {
+                // Check if already registered
+                let registration = await navigator.serviceWorker.getRegistration();
+
+                if (registration) {
+                    log.warning('Service Worker already registered');
+                    log.info(`Scope: ${registration.scope}`);
+                    log.info(`State: ${registration.active ? registration.active.state : 'unknown'}`);
+
+                    // Check if it's active
+                    if (registration.active && registration.active.state === 'activated') {
+                        log.success('✅ Service Worker is active and ready');
+                        updateStatus('sw-status', '✅ Registered & Active');
+                        return true;
+                    }
+
+                    // If not active, try to update it
+                    log.info('Updating Service Worker...');
+                    await registration.update();
+                    await navigator.serviceWorker.ready;
+                    log.success('✅ Service Worker updated and ready');
+                    updateStatus('sw-status', '✅ Registered & Active');
+                    return true;
+                }
+
+                // Not registered yet, register it
+                log.info('Registering new Service Worker...');
+                log.info('Looking for service worker at: /static/js/service-worker.js');
+
+                registration = await navigator.serviceWorker.register('/static/js/service-worker.js', {
+                    scope: '/'
+                });
+
+                log.success('✅ Service Worker registered!');
+                log.info(`Scope: ${registration.scope}`);
+
+                // Wait for it to be ready
+                log.info('Waiting for Service Worker to activate...');
+                await navigator.serviceWorker.ready;
+
+                log.success('✅ Service Worker is now active and ready!');
+                updateStatus('sw-status', '✅ Registered & Active');
+
+                // Check final state
+                const finalReg = await navigator.serviceWorker.getRegistration();
+                if (finalReg && finalReg.active) {
+                    log.info(`Final state: ${finalReg.active.state}`);
+                }
+
+                log.success('=== SERVICE WORKER REGISTRATION COMPLETE ===');
+                return true;
+
+            } catch (error) {
+                log.error(`❌ Service Worker registration failed: ${error.message}`);
+                log.error(`Error details: ${error.stack}`);
+
+                // Try to provide helpful error messages
+                if (error.message.includes('404')) {
+                    log.error('📁 Service worker file not found at /static/js/service-worker.js');
+                    log.info('Make sure the file exists and is accessible');
+                } else if (error.message.includes('https')) {
+                    log.error('🔒 HTTPS required for service workers (except on localhost)');
+                } else if (error.message.includes('scope')) {
+                    log.error('🔍 Scope issue - check service worker scope configuration');
+                }
+
+                updateStatus('sw-status', '❌ Registration Failed');
+                return false;
+            }
         }
 
         function updatePermissionStatus(permission) {
