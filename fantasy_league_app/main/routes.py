@@ -13,6 +13,8 @@ from ..models import User, League, LeagueEntry, PlayerScore
 from ..auth.decorators import user_required
 import stripe
 from fantasy_league_app.cache_utils import CacheManager, cache_result
+from flask import send_from_directory
+import os
 
 @main_bp.route('/offline.html')
 def offline():
@@ -31,8 +33,6 @@ def privacy_policy():
 @app.route('/service-worker.js')
 def service_worker():
     """Serve service worker from root for proper scope"""
-    from flask import send_from_directory
-    import os
 
     response = send_from_directory(
         os.path.join(app.root_path, 'static'),
