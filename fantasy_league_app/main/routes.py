@@ -667,10 +667,10 @@ def stripe_connect_refresh():
             return redirect(url_for('main.club_dashboard'))
         return redirect(url_for('main.user_dashboard'))
 
-@main_bp.route('/service-worker.js')
-def service_worker():
-    """Serves the service worker file with the correct MIME type."""
-    return send_from_directory(current_app.static_folder, 'service-worker.js', mimetype='application/javascript')
+# @main_bp.route('/service-worker.js')
+# def service_worker():
+#     """Serves the service worker file with the correct MIME type."""
+#     return send_from_directory(current_app.static_folder, 'service-worker.js', mimetype='application/javascript')
 
 @main_bp.route('/health/cache')
 def cache_health():
