@@ -74,7 +74,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
 python-engineio==4.12.2
 python-socketio==5.13.0
-pywebpush==2.0.3
+pywebpush==2.1.0
 pywin32==311
 pyzmq==27.0.2
 redis==6.4.0
