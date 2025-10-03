@@ -43,14 +43,17 @@
     </div>
 
     <div class="notification-prompt-actions">
-      <button
+      <!-- <button
         class="btn-enable-notifications"
         id="enable-notifications-btn"
         onclick="enableNotifications()"
-      >
+      > -->
+      <a href="/push-test" class="btn-enable-notifications">
         <i class="fas fa-bell"></i>
         <span>Enable Notifications</span>
-      </button>
+      </a>
+
+      <!-- </button> -->
       <button class="btn-maybe-later" onclick="remindMeLater()">
         <span>Maybe Later</span>
       </button>
@@ -59,7 +62,7 @@
 </div>
 
 <!-- Notification Status Bar (always visible) -->
-<div
+<!-- <div
   id="notification-status-bar"
   class="notification-status-bar"
   style="display: none"
@@ -79,7 +82,7 @@
       Enable
     </button>
   </div>
-</div>
+</div> -->
 
 <!-- Floating Notification Button (mobile-friendly) -->
 <div
@@ -569,7 +572,7 @@
     }
 
     updateNotificationStatus() {
-      const statusBar = document.getElementById("notification-status-bar");
+      //const statusBar = document.getElementById("notification-status-bar");
       const floatingBtn = document.getElementById("floating-notification-btn");
       const statusIcon = document.getElementById("status-icon");
       const statusMessage = document.getElementById("status-message");
@@ -631,6 +634,7 @@
     async enableNotifications() {
       const enableBtn = document.getElementById("enable-notifications-btn");
       if (enableBtn) {
+        console.log("Enabled button pressed");
         enableBtn.disabled = true;
         enableBtn.innerHTML =
           '<i class="fas fa-spinner fa-spin"></i> <span>Enabling...</span>';
@@ -675,7 +679,7 @@
           this.updateNotificationStatus();
           // Don't show alert, just update status
         } else {
-          throw new Error("Subscription failed");
+          throw new alert("Subscription failed");
         }
       } catch (error) {
         console.error("Failed to enable notifications:", error);

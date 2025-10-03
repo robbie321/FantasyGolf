@@ -179,7 +179,14 @@ def get_vapid_public_key():
         if not public_key:
             return jsonify({'error': 'VAPID public key not configured'}), 500
 
-        return jsonify({'publicKey': public_key}), 200
+        response = jsonify({'publicKey': public_key})
+
+        # PREVENT CACHING
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+
+        return response, 200
 
     except Exception as e:
         current_app.logger.error(f"Failed to get VAPID public key: {e}")
