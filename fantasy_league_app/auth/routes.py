@@ -59,7 +59,6 @@ from flask_login import login_user as flask_login_user
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 @redirect_if_authenticated
-# @limiter.limit("8 per hour")
 def register():
     form = RegistrationForm()
     if form.validate_on_submit():
@@ -105,7 +104,6 @@ def register():
 
 @auth_bp.route('/register_club', methods=['GET', 'POST'])
 @redirect_if_authenticated
-@limiter.limit("3 per hour")
 def register_club():
 
     if current_user.is_authenticated:

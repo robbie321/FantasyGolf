@@ -69,7 +69,7 @@ def _create_new_league(name, player_bucket_id, entry_fee_str,
 
     start_date = (today + timedelta(days=days_until_target)).replace(hour=6, minute=0, second=0, microsecond=0)
     end_date = start_date + timedelta(days=end_day_delta)
-    entry_deadline=tournament_start - timedelta(hours=12)
+    entry_deadline=start_date - timedelta(hours=12)
     # --- End of Date Logic ---
 
     # --- Validation ---
@@ -675,7 +675,7 @@ def add_entry(league_id):
 
 
             # Send confirmation email
-            send_entry_confirmation_email(current_user, league)
+            # send_entry_confirmation_email(current_user, league)
 
             flash('Your free entry has been successfully submitted!', 'success')
             return redirect(url_for('main.user_dashboard'))
