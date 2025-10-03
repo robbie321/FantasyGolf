@@ -110,10 +110,10 @@ class ClubRegistrationForm(FlaskForm):
         'Confirm Password',
         validators=[DataRequired(), EqualTo('password', message='Passwords must match.')]
     )
-    contact_person=StringField('Contact Person', validators=[DataRequired(), Length(min=5, max=100)]),
-    phone_number= IntegerField('Phone number', validators=[DataRequired(), NumberRange(min=10, max=10)]),
+    contact_person=StringField('Contact Person', validators=[DataRequired(), Length(min=5, max=100)])
+    phone_number = StringField('Phone number', validators=[DataRequired(), Length(min=10, max=15)])
     website= TextAreaField('Website (Optional)')
-    address= TextAreaField('Club Address'),
+    address= TextAreaField('Club Address')
     submit = SubmitField('Sign Up')
 
     def validate_email(self, email):
