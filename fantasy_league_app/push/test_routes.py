@@ -877,22 +877,39 @@ def broadcast_test():
     return jsonify(result)
 
 
+# In test_routes.py
 @test_bp.route('/api/clear-subscriptions', methods=['POST'])
 @login_required
 def clear_subscriptions():
     """Clear all subscriptions for current user (for testing)"""
 
     try:
+        # First, delete or update related notification logs
+        from fantasy_league_app.push.models import NotificationLog
+
+        # Get subscription IDs for this user
+        subscription_ids = [sub.id for sub in PushSubscription.query.filter_by(user_id=current_user.id).all()]
+
+        # Option 1: Delete related logs
+        NotificationLog.query.filter(NotificationLog.subscription_id.in_(subscription_ids)).delete(synchronize_session=False)
+
+        # OR Option 2: Set subscription_id to NULL in logs (if your model allows it)
+        # NotificationLog.query.filter(NotificationLog.subscription_id.in_(subscription_ids)).update(
+        #     {NotificationLog.subscription_id: None}, synchronize_session=False
+        # )
+
+        # Now delete the subscriptions
         deleted = PushSubscription.query.filter_by(user_id=current_user.id).delete()
         db.session.commit()
 
         return jsonify({
             'success': True,
             'deleted': deleted,
-            'message': f'Deleted {deleted} subscription(s)'
+            'message': f'Deleted {deleted} subscription(s) and related logs'
         })
     except Exception as e:
         db.session.rollback()
+        current_app.logger.error(f"Clear subscriptions error: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
