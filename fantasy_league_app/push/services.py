@@ -173,7 +173,7 @@ class PushNotificationService:
 
         return results
 
-    def _send_to_subscriptions_with_raw_key(self, subscriptions, payload, vapid_private_key, vapid_claim_email):
+    def _send_to_subscriptions_with_string_key(self, subscriptions, payload, vapid_private_key, vapid_claim_email):
         """Send notification to multiple subscriptions using string key"""
 
         success_count = 0
