@@ -644,7 +644,6 @@
           window.matchMedia("(display-mode: standalone)").matches;
 
         if (isIOS && !isStandalone) {
-          // Show iOS-specific instructions
           alert(
             'To enable notifications on iOS:\n\n1. Tap the Share button\n2. Tap "Add to Home Screen"\n3. Open the app from your Home Screen\n4. Then try enabling notifications again'
           );
@@ -657,32 +656,29 @@
           return;
         }
 
-        // Use the global push manager
-        if (window.pushManager) {
-          const success = await window.pushManager.subscribe();
-
-          if (success) {
-            // Hide the prompt
-            if (window.notificationPromptManager) {
-              window.notificationPromptManager.hidePrompt();
-            }
-
-            // Update status
-            if (window.notificationPromptManager) {
-              window.notificationPromptManager.updateNotificationStatus();
-            }
-
-            // Show success message
-            alert("✅ Notifications enabled successfully!");
-          } else {
-            throw new Error("Subscription failed");
-          }
-        } else {
+        // Wait for push manager to be ready
+        if (!window.pushManager) {
+          console.error("Push manager not loaded yet");
           throw new Error("Push manager not initialized");
+        }
+
+        // Initialize if needed
+        if (!window.pushManager.vapidPublicKey) {
+          await window.pushManager.init();
+        }
+
+        // Subscribe
+        const success = await window.pushManager.subscribe();
+
+        if (success) {
+          this.hidePrompt();
+          this.updateNotificationStatus();
+          // Don't show alert, just update status
+        } else {
+          throw new Error("Subscription failed");
         }
       } catch (error) {
         console.error("Failed to enable notifications:", error);
-        alert("❌ Failed to enable notifications. Please try again.");
 
         if (enableBtn) {
           enableBtn.disabled = false;
