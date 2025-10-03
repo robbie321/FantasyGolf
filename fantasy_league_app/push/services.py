@@ -118,17 +118,12 @@ class PushNotificationService:
         """Send push notification synchronously (for immediate sending)"""
 
         # Get VAPID configuration
-        vapid_private_key_der = current_app.config.get('VAPID_PRIVATE_KEY')
-        vapid_claim_email = current_app.config.get('VAPID_CLAIM_EMAIL')
+        vapid_private_key = current_app.config.get('VAPID_PRIVATE_KEY')  # Keep as string
+        vapid_claims_email = current_app.config.get('VAPID_CLAIM_EMAIL')
 
-        if not vapid_private_key_der or not vapid_claim_email:
+        if not vapid_private_key or not vapid_claims_email:
             current_app.logger.error("VAPID configuration missing")
             return {"error": "VAPID keys not configured", "success": 0, "failed": 0}
-
-        # Convert DER private key to raw bytes
-        vapid_private_key = self._convert_der_private_key(vapid_private_key_der)
-        if not vapid_private_key:
-            return {"error": "Invalid VAPID private key format", "success": 0, "failed": 0}
 
         current_app.logger.info(f"Sending notifications to {len(user_ids)} users")
 
@@ -172,14 +167,14 @@ class PushNotificationService:
             payload["vibrate"] = vibrate
 
         # Send notifications using converted key
-        results = self._send_to_subscriptions_with_raw_key(
-            subscriptions, payload, vapid_private_key, vapid_claim_email
+        results = self._send_to_subscriptions_with_string_key(
+            subscriptions, payload, vapid_private_key, vapid_claims_email
         )
 
         return results
 
     def _send_to_subscriptions_with_raw_key(self, subscriptions, payload, vapid_private_key, vapid_claim_email):
-        """Send notification to multiple subscriptions using raw private key"""
+        """Send notification to multiple subscriptions using string key"""
 
         success_count = 0
         failed_count = 0
@@ -194,11 +189,11 @@ class PushNotificationService:
 
                 current_app.logger.info(f"Sending push to endpoint: {subscription_data.get('endpoint', 'unknown')[:50]}...")
 
-                # Use raw bytes directly - pywebpush expects raw bytes, not base64
+                # Pass the base64url string directly - pywebpush 2.1.0 handles conversion
                 webpush(
                     subscription_info=subscription_data,
                     data=json.dumps(payload),
-                    vapid_private_key=vapid_private_key,  # Use the converted bytes, not the config string
+                    vapid_private_key=vapid_private_key,  # Pass string, not bytes
                     vapid_claims={
                         "sub": vapid_claim_email
                     }
