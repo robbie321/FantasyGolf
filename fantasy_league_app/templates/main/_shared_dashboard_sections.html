@@ -23,9 +23,11 @@
   <!-- </div> -->
 </section>
 
+{% if not current_user.is_club_admin and not current_user.is_site_admin %}
 <section id="profile-section" class="page-section hidden">
   {% include 'components/_user_profile.html' with context %}
 </section>
+{% endif %}
 
 <!-- Tour Schedule Section -->
 <section id="schedule-section" class="page-section hidden">
