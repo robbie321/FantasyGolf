@@ -10,6 +10,7 @@ from flask_mail import Message
 from flask_login import current_user
 from pywebpush import webpush, WebPushException
 from .models import PushSubscription
+from itsdangerous import URLSafeTimedSerializer
 
 import os
 
@@ -265,6 +266,110 @@ def send_email_via_graph(to_email, subject, body):
         raise Exception(f"Failed to send email: {response.text}")
 
     return True
+
+
+def send_verification_email_graph(user_email, token):
+    """Send verification email using Microsoft Graph API"""
+    try:
+        from flask import current_app, url_for
+
+        # Get Azure config
+        client_id = current_app.config.get('AZURE_CLIENT_ID')
+        client_secret = current_app.config.get('AZURE_CLIENT_SECRET')
+        tenant_id = current_app.config.get('AZURE_TENANT_ID')
+        sender_email = current_app.config.get('MAIL_USERNAME')
+
+        if not all([client_id, client_secret, tenant_id, sender_email]):
+            current_app.logger.error("Missing Azure configuration")
+            return False
+
+        # Get access token
+        authority = f"https://login.microsoftonline.com/{tenant_id}"
+        app = msal.ConfidentialClientApplication(
+            client_id,
+            authority=authority,
+            client_credential=client_secret
+        )
+
+        result = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
+
+        if "access_token" not in result:
+            current_app.logger.error(f"Failed to get access token: {result.get('error_description')}")
+            return False
+
+        # Build verification URL
+        verification_url = url_for('auth.verify_email', token=token, _external=True)
+
+        # Email content
+        subject = "Verify Your Fantasy Fairways Account"
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #006a4e;">Welcome to Fantasy Fairways!</h2>
+                <p>Thank you for registering. Please verify your email address to complete your registration.</p>
+                <p style="margin: 30px 0;">
+                    <a href="{verification_url}"
+                       style="background-color: #006a4e; color: white; padding: 12px 30px;
+                              text-decoration: none; border-radius: 5px; display: inline-block;">
+                        Verify Email Address
+                    </a>
+                </p>
+                <p style="color: #666; font-size: 14px;">
+                    If the button doesn't work, copy and paste this link into your browser:
+                </p>
+                <p style="color: #006a4e; word-break: break-all; font-size: 14px;">
+                    {verification_url}
+                </p>
+                <p style="color: #999; font-size: 12px; margin-top: 30px;">
+                    This link will expire in 24 hours. If you didn't create an account, please ignore this email.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Send email via Graph API
+        headers = {
+            'Authorization': f'Bearer {result["access_token"]}',
+            'Content-Type': 'application/json'
+        }
+
+        email_data = {
+            "message": {
+                "subject": subject,
+                "body": {
+                    "contentType": "HTML",
+                    "content": body
+                },
+                "toRecipients": [
+                    {
+                        "emailAddress": {
+                            "address": user_email
+                        }
+                    }
+                ]
+            },
+            "saveToSentItems": "true"
+        }
+
+        response = requests.post(
+            f'https://graph.microsoft.com/v1.0/users/{sender_email}/sendMail',
+            headers=headers,
+            json=email_data,
+            timeout=10
+        )
+
+        if response.status_code == 202:
+            current_app.logger.info(f"Verification email sent successfully to {user_email}")
+            return True
+        else:
+            current_app.logger.error(f"Failed to send email: {response.status_code} - {response.text}")
+            return False
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to send verification email to {user_email}: {e}")
+        return False
 
 def generate_verification_token(user_email):
     """Generate verification token"""
