@@ -92,7 +92,7 @@ def register():
         token = generate_verification_token(user.email)
 
         # Send verification email
-        if send_verification_email_graph(user):
+        if send_verification_email_graph(user.email, token):
             flash('Account created! Please check your email to verify your account before logging in.', 'success')
         else:
             flash('Account created, but failed to send verification email. You can request a new one.', 'warning')
