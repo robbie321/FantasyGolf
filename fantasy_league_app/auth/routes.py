@@ -10,7 +10,7 @@ from . import auth_bp, validators
 from .decorators import redirect_if_authenticated, admin_required, user_required
 from ..forms import (RegistrationForm, UserLoginForm, ClubLoginForm,
                      SiteAdminRegistrationForm, ClubRegistrationForm)
-from ..utils import send_email_verification, send_email_verification_success, check_email_verification_required, validate_email_security, generate_verification_token, send_verification_email_graph
+from ..utils import send_email_verification, send_email_verification_success, check_email_verification_required, validate_email_security, generate_verification_token, send_verification_email_graph, verify_token
 
 # Helper function to create the serializer
 def get_serializer(secret_key):
