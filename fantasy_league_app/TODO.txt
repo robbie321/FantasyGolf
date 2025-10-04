@@ -31,6 +31,7 @@ Tasks []
 ####SIGNUP ####
 ###############
 [✅]Fix user and club registration
+[] verification email not being sent
 
 ###############
 ####LOGIN ####
@@ -42,6 +43,7 @@ Tasks []
 ###############
 [✅] Fix leaderboard css on the leaderboards tab. Total score and thru score are on the same line on mobile devices
 [] Fix league details option on the view league page
+[] check to make sure when 5am check is ran that the entry in the db is reset before the check is ran again
 
 
 ##############
