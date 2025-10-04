@@ -10,7 +10,7 @@ from . import auth_bp, validators
 from .decorators import redirect_if_authenticated, admin_required, user_required
 from ..forms import (RegistrationForm, UserLoginForm, ClubLoginForm,
                      SiteAdminRegistrationForm, ClubRegistrationForm)
-from ..utils import send_email_verification, send_email_verification_success, check_email_verification_required, validate_email_security
+from ..utils import send_email_verification, send_email_verification_success, check_email_verification_required, validate_email_security, generate_verification_token, send_verification_email_graph
 
 # Helper function to create the serializer
 def get_serializer(secret_key):
@@ -89,11 +89,10 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        # Log successful registration
-        current_app.logger.info(f"New user registered: {user.email} from IP: {request.remote_addr}")
+        token = generate_verification_token(user.email)
 
         # Send verification email
-        if send_email_verification(user):
+        if send_verification_email_graph(user):
             flash('Account created! Please check your email to verify your account before logging in.', 'success')
         else:
             flash('Account created, but failed to send verification email. You can request a new one.', 'warning')
@@ -454,34 +453,16 @@ def verify_email(token):
 def resend_verification():
     """Resend email verification"""
 
-    if request.method == 'POST':
-        email = request.form.get('email', '').strip().lower()
-
-        if not email:
-            flash('Please enter your email address.', 'danger')
-            return redirect(url_for('auth.resend_verification'))
-
-        user = User.query.filter_by(email=email).first()
-
-        if not user:
-            # Don't reveal if email exists or not for security
-            flash('If an account with that email exists, a verification email has been sent.', 'info')
-            return redirect(url_for('auth.resend_verification'))
-
-        if user.email_verified:
+    if user.email_verified:
             flash('This email address is already verified. You can log in now.', 'info')
             return redirect(url_for('auth.login_choice'))
 
-        if not user.can_resend_verification_email():
-            flash('Please wait 5 minutes before requesting another verification email.', 'warning')
-            return redirect(url_for('auth.resend_verification'))
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        token = generate_verification_token(email)
 
-        # Generate new token and send email
-        user.generate_email_verification_token()
-        db.session.commit()
-
-        if send_email_verification(user):
-            flash('Verification email sent! Please check your inbox and spam folder.', 'success')
+        if send_verification_email_graph(current_user.email, token):
+            flash('Verification email sent! Please check your inbox.', 'success')
         else:
             flash('Failed to send verification email. Please try again later.', 'danger')
 
