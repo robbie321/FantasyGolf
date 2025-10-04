@@ -660,18 +660,16 @@ def stripe_connect_refresh():
 
 @main_bp.route('/service-worker.js')
 def service_worker():
-    """Serve service worker from root for proper scope"""
-
+    """Serve service worker from root with proper headers"""
     response = send_from_directory(
-        os.path.join(current_app.root_path, 'static'),
+        current_app.static_folder,
         'service-worker.js',
         mimetype='application/javascript'
     )
-
-    # Add headers to prevent caching
+    # Prevent caching during development
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response.headers['Service-Worker-Allowed'] = '/'
-
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
     return response
 
 @main_bp.route('/health/cache')

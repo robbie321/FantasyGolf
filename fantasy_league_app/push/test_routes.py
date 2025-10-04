@@ -333,6 +333,7 @@ def test_dashboard():
     </div>
 
     <script>
+        // Logging utilities
         const log = {
             success: (msg) => addLog(msg, 'success'),
             error: (msg) => addLog(msg, 'error'),
@@ -344,7 +345,8 @@ def test_dashboard():
             const logContainer = document.getElementById('debug-log');
             const entry = document.createElement('div');
             entry.className = `log-entry log-${type}`;
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
             logContainer.appendChild(entry);
             logContainer.scrollTop = logContainer.scrollHeight;
         }
@@ -354,7 +356,10 @@ def test_dashboard():
         }
 
         function updateStatus(elementId, content) {
-            document.getElementById(elementId).innerHTML = content;
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = content;
+            }
         }
 
         async function detectPlatform() {
@@ -384,7 +389,6 @@ def test_dashboard():
 
             log.info(`Platform: ${platform}, Browser: ${browser}`);
 
-            // Check if standalone mode (PWA) on iOS
             if (isIOS && window.navigator.standalone) {
                 log.success('Running as standalone PWA on iOS ✅');
             } else if (isIOS && !window.navigator.standalone) {
@@ -395,7 +399,6 @@ def test_dashboard():
         async function checkSupport() {
             log.info('Checking browser support...');
 
-            // Check Notification API
             if (!('Notification' in window)) {
                 log.error('❌ Notification API not supported');
                 updateStatus('permission-status', '<span class="status-badge status-denied">Not Supported</span>');
@@ -403,7 +406,6 @@ def test_dashboard():
             }
             log.success('✅ Notification API supported');
 
-            // Check Service Worker
             if (!('serviceWorker' in navigator)) {
                 log.error('❌ Service Workers not supported');
                 updateStatus('sw-status', '❌ Not Supported');
@@ -412,7 +414,6 @@ def test_dashboard():
             log.success('✅ Service Workers supported');
             updateStatus('sw-status', '✅ Supported');
 
-            // Check Push Manager
             if (!('PushManager' in window)) {
                 log.error('❌ Push API not supported');
                 updateStatus('pm-status', '❌ Not Supported');
@@ -421,12 +422,10 @@ def test_dashboard():
             log.success('✅ Push API supported');
             updateStatus('pm-status', '✅ Supported');
 
-            // Check current permission
             const permission = Notification.permission;
             log.info(`Current permission: ${permission}`);
             updatePermissionStatus(permission);
 
-            // Check Service Worker registration
             try {
                 const registration = await navigator.serviceWorker.getRegistration();
                 if (registration) {
@@ -434,7 +433,6 @@ def test_dashboard():
                     log.info(`SW scope: ${registration.scope}`);
                     log.info(`SW state: ${registration.active ? registration.active.state : 'no active worker'}`);
 
-                    // Check subscription
                     const subscription = await registration.pushManager.getSubscription();
                     if (subscription) {
                         log.success('✅ Push subscription exists');
@@ -464,7 +462,6 @@ def test_dashboard():
             }
 
             try {
-                // Check if already registered
                 let registration = await navigator.serviceWorker.getRegistration();
 
                 if (registration) {
@@ -472,14 +469,12 @@ def test_dashboard():
                     log.info(`Scope: ${registration.scope}`);
                     log.info(`State: ${registration.active ? registration.active.state : 'unknown'}`);
 
-                    // Check if it's active
                     if (registration.active && registration.active.state === 'activated') {
                         log.success('✅ Service Worker is active and ready');
                         updateStatus('sw-status', '✅ Registered & Active');
                         return true;
                     }
 
-                    // If not active, try to update it
                     log.info('Updating Service Worker...');
                     await registration.update();
                     await navigator.serviceWorker.ready;
@@ -488,12 +483,10 @@ def test_dashboard():
                     return true;
                 }
 
-                // Not registered yet, register it
                 log.info('Registering new Service Worker...');
 
-                // Serve from root to allow root scope
                 const timestamp = new Date().getTime();
-                const swUrl = '/service-worker.js?v=' + timestamp;
+                const swUrl = `/service-worker.js?v=${timestamp}`;
 
                 log.info(`Looking for service worker at: ${swUrl}`);
 
@@ -505,14 +498,12 @@ def test_dashboard():
                 log.success('✅ Service Worker registered!');
                 log.info(`Scope: ${registration.scope}`);
 
-                // Wait for it to be ready
                 log.info('Waiting for Service Worker to activate...');
                 await navigator.serviceWorker.ready;
 
                 log.success('✅ Service Worker is now active and ready!');
                 updateStatus('sw-status', '✅ Registered & Active');
 
-                // Check final state
                 const finalReg = await navigator.serviceWorker.getRegistration();
                 if (finalReg && finalReg.active) {
                     log.info(`Final state: ${finalReg.active.state}`);
@@ -525,9 +516,8 @@ def test_dashboard():
                 log.error(`❌ Service Worker registration failed: ${error.message}`);
                 log.error(`Error details: ${error.stack}`);
 
-                // Try to provide helpful error messages
                 if (error.message.includes('404')) {
-                    log.error('📁 Service worker file not found at /static/js/service-worker.js');
+                    log.error('📁 Service worker file not found at /service-worker.js');
                     log.info('Make sure the file exists and is accessible');
                 } else if (error.message.includes('https')) {
                     log.error('🔒 HTTPS required for service workers (except on localhost)');
@@ -588,7 +578,6 @@ def test_dashboard():
             log.info('Starting push subscription process...');
 
             try {
-                // Get VAPID public key
                 log.info('Fetching VAPID public key...');
                 const response = await fetch('/api/push/vapid-public-key');
                 const data = await response.json();
@@ -600,21 +589,18 @@ def test_dashboard():
 
                 log.success(`✅ Got VAPID key: ${data.publicKey.substring(0, 20)}...`);
 
-                // Get or register Service Worker
                 log.info('Getting Service Worker registration...');
                 let registration = await navigator.serviceWorker.getRegistration();
 
                 if (!registration) {
                     log.warning('No registration found, registering Service Worker...');
-                    registration = await navigator.serviceWorker.register('/static/js/service-worker.js');
+                    registration = await navigator.serviceWorker.register('/service-worker.js');
                     log.success('✅ Service Worker registered');
 
-                    // Wait for activation
                     await navigator.serviceWorker.ready;
                     log.success('✅ Service Worker ready');
                 }
 
-                // Check if already subscribed
                 let subscription = await registration.pushManager.getSubscription();
 
                 if (subscription) {
@@ -622,11 +608,9 @@ def test_dashboard():
                     await subscription.unsubscribe();
                 }
 
-                // Convert VAPID key
                 const vapidPublicKey = urlBase64ToUint8Array(data.publicKey);
                 log.info('VAPID key converted to Uint8Array');
 
-                // Subscribe
                 log.info('Creating push subscription...');
                 subscription = await registration.pushManager.subscribe({
                     userVisibleOnly: true,
@@ -636,7 +620,6 @@ def test_dashboard():
                 log.success('✅ Push subscription created!');
                 log.info(`Endpoint: ${subscription.endpoint.substring(0, 50)}...`);
 
-                // Send to server
                 log.info('Sending subscription to server...');
                 const saveResponse = await fetch('/api/push/subscribe', {
                     method: 'POST',
@@ -652,7 +635,6 @@ def test_dashboard():
                     log.success('✅ Subscription saved to server!');
                     updateStatus('sub-status', '✅ Subscribed');
 
-                    // Refresh page to show new subscription
                     setTimeout(() => {
                         log.info('Refreshing page...');
                         location.reload();
@@ -718,11 +700,9 @@ def test_dashboard():
                     return;
                 }
 
-                // Unsubscribe from push
                 await subscription.unsubscribe();
                 log.success('✅ Unsubscribed from push');
 
-                // Remove from server
                 const response = await fetch('/api/push/unsubscribe', {
                     method: 'POST',
                     headers: {
@@ -750,7 +730,7 @@ def test_dashboard():
         function urlBase64ToUint8Array(base64String) {
             const padding = '='.repeat((4 - base64String.length % 4) % 4);
             const base64 = (base64String + padding)
-                .replace(/\\-/g, '+')
+                .replace(/-/g, '+')
                 .replace(/_/g, '/');
 
             const rawData = window.atob(base64);
@@ -764,8 +744,30 @@ def test_dashboard():
 
         // Initialize on load
         window.addEventListener('load', async () => {
+            console.log('[Test Dashboard] Initializing...');
+
             await detectPlatform();
             await checkSupport();
+
+            // Attach event listeners
+            const buttons = {
+                'check-support-btn': checkSupport,
+                'register-sw-btn': registerServiceWorker,
+                'request-permission-btn': requestPermission,
+                'subscribe-btn': subscribeToPush,
+                'test-notification-btn': sendTestNotification,
+                'unsubscribe-btn': unsubscribe
+            };
+
+            Object.entries(buttons).forEach(([id, handler]) => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.addEventListener('click', handler);
+                    console.log(`[Test Dashboard] Attached listener to ${id}`);
+                }
+            });
+
+            console.log('[Test Dashboard] Initialization complete');
         });
     </script>
 </body>

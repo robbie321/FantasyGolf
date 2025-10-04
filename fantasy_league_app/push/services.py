@@ -99,7 +99,6 @@ class PushNotificationService:
             return None, None
 
 
-
     def send_notification_sync(
         self,
         user_ids: List[int],
@@ -114,15 +113,15 @@ class PushNotificationService:
         require_interaction: bool = False,
         tag: Optional[str] = None,
         vibrate: Optional[List[int]] = None
-        ) -> Dict[str, Any]:
-        """Send push notification synchronously (for immediate sending)"""
+    ) -> Dict[str, Any]:
+        """Send push notification synchronously"""
 
-        # Get VAPID configuration
-        vapid_private_key = current_app.config.get('VAPID_PRIVATE_KEY')  # Keep as string
+        # Get VAPID configuration - now properly converted
+        vapid_private_key = current_app.config.get('VAPID_PRIVATE_KEY')
         vapid_claims_email = current_app.config.get('VAPID_CLAIM_EMAIL')
 
         if not vapid_private_key or not vapid_claims_email:
-            current_app.logger.error("VAPID configuration missing")
+            current_app.logger.error("VAPID configuration missing or invalid")
             return {"error": "VAPID keys not configured", "success": 0, "failed": 0}
 
         current_app.logger.info(f"Sending notifications to {len(user_ids)} users")
@@ -172,6 +171,54 @@ class PushNotificationService:
         )
 
         return results
+
+        # current_app.logger.info(f"Sending notifications to {len(user_ids)} users")
+
+        # # Filter users based on preferences
+        # filtered_users = self._filter_users_by_preferences(user_ids, notification_type)
+
+        # if not filtered_users:
+        #     return {"success": 0, "failed": 0, "message": "No users with matching preferences"}
+
+        # # Get active subscriptions for filtered users
+        # subscriptions = PushSubscription.query.filter(
+        #     PushSubscription.user_id.in_(filtered_users)
+        # ).all()
+
+        # if not subscriptions:
+        #     current_app.logger.warning("No active subscriptions found")
+        #     return {"success": 0, "failed": 0, "message": "No active subscriptions found"}
+
+        # current_app.logger.info(f"Found {len(subscriptions)} active subscriptions")
+
+        # # Prepare notification payload
+        # payload = {
+        #     "title": title,
+        #     "body": body,
+        #     "type": notification_type,
+        #     "icon": icon or "/static/images/icon-192x192.png",
+        #     "badge": badge or "/static/images/badge-72x72.png",
+        #     "tag": tag or notification_type,
+        #     "requireInteraction": require_interaction,
+        #     "data": {
+        #         **(data or {}),
+        #         "url": url,
+        #         "timestamp": datetime.utcnow().isoformat(),
+        #         "type": notification_type
+        #     }
+        # }
+
+        # if actions:
+        #     payload["actions"] = actions
+        # if vibrate:
+        #     payload["vibrate"] = vibrate
+
+        # # Send notifications using converted key
+        # results = self._send_to_subscriptions_with_string_key(
+        #     subscriptions, payload, vapid_private_key, vapid_claims_email
+        # )
+
+        # return results
 
     def _send_to_subscriptions_with_string_key(self, subscriptions, payload, vapid_private_key, vapid_claim_email):
         """Send notification to multiple subscriptions using string key"""
