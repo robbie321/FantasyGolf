@@ -279,6 +279,12 @@ def send_verification_email_graph(user_email, token):
         tenant_id = current_app.config.get('AZURE_TENANT_ID')
         sender_email = current_app.config.get('MAIL_USERNAME')
 
+        # DEBUG: Log which values are missing
+        current_app.logger.info(f"AZURE_CLIENT_ID: {'SET' if client_id else 'MISSING'}")
+        current_app.logger.info(f"AZURE_CLIENT_SECRET: {'SET' if client_secret else 'MISSING'}")
+        current_app.logger.info(f"AZURE_TENANT_ID: {'SET' if tenant_id else 'MISSING'}")
+        current_app.logger.info(f"MAIL_USERNAME: {sender_email if sender_email else 'MISSING'}")
+
         if not all([client_id, client_secret, tenant_id, sender_email]):
             current_app.logger.error("Missing Azure configuration")
             return False
