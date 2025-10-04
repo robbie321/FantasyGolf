@@ -453,12 +453,6 @@ def verify_email(token):
 def resend_verification():
     """Resend email verification"""
 
-
-
-    if user.email_verified:
-            flash('This email address is already verified. You can log in now.', 'info')
-            return redirect(url_for('auth.login_choice'))
-
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
 
