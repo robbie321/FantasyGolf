@@ -453,15 +453,33 @@ def verify_email(token):
 def resend_verification():
     """Resend email verification"""
 
-    if current_user.email_verified:
+
+
+    if user.email_verified:
             flash('This email address is already verified. You can log in now.', 'info')
             return redirect(url_for('auth.login_choice'))
 
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
+
+        if not email:
+            flash('Please enter your email address.', 'danger')
+            return redirect(url_for('auth.resend_verification'))
+
+        user = User.query.filter_by(email=email).first()
+
+        if not user:
+            # Don't reveal if email exists or not for security
+            flash('If an account with that email exists, a verification email has been sent.', 'info')
+            return redirect(url_for('auth.resend_verification'))
+
+        if user.email_verified:
+            flash('This email address is already verified. You can log in now.', 'info')
+            return redirect(url_for('auth.login_choice'))
+
         token = generate_verification_token(email)
 
-        if send_verification_email_graph(current_user.email, token):
+        if send_verification_email_graph(user.email, token):
             flash('Verification email sent! Please check your inbox.', 'success')
         else:
             flash('Failed to send verification email. Please try again later.', 'danger')
