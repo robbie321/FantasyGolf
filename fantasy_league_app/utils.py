@@ -1,4 +1,6 @@
 import json
+import msal
+import requests
 from fantasy_league_app import db, mail
 from fantasy_league_app.models import Player
 from datetime import datetime, timedelta
@@ -206,6 +208,81 @@ def send_email(subject, recipients, html_body):
     except Exception as e:
         current_app.logger.error(f"Failed to send email to {recipients}: {e}")
 
+
+def send_email_via_graph(to_email, subject, body):
+    """Send email using Microsoft Graph API"""
+
+    # Get config
+    client_id = current_app.config.get('AZURE_CLIENT_ID')
+    client_secret = current_app.config.get('AZURE_CLIENT_SECRET')
+    tenant_id = current_app.config.get('AZURE_TENANT_ID')
+    sender_email = current_app.config.get('MAIL_USERNAME')
+
+    # Get access token
+    authority = f"https://login.microsoftonline.com/{tenant_id}"
+    app = msal.ConfidentialClientApplication(
+        client_id,
+        authority=authority,
+        client_credential=client_secret
+    )
+
+    result = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
+
+    if "access_token" not in result:
+        raise Exception(f"Could not get access token: {result.get('error_description')}")
+
+    # Send email via Graph API
+    headers = {
+        'Authorization': f'Bearer {result["access_token"]}',
+        'Content-Type': 'application/json'
+    }
+
+    email_data = {
+        "message": {
+            "subject": subject,
+            "body": {
+                "contentType": "HTML",
+                "content": body
+            },
+            "toRecipients": [
+                {
+                    "emailAddress": {
+                        "address": to_email
+                    }
+                }
+            ]
+        },
+        "saveToSentItems": "true"
+    }
+
+    response = requests.post(
+        f'https://graph.microsoft.com/v1.0/users/{sender_email}/sendMail',
+        headers=headers,
+        json=email_data
+    )
+
+    if response.status_code != 202:
+        raise Exception(f"Failed to send email: {response.text}")
+
+    return True
+
+def generate_verification_token(user_email):
+    """Generate verification token"""
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    return serializer.dumps(user_email, salt='email-verification')
+
+
+def verify_token(token, expiration=86400):
+    """Verify token (default 24 hours)"""
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    try:
+        email = serializer.loads(token, salt='email-verification', max_age=expiration)
+        return email
+    except:
+        return None
+
+####################################################
+############### use graph above
 
 def send_email_verification(user):
     """Send email verification email to user"""
