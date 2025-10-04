@@ -87,6 +87,10 @@ class Config:
 
 
     # Email Configuration
+    AZURE_CLIENT_ID = os.environ.get('AZURE_CLIENT_ID')
+    AZURE_CLIENT_SECRET = os.environ.get('AZURE_CLIENT_SECRET')
+    AZURE_TENANT_ID = os.environ.get('AZURE_TENANT_ID')
+
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')
     MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', 'on', '1']
