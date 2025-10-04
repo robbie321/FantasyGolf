@@ -1,9 +1,9 @@
-// static/js/service-worker.js
+// static/service-worker.js
 // Enhanced Service Worker for Fantasy Fairways
 // Handles push notifications, caching, and offline functionality
 
-const CACHE_NAME = 'fantasy-fairways-v1.0.1';
-const STATIC_CACHE = 'fantasy-fairways-static-v1.0.1';
+const CACHE_NAME = 'fantasy-fairways-v1.0.2';
+const STATIC_CACHE = 'fantasy-fairways-static-v1.0.2';
 
 // Define what to cache - only files that exist
 const STATIC_ASSETS = [
@@ -85,16 +85,21 @@ self.addEventListener('fetch', event => {
     );
 });
 
-// Push notification event handler
-self.addEventListener('push', event => {
+// ============================================
+// ENHANCED PUSH NOTIFICATION EVENT HANDLER
+// Fix 6: Android & iOS Compatibility
+// ============================================
+self.addEventListener('push', function(event) {
     console.log('[SW] Push notification received:', event);
+    console.log('[SW] Push event data exists:', !!event.data);
 
+    // Default notification configuration
     let notificationData = {
         title: 'Fantasy Fairways',
-        body: 'You have a new update!',
+        body: 'You have a new notification',
         icon: '/static/images/icon-192x192.png',
         badge: '/static/images/badge-72x72.png',
-        tag: 'general',
+        tag: 'default',
         requireInteraction: false,
         data: {
             url: '/dashboard',
@@ -102,12 +107,14 @@ self.addEventListener('push', event => {
         }
     };
 
-    // Parse push data if available
+    // Parse push event data
     if (event.data) {
         try {
+            // Try to parse as JSON first
             const pushData = event.data.json();
-            console.log('[SW] Push data:', pushData);
+            console.log('[SW] Parsed push data:', pushData);
 
+            // Build notification from push data
             notificationData = {
                 title: pushData.title || notificationData.title,
                 body: pushData.body || notificationData.body,
@@ -115,35 +122,52 @@ self.addEventListener('push', event => {
                 badge: pushData.badge || notificationData.badge,
                 tag: pushData.tag || notificationData.tag,
                 requireInteraction: pushData.requireInteraction || false,
+                // Handle nested data object properly
                 data: {
                     url: pushData.data?.url || pushData.url || '/dashboard',
-                    type: pushData.type || 'general',
+                    type: pushData.data?.type || pushData.type || 'general',
                     timestamp: Date.now(),
-                    ...pushData.data
+                    // Preserve any additional data
+                    ...(pushData.data || {})
                 }
             };
 
-            // Add actions if provided
+            // Add actions if provided (Android & Chrome support)
             if (pushData.actions && Array.isArray(pushData.actions)) {
-                notificationData.actions = pushData.actions;
+                notificationData.actions = pushData.actions.map(action => ({
+                    action: action.action,
+                    title: action.title,
+                    icon: action.icon || undefined
+                }));
             }
 
-            // Add vibration if provided
+            // Add vibration pattern if provided (Android support)
             if (pushData.vibrate && Array.isArray(pushData.vibrate)) {
                 notificationData.vibrate = pushData.vibrate;
             }
 
-            // Enhance based on notification type
+            // Apply type-based enhancements
             notificationData = enhanceNotification(notificationData);
 
         } catch (e) {
-            console.error('[SW] Error parsing push data:', e);
-            notificationData.body = event.data.text() || notificationData.body;
+            console.error('[SW] Error parsing push data as JSON:', e);
+            // Fallback to text if JSON parsing fails
+            try {
+                const textData = event.data.text();
+                console.log('[SW] Push data as text:', textData);
+                notificationData.body = textData || notificationData.body;
+            } catch (textError) {
+                console.error('[SW] Error parsing push data as text:', textError);
+            }
         }
+    } else {
+        console.warn('[SW] No push data received, using defaults');
     }
 
-    event.waitUntil(
-        self.registration.showNotification(notificationData.title, {
+    // Show the notification
+    const promiseChain = self.registration.showNotification(
+        notificationData.title,
+        {
             body: notificationData.body,
             icon: notificationData.icon,
             badge: notificationData.badge,
@@ -153,52 +177,149 @@ self.addEventListener('push', event => {
             actions: notificationData.actions || [],
             vibrate: notificationData.vibrate || [200, 100, 200],
             timestamp: Date.now(),
-            renotify: true
-        }).then(() => {
-            console.log('[SW] Notification shown successfully');
-        }).catch(error => {
-            console.error('[SW] Error showing notification:', error);
-        })
-    );
+            renotify: true,
+            // Android-specific options
+            silent: false,
+            // iOS compatibility
+            dir: 'auto',
+            lang: 'en'
+        }
+    ).then(() => {
+        console.log('[SW] ✅ Notification shown successfully');
+    }).catch(error => {
+        console.error('[SW] ❌ Error showing notification:', error);
+        // Fallback: try showing a simpler notification
+        return self.registration.showNotification(
+            notificationData.title,
+            {
+                body: notificationData.body,
+                icon: notificationData.icon,
+                data: notificationData.data
+            }
+        );
+    });
+
+    event.waitUntil(promiseChain);
 });
 
-// Notification click event handler
-self.addEventListener('notificationclick', event => {
-    console.log('[SW] Notification clicked:', event.notification);
+// ============================================
+// ENHANCED NOTIFICATION CLICK HANDLER
+// Fix 6: Better client handling for Android & iOS
+// ============================================
+self.addEventListener('notificationclick', function(event) {
+    console.log('[SW] Notification clicked:', event.notification.tag);
+    console.log('[SW] Action clicked:', event.action || 'default');
 
     const notification = event.notification;
     const data = notification.data || {};
 
-    // Close the notification
+    // Close the notification immediately
     notification.close();
 
-    // Handle different click actions
+    // Determine URL to open
+    let urlToOpen = '/';
+
+    if (event.action) {
+        // Handle specific action clicks
+        const actionUrls = {
+            'view-league': data.url || '/user_dashboard',
+            'view-leaderboard': '/user_dashboard#leaderboards-section',
+            'view-live': '/user_dashboard#leaderboards-section',
+            'view-team': '/user_dashboard#dashboard-section',
+            'view-winnings': '/user_dashboard',
+            'dismiss': null
+        };
+        urlToOpen = actionUrls[event.action];
+
+        // If dismiss action, just close notification
+        if (event.action === 'dismiss') {
+            console.log('[SW] Notification dismissed via action');
+            event.waitUntil(logNotificationAction(event.action, data));
+            return;
+        }
+    } else {
+        // Default click - use URL from notification data
+        urlToOpen = data.url || '/dashboard';
+    }
+
+    console.log('[SW] Opening URL:', urlToOpen);
+
+    // Handle navigation
     event.waitUntil(
-        (async () => {
-            if (event.action) {
-                await handleNotificationAction(event.action, data);
-            } else {
-                await handleNotificationClick(data);
+        clients.matchAll({
+            type: 'window',
+            includeUncontrolled: true
+        })
+        .then(function(clientList) {
+            console.log('[SW] Found', clientList.length, 'open clients');
+
+            // Try to find an existing client to focus
+            for (let i = 0; i < clientList.length; i++) {
+                const client = clientList[i];
+                console.log('[SW] Checking client:', client.url);
+
+                // If we find a matching client, focus it
+                if (client.url.includes(urlToOpen.split('#')[0]) && 'focus' in client) {
+                    console.log('[SW] Focusing existing client');
+                    // Navigate to specific section if hash exists
+                    if (urlToOpen.includes('#')) {
+                        client.postMessage({
+                            type: 'NAVIGATE_HASH',
+                            hash: urlToOpen.split('#')[1]
+                        });
+                    }
+                    return client.focus();
+                }
+
+                // Otherwise focus the first available client and navigate
+                if ('focus' in client) {
+                    console.log('[SW] Focusing first available client');
+                    client.postMessage({
+                        type: 'NAVIGATE',
+                        url: urlToOpen
+                    });
+                    return client.focus();
+                }
             }
-        })()
+
+            // No clients found, open new window
+            console.log('[SW] No existing clients, opening new window');
+            if (clients.openWindow) {
+                return clients.openWindow(urlToOpen);
+            }
+        })
+        .then(() => {
+            // Log analytics
+            if (event.action) {
+                return logNotificationAction(event.action, data);
+            } else {
+                return logNotificationClicked(data);
+            }
+        })
+        .catch(error => {
+            console.error('[SW] Error handling notification click:', error);
+        })
     );
 });
 
 // Notification close event handler
 self.addEventListener('notificationclose', event => {
-    console.log('[SW] Notification closed:', event.notification);
+    console.log('[SW] Notification closed:', event.notification.tag);
 
     // Log notification dismissal analytics
     const data = event.notification.data || {};
     event.waitUntil(logNotificationDismissed(data));
 });
 
-// Helper function to enhance notifications
+// Helper function to enhance notifications based on type
 function enhanceNotification(data) {
+    const type = data.data?.type || 'general';
+
     const enhancements = {
         'league_update': {
             icon: '/static/images/icon-192x192.png',
             requireInteraction: true,
+            vibrate: [200, 100, 200],
             actions: [
                 { action: 'view-league', title: 'View League' },
                 { action: 'dismiss', title: 'Dismiss' }
@@ -226,90 +347,32 @@ function enhanceNotification(data) {
                 { action: 'view-winnings', title: 'View Winnings' }
             ]
         },
+        'rank_change': {
+            vibrate: [100, 100, 100],
+            actions: [
+                { action: 'view-league', title: 'View League' }
+            ]
+        },
         'test': {
             icon: '/static/images/icon-192x192.png',
-            requireInteraction: false
+            requireInteraction: false,
+            vibrate: [200]
         }
     };
 
-    const enhancement = enhancements[data.type || data.data?.type];
-    if (enhancement) {
-        return {
-            ...data,
-            ...enhancement,
-            // Keep existing actions if they exist
-            actions: enhancement.actions || data.actions
-        };
-    }
+    const enhancement = enhancements[type] || {};
 
-    return data;
-}
-
-async function handleNotificationClick(data) {
-    const urlToOpen = data.url || '/dashboard';
-
-    try {
-        // Check if any client is already open
-        const clients = await self.clients.matchAll({
-            type: 'window',
-            includeUncontrolled: true
-        });
-
-        // If a client is open, focus it and navigate
-        if (clients.length > 0) {
-            const client = clients[0];
-            await client.focus();
-            client.postMessage({
-                type: 'NAVIGATE',
-                url: urlToOpen,
-                data: data
-            });
-        } else {
-            // Open new window
-            await self.clients.openWindow(urlToOpen);
-        }
-
-        // Log analytics
-        await logNotificationClicked(data);
-    } catch (error) {
-        console.error('[SW] Error handling notification click:', error);
-    }
-}
-
-async function handleNotificationAction(action, data) {
-    const actions = {
-        'view-league': () => navigateToUrl(data.url || '/user_dashboard'),
-        'view-leaderboard': () => navigateToUrl('/user_dashboard#leaderboards'),
-        'view-live': () => navigateToUrl('/user_dashboard#leaderboards'),
-        'view-team': () => navigateToUrl('/user_dashboard'),
-        'view-winnings': () => navigateToUrl('/user_dashboard'),
-        'dismiss': () => Promise.resolve()
+    // Merge enhancement with existing data
+    return {
+        ...data,
+        icon: enhancement.icon || data.icon,
+        requireInteraction: enhancement.requireInteraction !== undefined
+            ? enhancement.requireInteraction
+            : data.requireInteraction,
+        vibrate: enhancement.vibrate || data.vibrate,
+        // Only add actions if not already present
+        actions: data.actions || enhancement.actions || []
     };
-
-    const actionHandler = actions[action];
-    if (actionHandler) {
-        await actionHandler();
-        await logNotificationAction(action, data);
-    }
-}
-
-async function navigateToUrl(url) {
-    try {
-        const clients = await self.clients.matchAll({
-            type: 'window',
-            includeUncontrolled: true
-        });
-
-        if (clients.length > 0) {
-            const client = clients[0];
-            await client.focus();
-            client.postMessage({ type: 'NAVIGATE', url: url });
-        } else {
-            await self.clients.openWindow(url);
-        }
-    } catch (error) {
-        console.error('[SW] Error navigating to URL:', error);
-    }
 }
 
 // Analytics functions
@@ -324,6 +387,7 @@ async function logNotificationClicked(data) {
                 tag: data.tag
             })
         });
+        console.log('[SW] Logged notification clicked');
     } catch (error) {
         console.log('[SW] Failed to log notification clicked:', error);
     }
@@ -340,6 +404,7 @@ async function logNotificationDismissed(data) {
                 tag: data.tag
             })
         });
+        console.log('[SW] Logged notification dismissed');
     } catch (error) {
         console.log('[SW] Failed to log notification dismissed:', error);
     }
@@ -357,6 +422,7 @@ async function logNotificationAction(action, data) {
                 tag: data.tag
             })
         });
+        console.log('[SW] Logged notification action:', action);
     } catch (error) {
         console.log('[SW] Failed to log notification action:', error);
     }
@@ -364,9 +430,11 @@ async function logNotificationAction(action, data) {
 
 // Listen for messages from main thread
 self.addEventListener('message', event => {
+    console.log('[SW] Message received:', event.data);
+
     if (event.data && event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
     }
 });
 
-console.log('[SW] Service Worker registered successfully');
+console.log('[SW] Service Worker v1.0.2 registered successfully');

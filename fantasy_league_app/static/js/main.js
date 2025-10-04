@@ -8,6 +8,28 @@ import { setupModalHandlers, setupSettingsHandlers } from './ui.js';
 import { setupViews } from './views.js';
 import { setupLeaderboards } from './leaderboard.js';
 
+// ============================================
+// SERVICE WORKER MESSAGE HANDLER
+// Handle messages from service worker (Fix 6)
+// ============================================
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', event => {
+        console.log('[Main] Message from Service Worker:', event.data);
+
+        if (event.data.type === 'NAVIGATE') {
+            console.log('[Main] Navigating to:', event.data.url);
+            window.location.href = event.data.url;
+        } else if (event.data.type === 'NAVIGATE_HASH') {
+            console.log('[Main] Navigating to hash:', event.data.hash);
+            window.location.hash = event.data.hash;
+            // Trigger hash change event for SPA navigation
+            window.dispatchEvent(new HashChangeEvent('hashchange'));
+        }
+    });
+
+    console.log('[Main] Service Worker message listener registered');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Initializing professional dashboard application...");
 
@@ -150,7 +172,7 @@ export function showNotification(message, type = 'success') {
                 notification.parentNode.removeChild(notification);
             }
         }, 300);
-    }, 5000);
+    }, 3000);
 
     // Manual close
     const closeBtn = notification.querySelector('.notification-close');
