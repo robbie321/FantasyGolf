@@ -410,19 +410,54 @@ def reset_token(token):
 ##########
 ##Email Verification##
 
+# @auth_bp.route('/verify-email/<token>')
+# def verify_email(token):
+#     """Verify email address using token with enhanced security logging"""
+
+#     # Log verification attempt
+#     current_app.logger.info(f"Email verification attempted with token: {token[:10]}... from IP: {request.remote_addr}")
+
+#     # Find user with this token
+#     user = User.verify_email_token(token)
+
+#     if not user:
+#         # Log failed verification attempt with more details
+#         current_app.logger.warning(
+#             f"Invalid verification token used: {token[:10]}... "
+#             f"from IP: {request.remote_addr} "
+#             f"User-Agent: {request.headers.get('User-Agent', 'Unknown')}"
+#         )
+#         flash('Invalid or expired verification link. Please request a new one.', 'danger')
+#         return redirect(url_for('auth.resend_verification'))
+
+#     if user.email_verified:
+#         current_app.logger.info(f"Already verified email attempted verification: {user.email} from IP: {request.remote_addr}")
+#         flash('Your email has already been verified. You can log in now.', 'info')
+#         return redirect(url_for('auth.login_choice'))
+
+#     # Log successful verification
+#     current_app.logger.info(f"Email successfully verified for user: {user.email} from IP: {request.remote_addr}")
+
+#     # Verify the email
+#     user.verify_email()
+
+#     # Send welcome email
+#     send_email_verification_success(user)
+
+#     flash('Email verified successfully! You can now log in to your account.', 'success')
+#     return redirect(url_for('auth.login_choice'))
+
 @auth_bp.route('/verify-email/<token>')
-@limiter.limit("10 per hour")
 def verify_email(token):
     """Verify email address using token with enhanced security logging"""
 
     # Log verification attempt
     current_app.logger.info(f"Email verification attempted with token: {token[:10]}... from IP: {request.remote_addr}")
 
-    # Find user with this token
-    user = User.verify_email_token(token)
+    # Verify the token and get email
+    email = verify_token(token, expiration=86400)  # 24 hours
 
-    if not user:
-        # Log failed verification attempt with more details
+    if not email:
         current_app.logger.warning(
             f"Invalid verification token used: {token[:10]}... "
             f"from IP: {request.remote_addr} "
@@ -430,6 +465,14 @@ def verify_email(token):
         )
         flash('Invalid or expired verification link. Please request a new one.', 'danger')
         return redirect(url_for('auth.resend_verification'))
+
+    # Find user by email
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        current_app.logger.warning(f"Token valid but user not found: {email}")
+        flash('User not found.', 'danger')
+        return redirect(url_for('auth.login'))
 
     if user.email_verified:
         current_app.logger.info(f"Already verified email attempted verification: {user.email} from IP: {request.remote_addr}")
@@ -440,10 +483,11 @@ def verify_email(token):
     current_app.logger.info(f"Email successfully verified for user: {user.email} from IP: {request.remote_addr}")
 
     # Verify the email
-    user.verify_email()
+    user.email_verified = True
+    db.session.commit()
 
-    # Send welcome email
     send_email_verification_success(user)
+
 
     flash('Email verified successfully! You can now log in to your account.', 'success')
     return redirect(url_for('auth.login_choice'))
