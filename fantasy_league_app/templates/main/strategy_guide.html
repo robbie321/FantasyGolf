@@ -1,0 +1,821 @@
+<!-- fantasy_league_app/templates/main/strategy_guide.html -->
+{% extends 'base.html' %} {% block content %}
+<div class="dashboard-wrapper">
+  {% include 'main/_shared_side_navbar.html' with context %} {% include
+  'main/_shared_bottom_navbar.html' with context %}
+
+  <main class="dashboard-content">
+    <header class="dashboard-header">
+      <div>
+        <h1>
+          <i class="fa-solid fa-book-open"></i> Strategy Guide & Resources
+        </h1>
+        <p class="subtitle">
+          Master fantasy golf with our expert tips and video tutorials
+        </p>
+      </div>
+    </header>
+
+    <!-- Quick Navigation -->
+    <div class="guide-nav">
+      <a href="#getting-started" class="guide-nav-link">
+        <i class="fa-solid fa-rocket"></i>
+        Getting Started
+      </a>
+      <a href="#team-selection" class="guide-nav-link">
+        <i class="fa-solid fa-users-gear"></i>
+        Team Selection
+      </a>
+      <a href="#advanced-tips" class="guide-nav-link">
+        <i class="fa-solid fa-brain"></i>
+        Advanced Tips
+      </a>
+      <a href="#video-tutorials" class="guide-nav-link">
+        <i class="fa-solid fa-video"></i>
+        Video Tutorials
+      </a>
+    </div>
+
+    <!-- Getting Started Section -->
+    <section id="getting-started" class="guide-section">
+      <h2 class="section-title">
+        <i class="fa-solid fa-rocket"></i>
+        Getting Started
+      </h2>
+
+      <div class="guide-cards">
+        <div class="guide-card">
+          <div class="guide-card-icon">
+            <i class="fa-solid fa-question-circle"></i>
+          </div>
+          <h3>What is Fantasy Golf?</h3>
+          <p>
+            Fantasy golf is a game where you build a team of real professional
+            golfers and compete against other players based on how your team
+            performs in actual tournaments.
+          </p>
+          <ul class="guide-list">
+            <li>Select 3 golfers before each tournament</li>
+            <li>Your team's score is the sum of your players' scores</li>
+            <li>Lowest score wins (just like real golf!)</li>
+            <li>Win prizes based on the league structure</li>
+          </ul>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-card-icon">
+            <i class="fa-solid fa-map-location-dot"></i>
+          </div>
+          <h3>How to Join a League</h3>
+          <p>There are several ways to start playing:</p>
+          <ol class="guide-list">
+            <li>
+              <strong>Public Leagues:</strong> Browse and join open leagues
+            </li>
+            <li>
+              <strong>Private Leagues:</strong> Join using a league code from
+              friends or your club
+            </li>
+            <li>
+              <strong>Beginner Leagues:</strong> Start with low-stakes or free
+              leagues
+            </li>
+          </ol>
+          <a href="/browse-leagues?filter=beginner" class="btn btn-outline">
+            <i class="fa-solid fa-graduation-cap"></i>
+            Find Beginner Leagues
+          </a>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-card-icon">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+          <h3>Understanding Entry Fees & Prizes</h3>
+          <p>Each league has its own structure:</p>
+          <ul class="guide-list">
+            <li>
+              <strong>Free Leagues:</strong> No cost to join, perfect for
+              practice
+            </li>
+            <li>
+              <strong>Paid Leagues:</strong> Entry fees create prize pools
+            </li>
+            <li>
+              <strong>Prize Distribution:</strong> Usually top 3 finishers win
+            </li>
+            <li>
+              <strong>Club Leagues:</strong> Hosted by golf clubs for their
+              members
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Team Selection Section -->
+    <section id="team-selection" class="guide-section">
+      <h2 class="section-title">
+        <i class="fa-solid fa-users-gear"></i>
+        Team Selection Strategy
+      </h2>
+
+      <div class="strategy-grid">
+        <div class="strategy-card">
+          <div class="strategy-number">1</div>
+          <h3>Balance Your Team</h3>
+          <p>
+            Don't pick all favorites or all underdogs. A balanced approach works
+            best:
+          </p>
+          <ul class="guide-list">
+            <li>
+              <strong>1 Star Player:</strong> A top-10 ranked golfer (lower
+              odds)
+            </li>
+            <li>
+              <strong>1 Solid Mid-tier:</strong> Consistent performer (medium
+              odds)
+            </li>
+            <li>
+              <strong>1 Sleeper Pick:</strong> High-risk, high-reward player
+              (higher odds)
+            </li>
+          </ul>
+        </div>
+
+        <div class="strategy-card">
+          <div class="strategy-number">2</div>
+          <h3>Research Recent Form</h3>
+          <p>Look at these key factors before selecting players:</p>
+          <ul class="guide-list">
+            <li>Recent tournament finishes (last 3-4 events)</li>
+            <li>Course history at the tournament venue</li>
+            <li>Current world ranking trends</li>
+            <li>Recent interview quotes about preparation</li>
+          </ul>
+        </div>
+
+        <div class="strategy-card">
+          <div class="strategy-number">3</div>
+          <h3>Understand Odds Limits</h3>
+          <p>Many leagues have rules about team selection:</p>
+          <ul class="guide-list">
+            <li>
+              <strong>Total Odds Minimum:</strong> Your team's combined odds
+              must meet a threshold
+            </li>
+            <li>
+              <strong>No Favorites Rule:</strong> Top 5 players may be excluded
+            </li>
+            <li>
+              <strong>Tour Restrictions:</strong> Only players from specific
+              tours
+            </li>
+          </ul>
+          <div class="tip-box">
+            <i class="fa-solid fa-lightbulb"></i>
+            <strong>Pro Tip:</strong> Check league rules before the entry
+            deadline. You can't change your team once the tournament starts!
+          </div>
+        </div>
+
+        <div class="strategy-card">
+          <div class="strategy-number">4</div>
+          <h3>Master the Tiebreaker</h3>
+          <p>The tiebreaker question can determine the winner:</p>
+          <ul class="guide-list">
+            <li>Common question: "What will Player X's Day 2 score be?"</li>
+            <li>Research the player's recent round-by-round scoring</li>
+            <li>Consider course difficulty and weather forecasts</li>
+            <li>Don't just guess randomly - be strategic!</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Advanced Tips Section -->
+    <section id="advanced-tips" class="guide-section">
+      <h2 class="section-title">
+        <i class="fa-solid fa-brain"></i>
+        Advanced Strategies
+      </h2>
+
+      <div class="advanced-tips">
+        <div class="tip-card-large">
+          <h3><i class="fa-solid fa-chart-line"></i> Course Fit Analysis</h3>
+          <p>Not all players perform equally on different courses. Consider:</p>
+          <div class="two-column-list">
+            <div>
+              <h4>Long Courses</h4>
+              <ul>
+                <li>Favor big hitters</li>
+                <li>Distance off tee matters</li>
+                <li>Check driving distance stats</li>
+              </ul>
+            </div>
+            <div>
+              <h4>Technical Courses</h4>
+              <ul>
+                <li>Accuracy over distance</li>
+                <li>Putting performance key</li>
+                <li>Check greens in regulation</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="tip-card-large">
+          <h3><i class="fa-solid fa-calendar-days"></i> Timing Your Entry</h3>
+          <p>Join leagues strategically:</p>
+          <ul class="guide-list">
+            <li>
+              <strong>Early Bird:</strong> Lock in players before odds change
+            </li>
+            <li>
+              <strong>Weather Watch:</strong> Check forecasts - wind and rain
+              affect scoring
+            </li>
+            <li>
+              <strong>Injury Reports:</strong> Monitor player withdrawals and
+              fitness
+            </li>
+            <li>
+              <strong>Tee Times:</strong> Earlier tee times can be advantageous
+              in bad weather
+            </li>
+          </ul>
+        </div>
+
+        <div class="tip-card-large">
+          <h3><i class="fa-solid fa-users"></i> League Size Matters</h3>
+          <p>Adjust strategy based on competition:</p>
+          <ul class="guide-list">
+            <li>
+              <strong>Small Leagues (5-15 players):</strong> Safer picks work
+              well
+            </li>
+            <li>
+              <strong>Large Leagues (50+ players):</strong> Need riskier picks
+              to stand out
+            </li>
+            <li>
+              <strong>Head-to-Head:</strong> Focus on consistency over home runs
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    {% if is_guest %}
+    <div class="signup-cta">
+      <h3>Ready to put these strategies to work?</h3>
+      <p>Join Fantasy Fairways and start competing today!</p>
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">
+        Sign Up Free
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Video Tutorials Section -->
+    <section id="video-tutorials" class="guide-section">
+      <h2 class="section-title">
+        <i class="fa-solid fa-video"></i>
+        Video Tutorials
+      </h2>
+
+      <div class="video-grid">
+        <div class="video-card">
+          <div class="video-thumbnail">
+            <i class="fa-solid fa-play-circle"></i>
+            <span class="video-duration">3:45</span>
+          </div>
+          <div class="video-info">
+            <h4>Getting Started with Fantasy Fairways</h4>
+            <p>Learn the basics in under 4 minutes</p>
+            <button class="btn btn-outline btn-sm" onclick="playVideo('intro')">
+              <i class="fa-solid fa-play"></i>
+              Watch Tutorial
+            </button>
+          </div>
+        </div>
+
+        <div class="video-card">
+          <div class="video-thumbnail">
+            <i class="fa-solid fa-play-circle"></i>
+            <span class="video-duration">5:20</span>
+          </div>
+          <div class="video-info">
+            <h4>How to Pick a Winning Team</h4>
+            <p>Expert tips for player selection</p>
+            <button
+              class="btn btn-outline btn-sm"
+              onclick="playVideo('team-selection')"
+            >
+              <i class="fa-solid fa-play"></i>
+              Watch Tutorial
+            </button>
+          </div>
+        </div>
+
+        <div class="video-card">
+          <div class="video-thumbnail">
+            <i class="fa-solid fa-play-circle"></i>
+            <span class="video-duration">4:15</span>
+          </div>
+          <div class="video-info">
+            <h4>Understanding Live Scoring</h4>
+            <p>Track your team during tournaments</p>
+            <button
+              class="btn btn-outline btn-sm"
+              onclick="playVideo('live-scoring')"
+            >
+              <i class="fa-solid fa-play"></i>
+              Watch Tutorial
+            </button>
+          </div>
+        </div>
+
+        <div class="video-card">
+          <div class="video-thumbnail">
+            <i class="fa-solid fa-play-circle"></i>
+            <span class="video-duration">6:30</span>
+          </div>
+          <div class="video-info">
+            <h4>Advanced Strategy Guide</h4>
+            <p>Take your game to the next level</p>
+            <button
+              class="btn btn-outline btn-sm"
+              onclick="playVideo('advanced')"
+            >
+              <i class="fa-solid fa-play"></i>
+              Watch Tutorial
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Tips Sidebar -->
+    <aside class="quick-tips">
+      <h3><i class="fa-solid fa-bolt"></i> Quick Tips</h3>
+      <div class="quick-tip">
+        <i class="fa-solid fa-check-circle"></i>
+        <p>
+          Always check the entry deadline - it's usually 12 hours before
+          tournament start
+        </p>
+      </div>
+      <div class="quick-tip">
+        <i class="fa-solid fa-check-circle"></i>
+        <p>
+          You can edit your team until the deadline, so don't rush your picks
+        </p>
+      </div>
+      <div class="quick-tip">
+        <i class="fa-solid fa-check-circle"></i>
+        <p>Start with free leagues to learn before risking money</p>
+      </div>
+      <div class="quick-tip">
+        <i class="fa-solid fa-check-circle"></i>
+        <p>Watch live leaderboards during tournaments for real-time updates</p>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<style>
+  .guide-nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .guide-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--white);
+    border: 2px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition);
+  }
+
+  .guide-nav-link:hover {
+    border-color: var(--primary-green);
+    background: var(--light-green);
+    transform: translateY(-2px);
+  }
+
+  .guide-section {
+    margin-bottom: 4rem;
+    scroll-margin-top: 2rem;
+  }
+
+  .section-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .section-title i {
+    color: var(--primary-green);
+  }
+
+  .guide-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+
+  .guide-card {
+    background: var(--white);
+    border: 2px solid var(--surface-border);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    transition: var(--transition);
+  }
+
+  .guide-card:hover {
+    border-color: var(--primary-green);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .guide-card-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(
+      135deg,
+      var(--primary-green),
+      var(--accent-blue)
+    );
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .guide-card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .guide-card p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  .guide-list {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .guide-list li {
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 0.5rem;
+  }
+
+  .guide-list strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .strategy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+  }
+
+  .strategy-card {
+    background: var(--white);
+    border: 2px solid var(--surface-border);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    position: relative;
+  }
+
+  .strategy-number {
+    position: absolute;
+    top: -15px;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(
+      135deg,
+      var(--primary-green),
+      var(--accent-blue)
+    );
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 1.25rem;
+  }
+
+  .strategy-card h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .tip-box {
+    background: var(--light-green);
+    border-left: 4px solid var(--primary-green);
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 8px;
+  }
+
+  .tip-box i {
+    color: var(--primary-green);
+    margin-right: 0.5rem;
+  }
+
+  .advanced-tips {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .tip-card-large {
+    background: var(--white);
+    border: 2px solid var(--surface-border);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+  }
+
+  .tip-card-large h3 {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .tip-card-large h3 i {
+    color: var(--primary-green);
+  }
+
+  .two-column-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    margin-top: 1rem;
+  }
+
+  .two-column-list h4 {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  .video-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .video-modal-content {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    aspect-ratio: 16/9;
+    background: black;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .video-modal-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: white;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.25rem;
+    z-index: 1;
+  }
+
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+  }
+
+  .video-card {
+    background: var(--white);
+    border: 2px solid var(--surface-border);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    transition: var(--transition);
+  }
+
+  .video-card:hover {
+    border-color: var(--primary-green);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .video-thumbnail {
+    background: linear-gradient(
+      135deg,
+      rgba(0, 106, 78, 0.9),
+      rgba(52, 152, 219, 0.9)
+    );
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .video-thumbnail i {
+    font-size: 4rem;
+    color: white;
+    opacity: 0.9;
+    transition: var(--transition);
+  }
+
+  .video-card:hover .video-thumbnail i {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+
+  .video-duration {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .video-info {
+    padding: 1.5rem;
+  }
+
+  .video-info h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .video-info p {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .quick-tips {
+    background: var(--white);
+    border: 2px solid var(--surface-border);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    margin-top: 3rem;
+  }
+
+  .quick-tips h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .quick-tips h3 i {
+    color: #f59e0b;
+  }
+
+  .quick-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--surface-light);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+
+  .quick-tip i {
+    color: var(--primary-green);
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  .quick-tip p {
+    margin: 0;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    .guide-nav {
+      flex-direction: column;
+    }
+
+    .guide-nav-link {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .strategy-grid,
+    .video-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .two-column-list {
+      grid-template-columns: 1fr;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+    }
+  }
+</style>
+
+<script>
+  function playVideo(videoId) {
+    // Placeholder for video player implementation
+    const videoUrls = {
+      intro: "https://www.youtube.com/embed/YOUR_VIDEO_ID_1",
+      "team-selection": "https://www.youtube.com/embed/YOUR_VIDEO_ID_2",
+      "live-scoring": "https://www.youtube.com/embed/YOUR_VIDEO_ID_3",
+      advanced: "https://www.youtube.com/embed/YOUR_VIDEO_ID_4",
+    };
+
+    const modal = document.createElement("div");
+    modal.className = "video-modal-overlay";
+    modal.innerHTML = `
+          <div class="video-modal-content">
+              <button class="video-modal-close" onclick="this.closest('.video-modal-overlay').remove()">
+                  <i class="fa-solid fa-times"></i>
+              </button>
+              <iframe
+                  width="100%"
+                  height="100%"
+                  src="${videoUrls[videoId]}"
+                  frameborder="0"
+                  allowfullscreen
+              ></iframe>
+          </div>
+      `;
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.remove();
+    });
+
+    document.body.appendChild(modal);
+  }
+
+  // Example YouTube embed implementation:
+  // const modal = document.createElement('div');
+  // modal.innerHTML = `
+  //     <div class="video-modal-overlay" onclick="this.remove()">
+  //         <div class="video-modal-content">
+  //             <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
+  //         </div>
+  //     </div>
+  // `;
+  // document.body.appendChild(modal);
+</script>
+
+{% endblock %}

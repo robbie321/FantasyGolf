@@ -927,7 +927,6 @@ def track_league_win(user_id, league_id):
         # Update achievements
         update_user_achievements(user_id)
 
-
 def calculate_user_stats(user_id):
     """Calculate comprehensive user statistics"""
     from .models import LeagueEntry, League

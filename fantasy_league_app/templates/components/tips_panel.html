@@ -1,0 +1,516 @@
+<!-- fantasy_league_app/templates/components/tips_panel.html -->
+<div class="tips-container" id="tips-container">
+  <!-- Tips will be dynamically inserted here -->
+</div>
+
+<style>
+  .tips-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 9000;
+    max-width: 400px;
+  }
+
+  .tip-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    border-left: 4px solid #006a4e;
+    margin-bottom: 1rem;
+    animation: slideInRight 0.4s ease-out;
+    position: relative;
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .tip-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .tip-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #006a4e, #3498db);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .tip-content {
+    flex: 1;
+  }
+
+  .tip-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .tip-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .tip-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .tip-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    flex: 1;
+  }
+
+  .tip-btn-primary {
+    background: linear-gradient(135deg, #006a4e, #3498db);
+    color: white;
+  }
+
+  .tip-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 106, 78, 0.3);
+  }
+
+  .tip-btn-secondary {
+    background: transparent;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+  }
+
+  .tip-btn-secondary:hover {
+    background: #f9fafb;
+    color: #374151;
+  }
+
+  .tip-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 1.25rem;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .tip-close:hover {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    .tips-container {
+      bottom: 90px; /* Above mobile nav */
+      right: 1rem;
+      left: 1rem;
+      max-width: none;
+    }
+
+    .tip-card {
+      padding: 1.25rem;
+    }
+
+    .tip-actions {
+      flex-direction: column;
+    }
+
+    .tip-btn {
+      width: 100%;
+    }
+  }
+</style>
+
+<script>
+  class TipsManager {
+    constructor() {
+      this.container = document.getElementById("tips-container");
+      this.tips = this.getTipDefinitions();
+      this.shownTips = new Set();
+      this.dismissedTips = new Set(); // Track dismissed tips from backend
+    }
+
+    getTipDefinitions() {
+      return {
+        first_login: {
+          id: "first_login",
+          icon: "fa-hand-wave",
+          title: "Welcome to Fantasy Fairways!",
+          description:
+            "Start by joining a league or browsing beginner-friendly tournaments.",
+          action: {
+            text: "Browse Leagues",
+            handler: () =>
+              (window.location.href = "/browse-leagues?filter=beginner"),
+          },
+          trigger: "immediate",
+        },
+        no_leagues: {
+          id: "no_leagues",
+          icon: "fa-trophy",
+          title: "Join Your First League",
+          description:
+            "You haven't joined any leagues yet. Start with a free or low-cost league to learn the ropes!",
+          action: {
+            text: "Find Beginner Leagues",
+            handler: () =>
+              (window.location.href = "/browse-leagues?filter=beginner"),
+          },
+          trigger: "condition",
+          condition: () => {
+            // Show if user has no leagues
+            return (
+              window.liveLeaguesData?.length === 0 &&
+              window.upcomingLeaguesData?.length === 0
+            );
+          },
+        },
+        team_selection: {
+          id: "team_selection",
+          icon: "fa-users-gear",
+          title: "Pro Tip: Team Balance",
+          description:
+            "Mix star players with underdogs for the best chance to win. Don't put all your eggs in one basket!",
+          action: {
+            text: "Learn More",
+            handler: () => this.showStrategyGuide(),
+          },
+          trigger: "page",
+          page: "/league/add_entry",
+        },
+        live_scores: {
+          id: "live_scores",
+          icon: "fa-chart-line",
+          title: "Track Live Scores",
+          description:
+            "Check the live leaderboard to see how your team is performing in real-time during tournaments.",
+          action: {
+            text: "View Leaderboard",
+            handler: () => {
+              const section = document.getElementById("leaderboards-section");
+              if (section) {
+                section.scrollIntoView({ behavior: "smooth" });
+              }
+            },
+          },
+          trigger: "condition",
+          condition: () => window.liveLeaguesData?.length > 0,
+        },
+        tiebreaker: {
+          id: "tiebreaker",
+          icon: "fa-bullseye",
+          title: "Don't Forget the Tiebreaker!",
+          description:
+            "Your tiebreaker guess can determine the winner if scores are tied. Make an educated guess!",
+          action: {
+            text: "Got It",
+            handler: () => this.dismissTip("tiebreaker"),
+          },
+          trigger: "page",
+          page: "/league/add_entry",
+        },
+        test: {
+          id: "TrueTest",
+          icon: "fa-bullseye",
+          title: "secondTest",
+          description:
+            "Your tiebreaker guess can determine the winner if scores are tied. Make an educated guess!",
+          action: {
+            text: "Got It",
+            handler: () => this.dismissTip("TrueTest"),
+          },
+          trigger: "page",
+          page: "/user_dashboard",
+        },
+      };
+    }
+
+    async init() {
+      console.log("🚀 Initializing Tips Manager...");
+
+      // MUST wait for dismissed tips to load before checking
+      await this.loadDismissedTips();
+
+      console.log(
+        "📊 Dismissed tips loaded, now checking which tips to show..."
+      );
+
+      // Then check and show tips
+      this.checkAndShowTips();
+    }
+
+    async loadDismissedTips() {
+      try {
+        console.log(
+          "🔄 Fetching dismissed tips from /api/onboarding/status..."
+        );
+        const response = await fetch("/api/onboarding/status");
+
+        if (!response.ok) {
+          console.error(
+            "❌ Failed to fetch onboarding status:",
+            response.status
+          );
+          return;
+        }
+
+        const data = await response.json();
+        console.log("📦 Received data from backend:", data);
+
+        // Load the user's dismissed tips
+        if (data.dismissed_tips && Array.isArray(data.dismissed_tips)) {
+          this.dismissedTips = new Set(data.dismissed_tips);
+          console.log(
+            "✅ Loaded dismissed tips from backend:",
+            Array.from(this.dismissedTips)
+          );
+        } else {
+          console.log("⚠️ No dismissed tips found in backend response");
+          this.dismissedTips = new Set(); // Initialize empty set
+        }
+      } catch (error) {
+        console.error("❌ Error loading dismissed tips:", error);
+        this.dismissedTips = new Set(); // Initialize empty set on error
+      }
+    }
+
+    async getUserTipsStatus() {
+      try {
+        const response = await fetch("/api/onboarding/status");
+        return await response.json();
+      } catch (error) {
+        console.error("Error fetching tips status:", error);
+        return {};
+      }
+    }
+
+    checkAndShowTips() {
+      const currentPath = window.location.pathname;
+      console.log("🔍 Checking tips for path:", currentPath);
+      console.log(
+        "📋 Currently dismissed tips:",
+        Array.from(this.dismissedTips)
+      );
+
+      Object.values(this.tips).forEach((tip) => {
+        // Skip if already dismissed by user
+        if (this.dismissedTips.has(tip.id)) {
+          console.log(
+            `⏭️ Skipping tip "${tip.id}" - already dismissed by user`
+          );
+          return;
+        }
+
+        // Skip if already shown in this session
+        if (this.shownTips.has(tip.id)) {
+          console.log(
+            `⏭️ Skipping tip "${tip.id}" - already shown this session`
+          );
+          return;
+        }
+
+        let shouldShow = false;
+
+        switch (tip.trigger) {
+          case "immediate":
+            shouldShow = true;
+            console.log(`✓ Tip "${tip.id}" - immediate trigger`);
+            break;
+
+          case "condition":
+            shouldShow = tip.condition && tip.condition();
+            console.log(
+              `${shouldShow ? "✓" : "✗"} Tip "${tip.id}" - condition ${
+                shouldShow ? "met" : "not met"
+              }`
+            );
+            break;
+
+          case "page":
+            shouldShow = currentPath.includes(tip.page);
+            console.log(
+              `${shouldShow ? "✓" : "✗"} Tip "${tip.id}" - page match ${
+                shouldShow ? "yes" : "no"
+              }`
+            );
+            break;
+        }
+
+        if (shouldShow) {
+          console.log(`🎯 Showing tip: "${tip.id}"`);
+          // Double-check it's not dismissed before showing
+          if (!this.dismissedTips.has(tip.id)) {
+            setTimeout(() => this.showTip(tip), 1000);
+          } else {
+            console.log(`⚠️ Prevented showing dismissed tip "${tip.id}"`);
+          }
+        }
+      });
+    }
+
+    showTip(tip) {
+      if (!this.container || this.shownTips.has(tip.id)) {
+        console.log(
+          `⚠️ Not showing tip "${tip.id}" - already shown or no container`
+        );
+        return;
+      }
+
+      // Mark as shown IMMEDIATELY to prevent duplicates
+      this.shownTips.add(tip.id);
+      console.log(`📌 Marked tip "${tip.id}" as shown in this session`);
+
+      const tipCard = document.createElement("div");
+      tipCard.className = "tip-card";
+      tipCard.id = `tip-${tip.id}`;
+
+      tipCard.innerHTML = `
+            <button class="tip-close" onclick="window.tipsManager.dismissTip('${
+              tip.id
+            }')">
+                <i class="fa-solid fa-times"></i>
+            </button>
+            <div class="tip-header">
+                <div class="tip-icon">
+                    <i class="fa-solid ${tip.icon}"></i>
+                </div>
+                <div class="tip-content">
+                    <h4 class="tip-title">${tip.title}</h4>
+                    <p class="tip-description">${tip.description}</p>
+                </div>
+            </div>
+            ${
+              tip.action
+                ? `
+                <div class="tip-actions">
+                    <button class="tip-btn tip-btn-primary" onclick="window.tipsManager.handleTipAction('${tip.id}')">
+                        ${tip.action.text}
+                    </button>
+                    <button class="tip-btn tip-btn-secondary" onclick="window.tipsManager.dismissTip('${tip.id}')">
+                        Dismiss
+                    </button>
+                </div>
+            `
+                : ""
+            }
+        `;
+
+      this.container.appendChild(tipCard);
+      console.log(`✅ Tip "${tip.id}" displayed to user`);
+    }
+
+    handleTipAction(tipId) {
+      const tip = this.tips[tipId];
+      if (tip && tip.action && tip.action.handler) {
+        tip.action.handler();
+      }
+      this.dismissTip(tipId);
+    }
+
+    async dismissTip(tipId) {
+      console.log(`🚫 Dismissing tip: "${tipId}"`);
+
+      // Add to dismissed set IMMEDIATELY (before async call)
+      this.dismissedTips.add(tipId);
+      this.shownTips.add(tipId); // Also mark as shown
+      console.log(`📌 Added "${tipId}" to dismissed tips locally`);
+
+      const tipElement = document.getElementById(`tip-${tipId}`);
+      if (tipElement) {
+        tipElement.style.animation = "slideOutRight 0.3s ease-out";
+        setTimeout(() => {
+          tipElement.remove();
+        }, 300);
+      }
+
+      // Save dismissal to backend
+      try {
+        const response = await fetch("/api/onboarding/dismiss-tip", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": document.querySelector('meta[name="csrf-token"]')
+              ?.content,
+          },
+          body: JSON.stringify({ tip_id: tipId }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          console.log(`✅ Tip "${tipId}" successfully saved to backend`);
+          console.log(`📋 All dismissed tips:`, data.dismissed_tips);
+        } else {
+          console.error("❌ Failed to save tip dismissal:", data.message);
+          // Remove from set if backend save failed
+          this.dismissedTips.delete(tipId);
+        }
+      } catch (error) {
+        console.error("❌ Error dismissing tip:", error);
+        // Remove from set if request failed
+        this.dismissedTips.delete(tipId);
+      }
+    }
+
+    showStrategyGuide() {
+      // Implement strategy guide modal or redirect
+      window.location.href = "/resources/strategy-guide";
+    }
+  }
+
+  // Animation for dismissal
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+  document.head.appendChild(style);
+
+  // Global instance
+  window.tipsManager = new TipsManager();
+
+  // Initialize on page load - MUST be async
+  document.addEventListener("DOMContentLoaded", async () => {
+    console.log("📄 DOM loaded, initializing tips manager...");
+    await window.tipsManager.init();
+    console.log("✅ Tips manager initialized");
+  });
+</script>

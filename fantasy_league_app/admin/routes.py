@@ -2018,3 +2018,33 @@ def generate_vapid_keys():
 
     except Exception as e:
         return f"Error: {str(e)}", 500
+
+
+@admin_bp.route('/analytics/onboarding')
+@admin_required
+def onboarding_analytics():
+    total_users = User.query.count()
+    tutorial_completed = User.query.filter_by(tutorial_completed=True).count()
+
+    # Average time to complete tutorial
+    avg_completion_time = db.session.query(
+        func.avg(User.tutorial_completion_date - User.first_login)
+    ).filter(User.tutorial_completed == True).scalar()
+
+    # Most dismissed tips
+    all_dismissed = db.session.query(User.tips_dismissed).filter(
+        User.tips_dismissed.isnot(None)
+    ).all()
+
+    tip_counts = {}
+    for (tips,) in all_dismissed:
+        for tip in tips:
+            tip_counts[tip] = tip_counts.get(tip, 0) + 1
+
+    return render_template('admin/onboarding_analytics.html',
+        total_users=total_users,
+        tutorial_completed=tutorial_completed,
+        completion_rate=(tutorial_completed/total_users*100) if total_users > 0 else 0,
+        avg_completion_time=avg_completion_time,
+        top_dismissed_tips=sorted(tip_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+    )

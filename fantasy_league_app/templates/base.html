@@ -67,10 +67,7 @@
       type="module"
       src="{{ url_for('static', filename='js/main.js') }}"
     ></script>
-    <!-- <script
-      type="module"
-      src="{{ url_for('static', filename='js/push-notifications.js') }}"
-    ></script> -->
+    <script src="{{ url_for('static', filename='tutorial/tutorial.js') }}"></script>
 
     <!-- Professional Toast Notification Styles -->
     <style>
@@ -576,7 +573,9 @@
       </div>
     </div>
 
-    {% include 'components/player_analytics_modal.html' %}
+    {% include 'components/player_analytics_modal.html' %} {% include
+    'components/tutorial_overlay.html' %} {% include
+    'components/tips_panel.html' %}
   </body>
 </html>
 

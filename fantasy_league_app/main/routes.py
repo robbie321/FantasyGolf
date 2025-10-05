@@ -1,6 +1,7 @@
 # --- File: fantasy_league_app/main/routes.py (UPDATED - Fix NameError: db is not defined) ---
-from flask import render_template, url_for, redirect, flash, current_app, request, send_from_directory
+from flask import render_template, url_for, redirect, flash, current_app, request, send_from_directory, jsonify
 from flask_login import login_required, current_user
+from fantasy_league_app.extensions import cache
 from fantasy_league_app.models import League, LeagueEntry, User, Club
 from . import main_bp
 from fantasy_league_app import db, stripe_client
@@ -15,6 +16,7 @@ import stripe
 from fantasy_league_app.cache_utils import CacheManager, cache_result
 from flask import send_from_directory
 import os
+
 
 @main_bp.route('/offline.html')
 def offline():
@@ -698,3 +700,105 @@ def invalidate_user_caches(user_id):
     cache.delete(CacheManager.cache_key_for_user_leagues(user_id))
     cache.delete(CacheManager.make_key('profile', user_id))
     cache.delete(CacheManager.make_key('club_dashboard', user_id))
+
+
+@main_bp.route('/api/onboarding/status')
+@login_required
+def get_onboarding_status():
+    """Get user's onboarding status"""
+    return jsonify({
+        'tutorial_completed': current_user.tutorial_completed,
+        'onboarding_step': current_user.onboarding_step,
+        'should_show_tutorial': not current_user.tutorial_completed,
+        'days_since_signup': (datetime.utcnow() - current_user.first_login).days if current_user.first_login else 0,
+        'dismissed_tips': current_user.tips_dismissed if current_user.tips_dismissed else []
+    })
+
+@main_bp.route('/api/onboarding/complete-tutorial', methods=['POST'])
+@login_required
+def complete_tutorial():
+    """Mark tutorial as completed"""
+    try:
+        current_user.mark_tutorial_complete()
+        return jsonify({
+            'success': True,
+            'message': 'Tutorial completed successfully!'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@main_bp.route('/api/onboarding/dismiss-tip', methods=['POST'])
+@login_required
+def dismiss_tip():
+    """Dismiss a specific tip"""
+    data = request.get_json()
+    tip_id = data.get('tip_id')
+
+    if not tip_id:
+        return jsonify({'success': False, 'message': 'Tip ID required'}), 400
+
+    try:
+        current_user.dismiss_tip(tip_id)
+        return jsonify({
+            'success': True,
+            'message': f'Tip {tip_id} dismissed',
+            'dismissed_tips': current_user.tips_dismissed
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error dismissing tip {tip_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@main_bp.route('/api/leagues/beginner-friendly')
+@login_required
+def get_beginner_leagues():
+    """Get leagues suitable for beginners"""
+    leagues = League.query.filter(
+        League.is_public == True,
+        League.is_finalized == False,
+        League.start_date > datetime.utcnow()
+    ).all()
+
+    # Filter for beginner-friendly leagues
+    beginner_leagues = [
+        league for league in leagues
+        if league.is_suitable_for_beginners
+    ]
+
+    return jsonify([
+        {
+            'id': league.id,
+            'name': league.name,
+            'entry_fee': league.entry_fee,
+            'entries': len(league.entries),
+            'max_entries': league.max_entries,
+            'start_date': league.start_date.isoformat(),
+            'difficulty_level': league.difficulty_level,
+            'why_beginner_friendly': _get_beginner_reason(league)
+        }
+        for league in beginner_leagues[:10]  # Limit to 10
+    ])
+
+
+def _get_beginner_reason(league):
+    """Get reason why league is beginner-friendly"""
+    reasons = []
+    if league.entry_fee == 0:
+        reasons.append('Free to join')
+    elif league.entry_fee <= 5:
+        reasons.append('Low entry fee')
+    if not league.odds_limit:
+        reasons.append('No team restrictions')
+    if league.is_beginner_friendly:
+        reasons.append('Beginner-friendly')
+    return ', '.join(reasons) if reasons else 'Great for beginners'
+
+@main_bp.route('/resources/strategy-guide')
+def strategy_guide():
+    is_guest = not current_user.is_authenticated
+    return render_template('main/strategy_guide.html', is_guest=is_guest)

@@ -49,6 +49,12 @@ class User(db.Model, UserMixin):
     email_verification_sent_at = db.Column(db.DateTime, nullable=True)
     email_rank_changes = db.Column(db.Boolean, default=True, nullable=False)
 
+    # Onboarding fields
+    tutorial_completed = db.Column(db.Boolean, default=False)
+    onboarding_step = db.Column(db.Integer, default=0)
+    first_login = db.Column(db.DateTime, default=datetime.utcnow)
+    tips_dismissed = db.Column(db.JSON, default=list)
+
     #PROFILE ENHANCEMENT:
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     last_active = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -60,6 +66,37 @@ class User(db.Model, UserMixin):
         # Generate verification token for new users
         if not self.email_verification_token:
             self.generate_email_verification_token()
+
+    def mark_tutorial_complete(self):
+        """Mark the tutorial as completed"""
+        self.tutorial_completed = True
+        self.onboarding_step = 100  # Completed
+        db.session.commit()
+
+    def dismiss_tip(self, tip_id):
+        """Dismiss a specific tip"""
+        if self.tips_dismissed is None:
+            self.tips_dismissed = []
+
+        # Make a copy to ensure SQLAlchemy detects the change
+        current_tips = list(self.tips_dismissed)
+
+        if tip_id not in current_tips:
+            current_tips.append(tip_id)
+            self.tips_dismissed = current_tips
+            # Mark the column as modified to ensure SQLAlchemy commits it
+            from sqlalchemy.orm.attributes import flag_modified
+            flag_modified(self, 'tips_dismissed')
+            db.session.commit()
+            print(f"✅ Tip '{tip_id}' dismissed. Current dismissed tips: {self.tips_dismissed}")
+        else:
+            print(f"⚠️ Tip '{tip_id}' was already dismissed")
+
+    def should_show_tip(self, tip_id):
+        """Check if a tip should be shown"""
+        if self.tips_dismissed is None:
+            return True
+        return tip_id not in self.tips_dismissed
 
     def get_achievements(self):
         """Get user's achievement data as dictionary"""
@@ -387,6 +424,10 @@ class League(db.Model):
     # Make the existing user_id nullable
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
+    # Beginner-friendly flag
+    is_beginner_friendly = db.Column(db.Boolean, default=False)
+    difficulty_level = db.Column(db.String(20), default='intermediate')  # 'beginner', 'intermediate', 'advanced'
+
 
     # Add a new nullable site_admin_id foreign key
     club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True) # Now nullable
@@ -425,11 +466,19 @@ class League(db.Model):
         else:
             return "Site Admin" #public league
 
-    # deadline logic
-    # @property
-    # def entry_deadline(self):
-    #     """Calculates the deadline for entries (12 hours before start_date)."""
-    #     return self.start_date - timedelta(hours=12)
+    @property
+    def is_suitable_for_beginners(self):
+        """Determine if league is good for beginners"""
+        # Free or low entry fee
+        if self.entry_fee <= 5:
+            return True
+        # Explicitly marked as beginner friendly
+        if self.is_beginner_friendly:
+            return True
+        # No odds limit (easier team selection)
+        if not self.odds_limit:
+            return True
+        return False
 
     @property
     def has_entry_deadline_passed(self):

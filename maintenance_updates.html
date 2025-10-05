@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fantasy Fairways - Maintenance & Growth Guide</title>
+    <style>
+      :root {
+        --primary-green: #006a4e;
+        --light-green: #e8f5e8;
+        --accent-blue: #3498db;
+        --dark-gray: #2c3e50;
+        --light-gray: #ecf0f1;
+        --border-color: #bdc3c7;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: #f5f7fa;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      header {
+        background: linear-gradient(
+          135deg,
+          var(--primary-green),
+          var(--accent-blue)
+        );
+        color: white;
+        padding: 3rem 2rem;
+        text-align: center;
+        border-radius: 12px;
+        margin-bottom: 3rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .subtitle {
+        font-size: 1.25rem;
+        opacity: 0.9;
+      }
+
+      .toc {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .toc h2 {
+        color: var(--primary-green);
+        margin-bottom: 1rem;
+      }
+
+      .toc ul {
+        list-style: none;
+      }
+
+      .toc li {
+        padding: 0.5rem 0;
+      }
+
+      .toc a {
+        color: var(--accent-blue);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+
+      .toc a:hover {
+        color: var(--primary-green);
+      }
+
+      .section {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      h2 {
+        color: var(--primary-green);
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 3px solid var(--light-green);
+      }
+
+      h3 {
+        color: var(--dark-gray);
+        font-size: 1.5rem;
+        margin: 2rem 0 1rem;
+      }
+
+      h4 {
+        color: var(--dark-gray);
+        font-size: 1.25rem;
+        margin: 1.5rem 0 1rem;
+      }
+
+      p {
+        margin-bottom: 1rem;
+      }
+
+      ul,
+      ol {
+        margin: 1rem 0 1rem 2rem;
+      }
+
+      li {
+        margin-bottom: 0.5rem;
+      }
+
+      code {
+        background: #f5f5f5;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-family: "Courier New", monospace;
+        font-size: 0.9em;
+      }
+
+      pre {
+        background: #2d2d2d;
+        color: #f8f8f8;
+        padding: 1.5rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 1rem 0;
+      }
+
+      pre code {
+        background: none;
+        color: inherit;
+        padding: 0;
+      }
+
+      .alert {
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        margin: 1.5rem 0;
+        border-left: 4px solid;
+      }
+
+      .alert-info {
+        background: #e3f2fd;
+        border-color: #2196f3;
+        color: #0d47a1;
+      }
+
+      .alert-success {
+        background: var(--light-green);
+        border-color: var(--primary-green);
+        color: #1b5e20;
+      }
+
+      .checklist {
+        list-style: none;
+        margin-left: 0;
+      }
+
+      .checklist li {
+        padding-left: 2rem;
+        position: relative;
+        margin-bottom: 0.75rem;
+      }
+
+      .checklist li:before {
+        content: "☐";
+        position: absolute;
+        left: 0;
+        font-size: 1.25rem;
+        color: var(--primary-green);
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 1.5rem 0;
+      }
+
+      .metric-card {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 1.5rem;
+        border-radius: 8px;
+        border-left: 4px solid var(--primary-green);
+      }
+
+      .metric-card h4 {
+        margin: 0 0 1rem 0;
+        color: var(--primary-green);
+      }
+
+      .metric-card ul {
+        margin: 0;
+        padding-left: 1.5rem;
+      }
+
+      .step-number {
+        display: inline-block;
+        background: var(--primary-green);
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 30px;
+        font-weight: bold;
+        margin-right: 0.5rem;
+      }
+
+      footer {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+        margin-top: 3rem;
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+
+        .section {
+          page-break-inside: avoid;
+          box-shadow: none;
+          border: 1px solid #ddd;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 1rem;
+        }
+
+        h1 {
+          font-size: 2rem;
+        }
+
+        .section {
+          padding: 1.5rem;
+        }
+
+        .metric-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Fantasy Fairways</h1>
+        <p class="subtitle">Maintenance & Growth Guide</p>
+      </header>
+
+      <div class="toc">
+        <h2>Table of Contents</h2>
+        <ul>
+          <li><a href="#maintenance">Maintenance & Updates</a></li>
+          <li><a href="#seo">SEO & Marketing</a></li>
+          <li><a href="#metrics">Success Metrics</a></li>
+          <li><a href="#support">Support & Resources</a></li>
+        </ul>
+      </div>
+
+      <section class="section" id="maintenance">
+        <h2>Maintenance & Updates</h2>
+
+        <h3>Updating Tutorial Content</h3>
+        <ol>
+          <li>
+            <strong>Edit <code>tutorial_overlay.html</code></strong>
+            <p>
+              Each tutorial step is in a separate div with id
+              <code>tutorial-step-{number}</code>. Update the HTML content
+              directly.
+            </p>
+          </li>
+          <li>
+            <strong>Update step count in <code>tutorial.js</code></strong>
+            <p>
+              If adding or removing steps, update the
+              <code>totalSteps</code> variable:
+            </p>
+            <pre><code>constructor() {
+    this.currentStep = 1;
+    this.totalSteps = 5; // Update this number
+    this.overlay = document.getElementById('tutorial-overlay');
+}</code></pre>
+          </li>
+          <li>
+            <strong>Test all navigation flows</strong>
+            <ul class="checklist">
+              <li>Next button works on all steps</li>
+              <li>Back button appears correctly</li>
+              <li>Finish button shows on last step</li>
+              <li>Skip button works throughout</li>
+              <li>Progress bar updates correctly</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Consider versioning</strong>
+            <p>
+              Show "What's New" for returning users by tracking tutorial
+              version:
+            </p>
+            <pre><code># Add to User model
+tutorial_version = db.Column(db.Integer, default=1)
+
+# Show updates if version changed
+if current_user.tutorial_version < CURRENT_TUTORIAL_VERSION:
+    show_whats_new_modal()</code></pre>
+          </li>
+        </ol>
+
+        <h3>Adding New Tips</h3>
+        <ol>
+          <li>
+            <strong>Define tip in <code>tips_panel.html</code></strong>
+            <p>Add to the <code>getTipDefinitions()</code> method:</p>
+            <pre><code>'my_new_tip': {
+    id: 'my_new_tip',
+    icon: 'fa-star',
+    title: 'New Feature Available!',
+    description: 'Check out our latest feature...',
+    action: {
+        text: 'Learn More',
+        handler: () => {
+            window.location.href = '/new-feature';
+        }
+    },
+    trigger: 'condition',
+    condition: () => {
+        // Return true when tip should show
+        return window.userLeagueCount >= 3;
+    }
+}</code></pre>
+          </li>
+          <li>
+            <strong>Set appropriate trigger conditions</strong>
+            <ul>
+              <li>
+                <code>immediate</code> - Shows on every page load (use
+                sparingly)
+              </li>
+              <li>
+                <code>condition</code> - Shows when a JavaScript condition is
+                met
+              </li>
+              <li><code>page</code> - Shows on specific URL paths</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Test on relevant pages</strong>
+            <ul class="checklist">
+              <li>Tip appears at the right time</li>
+              <li>Dismissal works correctly</li>
+              <li>Doesn't reappear after dismissal</li>
+              <li>Mobile responsive</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Monitor dismissal rates</strong>
+            <p>Track which tips users dismiss to improve messaging:</p>
+            <pre><code># In admin dashboard
+dismissed_tips_analysis = db.session.query(
+    func.json_array_elements_text(User.tips_dismissed),
+    func.count()
+).group_by(func.json_array_elements_text(User.tips_dismissed)).all()</code></pre>
+          </li>
+        </ol>
+
+        <h3>Refreshing Strategy Guide</h3>
+        <ol>
+          <li>
+            <strong>Update content based on user feedback</strong>
+            <p>
+              Review analytics to see which sections users spend time on and
+              update accordingly.
+            </p>
+          </li>
+          <li>
+            <strong>Add new video tutorials as created</strong>
+            <p>
+              Update the video grid in <code>strategy_guide.html</code> with new
+              YouTube/Vimeo embeds.
+            </p>
+          </li>
+          <li>
+            <strong>Keep examples current with active tournaments</strong>
+            <p>
+              Update player names, tournament references, and statistics
+              seasonally.
+            </p>
+          </li>
+          <li>
+            <strong>Add seasonal content</strong>
+            <p>Create special sections for major championships:</p>
+            <ul>
+              <li>The Masters (April)</li>
+              <li>PGA Championship (May)</li>
+              <li>U.S. Open (June)</li>
+              <li>The Open Championship (July)</li>
+            </ul>
+          </li>
+        </ol>
+      </section>
+
+      <section class="section" id="seo">
+        <h2>SEO & Marketing</h2>
+
+        <h3>Strategy Guide as Marketing Content</h3>
+        <p>
+          Make the strategy guide public to attract new users and improve SEO:
+        </p>
+
+        <h4>Update the Route</h4>
+        <pre><code>@main_bp.route('/resources/strategy-guide')
+# Remove @login_required to make it public
+def strategy_guide():
+    # Add CTA for non-logged-in users
+    is_guest = not current_user.is_authenticated
+    return render_template('main/strategy_guide.html', is_guest=is_guest)</code></pre>
+
+        <h4>Add Signup CTAs in the Guide</h4>
+        <pre><code>{% if is_guest %}
+&lt;div class="signup-cta"&gt;
+    &lt;h3&gt;Ready to put these strategies to work?&lt;/h3&gt;
+    &lt;p&gt;Join Fantasy Fairways and start competing today!&lt;/p&gt;
+    &lt;a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg"&gt;
+        Sign Up Free
+    &lt;/a&gt;
+&lt;/div&gt;
+{% endif %}</code></pre>
+
+        <div class="alert alert-success">
+          <strong>SEO Benefits:</strong>
+          <ul>
+            <li>Rich content improves search rankings</li>
+            <li>Attracts organic traffic from golf fans</li>
+            <li>Builds authority in fantasy golf space</li>
+            <li>Creates shareable resource for social media</li>
+          </ul>
+        </div>
+
+        <h4>Additional SEO Improvements</h4>
+        <ul>
+          <li>Add meta descriptions to strategy guide</li>
+          <li>Use proper heading hierarchy (H1, H2, H3)</li>
+          <li>Include alt text for images</li>
+          <li>Add structured data (Schema.org)</li>
+          <li>Create sitemap including strategy guide</li>
+        </ul>
+      </section>
+
+      <section class="section" id="metrics">
+        <h2>Success Metrics</h2>
+
+        <p>Track these KPIs to measure onboarding success:</p>
+
+        <div class="metric-grid">
+          <div class="metric-card">
+            <h4>Week 1 Goals</h4>
+            <ul class="checklist">
+              <li>80%+ tutorial completion rate</li>
+              <li>60%+ of new users join at least one league</li>
+              <li>Average of 2+ tips viewed per user</li>
+            </ul>
+          </div>
+
+          <div class="metric-card">
+            <h4>Month 1 Goals</h4>
+            <ul class="checklist">
+              <li>
+                50%+ of tutorial completers are active (joined 2+ leagues)
+              </li>
+              <li>30%+ conversion from free to paid leagues</li>
+              <li>Strategy guide drives 10%+ of new signups</li>
+            </ul>
+          </div>
+
+          <div class="metric-card">
+            <h4>Quarter 1 Goals</h4>
+            <ul class="checklist">
+              <li>70%+ user retention after first league</li>
+              <li>
+                Beginner league participants have 2x retention vs non-beginner
+              </li>
+              <li>Strategy guide in top 3 most visited pages</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>How to Track These Metrics</h3>
+
+        <h4>Tutorial Completion Rate</h4>
+        <pre><code># In admin dashboard
+total_users = User.query.filter(
+    User.created_at >= start_date
+).count()
+
+completed_tutorial = User.query.filter(
+    User.created_at >= start_date,
+    User.tutorial_completed == True
+).count()
+
+completion_rate = (completed_tutorial / total_users * 100) if total_users > 0 else 0</code></pre>
+
+        <h4>League Join Rate</h4>
+        <pre><code>new_users_with_leagues = db.session.query(User).filter(
+    User.created_at >= start_date,
+    User.id.in_(
+        db.session.query(LeagueEntry.user_id).distinct()
+    )
+).count()
+
+join_rate = (new_users_with_leagues / total_users * 100) if total_users > 0 else 0</code></pre>
+
+        <h4>Conversion Rate</h4>
+        <pre><code>free_league_users = db.session.query(User.id).join(LeagueEntry).join(League).filter(
+    User.created_at >= start_date,
+    League.entry_fee == 0
+).distinct().count()
+
+paid_league_users = db.session.query(User.id).join(LeagueEntry).join(League).filter(
+    User.created_at >= start_date,
+    League.entry_fee > 0
+).distinct().count()
+
+conversion_rate = (paid_league_users / free_league_users * 100) if free_league_users > 0 else 0</code></pre>
+      </section>
+
+      <section class="section" id="support">
+        <h2>Support & Resources</h2>
+
+        <h3>Documentation Links</h3>
+        <ul>
+          <li>
+            <a
+              href="https://flask-sqlalchemy.palletsprojects.com/"
+              target="_blank"
+              >Flask-SQLAlchemy Documentation</a
+            >
+          </li>
+          <li>
+            <a href="https://jinja.palletsprojects.com/" target="_blank"
+              >Jinja2 Template Documentation</a
+            >
+          </li>
+          <li>
+            <a href="https://fontawesome.com/icons" target="_blank"
+              >Font Awesome Icons</a
+            >
+          </li>
+        </ul>
+
+        <h3>Support Checklist</h3>
+        <p>If you need help implementing any of these features:</p>
+
+        <ol>
+          <li>
+            <span class="step-number">1</span>
+            <strong>Check browser console for JavaScript errors</strong>
+            <p>
+              Press F12 to open developer tools and look for red error messages.
+            </p>
+          </li>
+          <li>
+            <span class="step-number">2</span>
+            <strong>Review Flask logs for backend errors</strong>
+            <pre><code># Local development
+flask run
+
+# Heroku production
+heroku logs --tail --app fantasy-fairways</code></pre>
+          </li>
+          <li>
+            <span class="step-number">3</span>
+            <strong>Verify database migrations completed successfully</strong>
+            <pre><code># Check migration status
+flask db current
+
+# View migration history
+flask db history</code></pre>
+          </li>
+          <li>
+            <span class="step-number">4</span>
+            <strong>Test with a fresh user account</strong>
+            <p>
+              Create a new user to see the full onboarding experience as
+              intended.
+            </p>
+          </li>
+        </ol>
+
+        <div class="alert alert-info">
+          <strong>Common Issues:</strong>
+          <ul>
+            <li>
+              <strong>Tutorial not showing:</strong> Check
+              <code>tutorial_completed</code> field in database
+            </li>
+            <li>
+              <strong>Tips reappearing:</strong> Verify cache is being cleared
+              on dismissal
+            </li>
+            <li>
+              <strong>Beginner leagues not filtering:</strong> Check
+              <code>is_suitable_for_beginners</code> property
+            </li>
+            <li>
+              <strong>Migration errors:</strong> Run
+              <code>flask db downgrade</code> and try again
+            </li>
+          </ul>
+        </div>
+
+        <h3>Quick Reference Commands</h3>
+        <pre><code># Start development server
+flask run
+
+# Create migration
+flask db migrate -m "Description"
+
+# Apply migration
+flask db upgrade
+
+# Rollback migration
+flask db downgrade
+
+# Clear cache
+heroku restart --app fantasy-fairways
+
+# View logs
+heroku logs --tail --app fantasy-fairways
+
+# Database console
+heroku pg:psql --app fantasy-fairways</code></pre>
+      </section>
+
+      <footer>
+        <p>&copy; 2025 Fantasy Fairways - Maintenance & Growth Guide</p>
+        <p>Keep your onboarding fresh and effective</p>
+      </footer>
+    </div>
+  </body>
+</html>

@@ -1,6 +1,6 @@
 Start App:
 flask --app fantasy_league_app:create_app run
-flask --app fantasy_league_app:create_app db migrate -m "email rank notification added to user model"
+flask --app fantasy_league_app:create_app db migrate -m "Add onboarding fields"
 flask --app fantasy_league_app:create_app db upgrade
 source venv/Scripts/activate
 
@@ -32,6 +32,7 @@ Tasks []
 ###############
 [✅]Fix user and club registration
 [] verification email not being sent
+[] fix forgot password on main app
 
 ###############
 ####LOGIN ####

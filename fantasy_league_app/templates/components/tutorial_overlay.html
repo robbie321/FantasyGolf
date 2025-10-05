@@ -1,0 +1,521 @@
+<!-- fantasy_league_app/templates/components/tutorial_overlay.html -->
+<div class="tutorial-overlay" id="tutorial-overlay">
+  <div class="tutorial-container">
+    <div class="tutorial-progress">
+      <div class="progress-bar">
+        <div class="progress-fill" id="tutorial-progress"></div>
+      </div>
+      <span class="progress-text" id="tutorial-step-text">Step 1 of 5</span>
+    </div>
+
+    <!-- Step 1: Welcome -->
+    <div class="tutorial-step active" id="tutorial-step-1">
+      <div class="tutorial-icon">
+        <i class="fa-solid fa-hand-wave"></i>
+      </div>
+      <h2>Welcome to Fantasy Fairways!</h2>
+      <p>
+        Let's get you started with a quick tour of how fantasy golf works. This
+        will only take a minute.
+      </p>
+      <ul class="tutorial-benefits">
+        <li>
+          <i class="fa-solid fa-check-circle"></i> Learn how to join leagues
+        </li>
+        <li><i class="fa-solid fa-check-circle"></i> Build winning teams</li>
+        <li><i class="fa-solid fa-check-circle"></i> Track live scores</li>
+      </ul>
+    </div>
+
+    <!-- Step 2: How It Works -->
+    <div class="tutorial-step" id="tutorial-step-2">
+      <div class="tutorial-icon">
+        <i class="fa-solid fa-lightbulb"></i>
+      </div>
+      <h2>How Fantasy Golf Works</h2>
+      <div class="tutorial-grid">
+        <div class="tutorial-card">
+          <i class="fa-solid fa-users"></i>
+          <h4>1. Join a League</h4>
+          <p>Enter a league code or browse public leagues to join</p>
+        </div>
+        <div class="tutorial-card">
+          <i class="fa-solid fa-user-plus"></i>
+          <h4>2. Pick Your Team</h4>
+          <p>Select 3 golfers for the tournament</p>
+        </div>
+        <div class="tutorial-card">
+          <i class="fa-solid fa-trophy"></i>
+          <h4>3. Watch & Win</h4>
+          <p>Lowest combined score wins!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Building Teams -->
+    <div class="tutorial-step" id="tutorial-step-3">
+      <div class="tutorial-icon">
+        <i class="fa-solid fa-users-gear"></i>
+      </div>
+      <h2>Building Your Dream Team</h2>
+      <p>When selecting your 3 golfers, keep these tips in mind:</p>
+      <ul class="tutorial-tips">
+        <li>
+          <strong>Mix favorites and underdogs</strong><br />
+          <span class="tip-detail"
+            >Balance star players with potential breakout performances</span
+          >
+        </li>
+        <li>
+          <strong>Check recent form</strong><br />
+          <span class="tip-detail"
+            >Look at players' recent tournament results and course history</span
+          >
+        </li>
+        <li>
+          <strong>Watch the odds limits</strong><br />
+          <span class="tip-detail"
+            >Some leagues restrict how many favorites you can pick</span
+          >
+        </li>
+        <li>
+          <strong>Don't forget the tiebreaker</strong><br />
+          <span class="tip-detail"
+            >Your tiebreaker guess could determine the winner!</span
+          >
+        </li>
+      </ul>
+    </div>
+
+    <!-- Step 4: Dashboard Tour -->
+    <div class="tutorial-step" id="tutorial-step-4">
+      <div class="tutorial-icon">
+        <i class="fa-solid fa-map"></i>
+      </div>
+      <h2>Navigate Your Dashboard</h2>
+      <div class="dashboard-tour">
+        <div class="tour-item">
+          <div class="tour-icon"><i class="fa-solid fa-trophy"></i></div>
+          <div class="tour-content">
+            <h4>My Leagues</h4>
+            <p>View all your active, upcoming, and past leagues</p>
+          </div>
+        </div>
+        <div class="tour-item">
+          <div class="tour-icon"><i class="fa-solid fa-chart-line"></i></div>
+          <div class="tour-content">
+            <h4>Live Leaderboards</h4>
+            <p>Track real-time tournament standings and scores</p>
+          </div>
+        </div>
+        <div class="tour-item">
+          <div class="tour-icon"><i class="fa-solid fa-user"></i></div>
+          <div class="tour-content">
+            <h4>Your Profile</h4>
+            <p>View your stats, achievements, and league history</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5: Ready to Go -->
+    <div class="tutorial-step" id="tutorial-step-5">
+      <div class="tutorial-icon">
+        <i class="fa-solid fa-rocket"></i>
+      </div>
+      <h2>You're All Set!</h2>
+      <p>
+        Time to join your first league and start competing. We recommend
+        starting with a beginner-friendly league to get comfortable.
+      </p>
+      <div class="tutorial-cta">
+        <div class="cta-card">
+          <i class="fa-solid fa-graduation-cap"></i>
+          <h4>Beginner Leagues</h4>
+          <p>Free or low-cost leagues perfect for learning</p>
+          <button
+            class="btn btn-outline"
+            onclick="window.showBeginnerLeagues()"
+          >
+            Browse Beginner Leagues
+          </button>
+        </div>
+        <div class="cta-card">
+          <i class="fa-solid fa-key"></i>
+          <h4>Have a Code?</h4>
+          <p>Join a private league with friends or club</p>
+          <button class="btn btn-outline" onclick="window.showJoinModal()">
+            Enter League Code
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tutorial Navigation -->
+    <div class="tutorial-navigation">
+      <button
+        class="btn btn-text"
+        id="tutorial-skip"
+        onclick="window.skipTutorial()"
+      >
+        Skip Tutorial
+      </button>
+      <div class="tutorial-buttons">
+        <button
+          class="btn btn-outline"
+          id="tutorial-back"
+          onclick="window.previousTutorialStep()"
+          style="display: none"
+        >
+          <i class="fa-solid fa-arrow-left"></i>
+          Back
+        </button>
+        <button
+          class="btn btn-primary"
+          id="tutorial-next"
+          onclick="window.nextTutorialStep()"
+        >
+          Next
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+        <button
+          class="btn btn-primary"
+          id="tutorial-finish"
+          onclick="window.completeTutorial()"
+          style="display: none"
+        >
+          Get Started
+          <i class="fa-solid fa-check"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(10px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .tutorial-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .tutorial-container {
+    background: white;
+    border-radius: 20px;
+    padding: 3rem;
+    max-width: 700px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    position: relative;
+  }
+
+  .tutorial-progress {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #006a4e, #3498db);
+    transition: width 0.3s ease;
+    width: 20%;
+  }
+
+  .progress-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .tutorial-step {
+    display: none;
+    animation: fadeInUp 0.5s ease;
+  }
+
+  .tutorial-step.active {
+    display: block;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .tutorial-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #006a4e, #3498db);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+    font-size: 2rem;
+    color: white;
+  }
+
+  .tutorial-step h2 {
+    text-align: center;
+    color: #1f2937;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .tutorial-step p {
+    text-align: center;
+    color: #6b7280;
+    font-size: 1.125rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+
+  .tutorial-benefits,
+  .tutorial-tips {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .tutorial-benefits li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    font-size: 1rem;
+    color: #374151;
+  }
+
+  .tutorial-benefits i {
+    color: #10b981;
+    font-size: 1.25rem;
+  }
+
+  .tutorial-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .tutorial-card {
+    text-align: center;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px solid #e9ecef;
+  }
+
+  .tutorial-card i {
+    font-size: 2rem;
+    color: #006a4e;
+    margin-bottom: 1rem;
+  }
+
+  .tutorial-card h4 {
+    color: #1f2937;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .tutorial-card p {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin: 0;
+  }
+
+  .tutorial-tips li {
+    background: #f0fff4;
+    border-left: 4px solid #10b981;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+  }
+
+  .tutorial-tips strong {
+    color: #1f2937;
+    font-size: 1rem;
+  }
+
+  .tip-detail {
+    display: block;
+    margin-top: 0.5rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  .dashboard-tour {
+    margin-top: 2rem;
+  }
+
+  .tour-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+  }
+
+  .tour-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #006a4e, #3498db);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .tour-content h4 {
+    color: #1f2937;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .tour-content p {
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin: 0;
+    text-align: left;
+  }
+
+  .tutorial-cta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .cta-card {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    border: 2px solid #e9ecef;
+  }
+
+  .cta-card i {
+    font-size: 2rem;
+    color: #006a4e;
+    margin-bottom: 1rem;
+  }
+
+  .cta-card h4 {
+    color: #1f2937;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .cta-card p {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+  }
+
+  .tutorial-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e9ecef;
+  }
+
+  .tutorial-buttons {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .btn-text {
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    transition: color 0.2s ease;
+  }
+
+  .btn-text:hover {
+    color: #374151;
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    .tutorial-container {
+      padding: 2rem 1.5rem;
+      max-width: 95%;
+    }
+
+    .tutorial-grid,
+    .tutorial-cta {
+      grid-template-columns: 1fr;
+    }
+
+    .tutorial-step h2 {
+      font-size: 1.5rem;
+    }
+
+    .tutorial-step p {
+      font-size: 1rem;
+    }
+
+    .tutorial-navigation {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .tutorial-buttons {
+      width: 100%;
+      flex-direction: column;
+    }
+
+    .tutorial-buttons .btn {
+      width: 100%;
+    }
+  }
+</style>
