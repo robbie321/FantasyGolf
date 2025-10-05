@@ -21,16 +21,43 @@ def send_reset_email(user):
     s = get_serializer(current_app.config['SECRET_KEY'])
     token = s.dumps(user.email, salt='password-reset-salt')
 
-    msg = Message('Password Reset Request',
-                  sender=current_app.config['MAIL_DEFAULT_SENDER'],
-                  recipients=[user.email])
-
     reset_url = url_for('auth.reset_token', token=token, _external=True)
-    msg.body = f'''To reset your password, visit the following link:{reset_url}
 
-    If you did not make this request then simply ignore this email and no changes will be made.
-    '''
-    mail.send(msg)
+    subject = 'Password Reset Request'
+    body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #006a4e;">Password Reset Request</h2>
+            <p>You requested to reset your password. Click the button below to create a new password:</p>
+            <p style="margin: 30px 0;">
+                <a href="{reset_url}"
+                   style="background-color: #006a4e; color: white; padding: 12px 30px;
+                          text-decoration: none; border-radius: 5px; display: inline-block;">
+                    Reset Password
+                </a>
+            </p>
+            <p style="color: #666; font-size: 14px;">
+                If the button doesn't work, copy and paste this link into your browser:
+            </p>
+            <p style="color: #006a4e; word-break: break-all; font-size: 14px;">
+                {reset_url}
+            </p>
+            <p style="color: #999; font-size: 12px; margin-top: 30px;">
+                This link will expire in 30 minutes. If you didn't request this reset, please ignore this email.
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+
+    try:
+        # Use Graph API instead of Flask-Mail
+        send_email_via_graph(user.email, subject, body)
+        return True
+    except Exception as e:
+        current_app.logger.error(f"Failed to send reset email to {user.email}: {str(e)}")
+        return False
 
 
 def _authenticate_and_login(user_model, identifier_field, identifier, password):
@@ -361,15 +388,23 @@ def logout():
 def reset_request():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
+
     if request.method == 'POST':
         email = request.form.get('email')
         user = User.query.filter_by(email=email).first()
+
         if user:
-            send_reset_email(user)
-            flash('An email has been sent with instructions to reset your password.', 'info')
+            if send_reset_email(user):
+                flash('An email has been sent with instructions to reset your password.', 'info')
+            else:
+                flash('Failed to send reset email. Please try again later or contact support.', 'danger')
+                current_app.logger.error(f"Password reset email failed for {email}")
+
             return redirect(url_for('auth.login_choice'))
         else:
-            flash('No account found with that email address.', 'warning')
+            # Don't reveal if email exists for security
+            flash('If an account with that email exists, a reset link has been sent.', 'info')
+            return redirect(url_for('auth.login_choice'))
 
     return render_template('auth/request_password_reset.html')
 
