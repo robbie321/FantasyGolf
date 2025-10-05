@@ -315,7 +315,10 @@ class PushNotificationService:
             'tournament_end': 'tournament_end',
             'prize_won': 'prize_notifications',
             'rank_change': 'score_updates',  # Rank changes are score-related
-            'marketing': 'marketing'
+            'marketing': 'marketing',
+            'player_alert': 'tee_time_alerts',
+            'deadline_alert': 'deadline_alerts',
+            'social': 'friend_activity',
         }
 
         pref_field = type_mapping.get(notification_type)

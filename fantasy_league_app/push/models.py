@@ -123,6 +123,9 @@ class NotificationPreference(db.Model):
     tournament_end = db.Column(db.Boolean, default=True)
     prize_notifications = db.Column(db.Boolean, default=True)
     marketing = db.Column(db.Boolean, default=False)
+    tee_time_alerts = db.Column(db.Boolean, default=True)
+    deadline_alerts = db.Column(db.Boolean, default=True)
+    friend_activity = db.Column(db.Boolean, default=True)
 
     # Relationship
     user = db.relationship('User', backref='notification_preference', uselist=False)
@@ -137,7 +140,10 @@ class NotificationPreference(db.Model):
             'tournament_start': self.tournament_start,
             'tournament_end': self.tournament_end,
             'prize_notifications': self.prize_notifications,
-            'marketing': self.marketing
+            'marketing': self.marketing,
+            'tee_time_alerts': self.tee_time_alerts,
+            'deadline_alerts': self.deadline_alerts,
+            'friend_activity': self.friend_activity
         }
 
 
@@ -204,6 +210,42 @@ def create_notification_templates():
             'notification_type': 'rank_change',
             'require_interaction': True,
             'vibrate_pattern': json.dumps([200, 100, 200])
+        },
+        {
+            'name': 'player_teeing_off',
+            'title_template': '⛳ {player_name} is Teeing Off!',
+            'body_template': 'Your player {player_name} starts their round in {minutes} minutes',
+            'notification_type': 'player_alert',
+            'icon': '/static/images/icon-192x192.png',
+            'vibrate_pattern': json.dumps([100, 50, 100]),
+            'actions': json.dumps([
+                {'action': 'view-player', 'title': 'View Stats'},
+                {'action': 'view-league', 'title': 'My Leagues'}
+            ])
+        },
+        {
+            'name': 'deadline_urgent',
+            'title_template': '⏰ Deadline Alert!',
+            'body_template': '{league_name} deadline in {hours} hours - {spots_left} spots left!',
+            'notification_type': 'deadline_alert',
+            'require_interaction': True,
+            'icon': '/static/images/icon-192x192.png',
+            'vibrate_pattern': json.dumps([200, 100, 200]),
+            'actions': json.dumps([
+                {'action': 'join-league', 'title': 'Join Now'},
+                {'action': 'view-league', 'title': 'View Details'}
+            ])
+        },
+        {
+            'name': 'friend_joined',
+            'title_template': '👋 {friend_name} Joined a League',
+            'body_template': 'Your friend just joined {league_name}. Join them?',
+            'notification_type': 'social',
+            'icon': '/static/images/icon-192x192.png',
+            'actions': json.dumps([
+                {'action': 'view-league', 'title': 'View League'},
+                {'action': 'dismiss', 'title': 'Maybe Later'}
+            ])
         }
     ]
 

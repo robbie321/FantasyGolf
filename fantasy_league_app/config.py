@@ -146,8 +146,8 @@ class Config:
             'schedule': crontab(hour=5, minute=30),
         },
         'cleanup-push-subscriptions-weekly': {
-        'task': 'fantasy_league_app.tasks.cleanup_old_push_subscriptions',
-        'schedule': crontab(hour=2, minute=0, day_of_week='monday'),
+            'task': 'fantasy_league_app.tasks.cleanup_old_push_subscriptions',
+            'schedule': crontab(hour=2, minute=0, day_of_week='monday'),
         },
         'send-league-start-notifications': {
             'task': 'fantasy_league_app.tasks.send_league_start_notifications',
@@ -158,12 +158,24 @@ class Config:
             'schedule': crontab(minute='*/30'),  # Every 30 minutes during tournaments
         },
         'cleanup-push-subscriptions-weekly': {
-        'task': 'fantasy_league_app.tasks.cleanup_old_push_subscriptions',
-        'schedule': crontab(hour=2, minute=0, day_of_week='monday'),
+            'task': 'fantasy_league_app.tasks.cleanup_old_push_subscriptions',
+            'schedule': crontab(hour=2, minute=0, day_of_week='monday'),
         },
         'check-player-withdrawals-thursday': {
-        'task': 'fantasy_league_app.tasks.substitute_withdrawn_players',
-        'schedule': crontab(minute='*/15', hour='6-14', day_of_week='thursday'),  # Every 15 min, 6am-2pm UTC on Thursdays
+            'task': 'fantasy_league_app.tasks.substitute_withdrawn_players',
+            'schedule': crontab(minute='*/15', hour='6-14', day_of_week='thursday'),  # Every 15 min, 6am-2pm UTC on Thursdays
+        },
+        'send-tee-time-notifications': {
+            'task': 'fantasy_league_app.tasks.send_tee_time_notifications',
+            'schedule': crontab(minute='*/10'),  # Every 10 minutes during tournament days
+        },
+        'send-deadline-urgent-alerts': {
+            'task': 'fantasy_league_app.tasks.send_deadline_urgent_alerts',
+            'schedule': crontab(minute='*/30'),  # Every 30 minutes
+        },
+        'send-friend-activity-notifications': {
+            'task': 'fantasy_league_app.tasks.send_friend_joined_notifications',
+            'schedule': crontab(minute='*/15'),  # Every 15 minutes
         },
     }
 

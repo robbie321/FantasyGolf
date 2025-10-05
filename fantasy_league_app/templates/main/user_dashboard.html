@@ -208,6 +208,123 @@
               </div>
             </div>
           </div>
+
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <h3>
+                <i class="fa-solid fa-bell"></i>
+                Push Notifications
+              </h3>
+            </div>
+            <div class="settings-card-body">
+              <div class="notification-status" id="notification-status">
+                <div class="status-icon" id="status-icon">
+                  <i class="fa-solid fa-bell-slash"></i>
+                </div>
+                <div class="status-info">
+                  <h5 id="status-title">Notifications Disabled</h5>
+                  <p id="status-description">
+                    Enable notifications to receive updates about your leagues
+                  </p>
+                </div>
+              </div>
+
+              <!-- iOS Warning (if applicable) -->
+              <div class="ios-warning" id="ios-warning" style="display: none">
+                <i class="fa-brands fa-apple"></i>
+                <div>
+                  <strong>iOS Device Detected</strong>
+                  <p>To enable notifications on iOS:</p>
+                  <ol>
+                    <li>
+                      Tap <i class="fa-solid fa-square-share-nodes"></i> Share
+                      button
+                    </li>
+                    <li>Select "Add to Home Screen"</li>
+                    <li>Open the app from your Home Screen</li>
+                    <li>Then tap "Enable Notifications" below</li>
+                  </ol>
+                </div>
+              </div>
+
+              <!-- Progress Steps (shown during enablement) -->
+              <div
+                class="progress-steps"
+                id="progress-steps"
+                style="display: none"
+              >
+                <div class="progress-bar-container">
+                  <div class="progress-bar-fill" id="progress-bar"></div>
+                </div>
+                <div class="step-list" id="step-list"></div>
+              </div>
+
+              <!-- Error Display -->
+              <div
+                class="error-display"
+                id="error-display"
+                style="display: none"
+              >
+                <i class="fa-solid fa-exclamation-triangle"></i>
+                <div>
+                  <strong>Something went wrong</strong>
+                  <p id="error-message"></p>
+                </div>
+              </div>
+
+              <!-- Action Button -->
+              <div class="notification-actions">
+                <button
+                  class="btn btn-primary btn-lg"
+                  id="toggle-notifications-btn"
+                >
+                  <i class="fa-solid fa-bell"></i>
+                  <span id="btn-text">Enable Notifications</span>
+                </button>
+                <button
+                  class="btn btn-outline btn-sm"
+                  id="troubleshoot-btn"
+                  style="margin-top: 0.75rem"
+                >
+                  <i class="fa-solid fa-wrench"></i>
+                  Troubleshoot
+                </button>
+              </div>
+
+              <!-- Troubleshoot Results -->
+              <div
+                class="troubleshoot-results"
+                id="troubleshoot-results"
+                style="display: none"
+              >
+                <h5><i class="fa-solid fa-stethoscope"></i> Diagnostics</h5>
+                <div id="troubleshoot-content"></div>
+              </div>
+
+              <!-- Additional Info -->
+              <div class="notification-info">
+                <h5>Why enable notifications?</h5>
+                <ul>
+                  <li>
+                    <i class="fa-solid fa-check"></i> Get live score updates
+                    during tournaments
+                  </li>
+                  <li>
+                    <i class="fa-solid fa-check"></i> Be notified when leagues
+                    start
+                  </li>
+                  <li>
+                    <i class="fa-solid fa-check"></i> Receive alerts when you
+                    win prizes
+                  </li>
+                  <li>
+                    <i class="fa-solid fa-check"></i> Stay informed about rank
+                    changes
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -322,6 +439,235 @@
       },
       "leagues"
     );
+
+    // Initialize the manager
+    const pushManager = new OneClickPushManager();
+
+    // DOM elements
+    const toggleBtn = document.getElementById("toggle-notifications-btn");
+    const btnText = document.getElementById("btn-text");
+    const statusContainer = document.getElementById("notification-status");
+    const statusIcon = document.getElementById("status-icon");
+    const statusTitle = document.getElementById("status-title");
+    const statusDescription = document.getElementById("status-description");
+    const progressSteps = document.getElementById("progress-steps");
+    const progressBar = document.getElementById("progress-bar");
+    const stepList = document.getElementById("step-list");
+    const errorDisplay = document.getElementById("error-display");
+    const errorMessage = document.getElementById("error-message");
+    const iosWarning = document.getElementById("ios-warning");
+
+    /**
+     * Update UI based on notification status
+     */
+    function updateUI(enabled) {
+      if (enabled) {
+        // Enabled state
+        statusContainer.classList.add("enabled");
+        statusIcon.innerHTML = '<i class="fa-solid fa-bell"></i>';
+        statusTitle.textContent = "Notifications Enabled";
+        statusDescription.textContent =
+          "You will receive updates about your leagues";
+        toggleBtn.classList.remove("btn-primary");
+        toggleBtn.classList.add("btn-outline");
+        btnText.innerHTML =
+          '<i class="fa-solid fa-bell-slash"></i> Disable Notifications';
+        toggleBtn.disabled = false;
+      } else {
+        // Disabled state
+        statusContainer.classList.remove("enabled");
+        statusIcon.innerHTML = '<i class="fa-solid fa-bell-slash"></i>';
+        statusTitle.textContent = "Notifications Disabled";
+        statusDescription.textContent =
+          "Enable notifications to receive updates about your leagues";
+        toggleBtn.classList.add("btn-primary");
+        toggleBtn.classList.remove("btn-outline");
+        btnText.innerHTML =
+          '<i class="fa-solid fa-bell"></i> Enable Notifications';
+        toggleBtn.disabled = false;
+      }
+    }
+
+    /**
+     * Enable notifications with progress tracking
+     */
+    async function enableNotifications() {
+      // Reset UI
+      errorDisplay.style.display = "none";
+      progressSteps.style.display = "block";
+      stepList.innerHTML = "";
+      progressBar.style.width = "0%";
+
+      // Disable button
+      toggleBtn.disabled = true;
+      btnText.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Enabling...';
+
+      try {
+        // Create steps display
+        const steps = [
+          "Checking browser support",
+          "Registering service worker",
+          "Requesting permission",
+          "Getting security keys",
+          "Creating subscription",
+          "Saving to server",
+        ];
+
+        steps.forEach((step, index) => {
+          const stepEl = document.createElement("div");
+          stepEl.className = "step-item";
+          stepEl.id = `step-${index}`;
+          stepEl.innerHTML = `
+        <i class="fa-solid fa-circle-notch"></i>
+        <span>${step}</span>
+      `;
+          stepList.appendChild(stepEl);
+        });
+
+        // Enable with progress tracking
+        const result = await enableWithProgress(pushManager, steps);
+
+        if (result.success) {
+          // Success!
+          progressSteps.style.display = "none";
+          updateUI(true);
+
+          // Show success toast
+          if (window.showToast) {
+            window.showToast("Notifications enabled successfully!", "success");
+          }
+        } else {
+          // Show error
+          throw new Error(result.message);
+        }
+      } catch (error) {
+        console.error("Enable notifications error:", error);
+
+        // Show error
+        progressSteps.style.display = "none";
+        errorDisplay.style.display = "flex";
+        errorMessage.textContent =
+          error.message || "Failed to enable notifications. Please try again.";
+
+        // Reset button
+        toggleBtn.disabled = false;
+        btnText.innerHTML =
+          '<i class="fa-solid fa-bell"></i> Enable Notifications';
+      }
+    }
+
+    /**
+     * Enable with progress visualization
+     */
+    async function enableWithProgress(manager, steps) {
+      let currentStep = 0;
+
+      const updateProgress = () => {
+        const progress = ((currentStep + 1) / steps.length) * 100;
+        progressBar.style.width = `${progress}%`;
+
+        // Update step icons
+        steps.forEach((_, index) => {
+          const stepEl = document.getElementById(`step-${index}`);
+          if (!stepEl) return;
+
+          if (index < currentStep) {
+            stepEl.classList.remove("active");
+            stepEl.classList.add("completed");
+            stepEl.querySelector("i").className = "fa-solid fa-check-circle";
+          } else if (index === currentStep) {
+            stepEl.classList.add("active");
+            stepEl.querySelector("i").className = "fa-solid fa-spinner fa-spin";
+          }
+        });
+      };
+
+      // Override logStep to track progress
+      const originalLogStep = manager.logStep.bind(manager);
+      manager.logStep = async function (stepName) {
+        await originalLogStep(stepName);
+        updateProgress();
+        currentStep++;
+        // Small delay for visual feedback
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      };
+
+      // Run enablement
+      const result = await manager.enableNotifications();
+
+      // Final progress update
+      if (result.success) {
+        currentStep = steps.length;
+        updateProgress();
+      }
+
+      return result;
+    }
+
+    /**
+     * Disable notifications
+     */
+    async function disableNotifications() {
+      toggleBtn.disabled = true;
+      btnText.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Disabling...';
+
+      try {
+        const result = await pushManager.disableNotifications();
+
+        if (result.success) {
+          updateUI(false);
+
+          if (window.showToast) {
+            window.showToast("Notifications disabled", "info");
+          }
+        } else {
+          throw new Error(result.error);
+        }
+      } catch (error) {
+        console.error("Disable notifications error:", error);
+
+        if (window.showToast) {
+          window.showToast("Failed to disable notifications", "error");
+        }
+
+        toggleBtn.disabled = false;
+        btnText.textContent = "Disable Notifications";
+      }
+    }
+
+    // Check iOS
+    if (pushManager.isIOS && !pushManager.isStandalone) {
+      iosWarning.style.display = "flex";
+    }
+
+    // Initialize on load
+    (async () => {
+      try {
+        // Check initial status
+        const isEnabled = await pushManager.isEnabled();
+        updateUI(isEnabled);
+      } catch (error) {
+        console.error("Failed to check notification status:", error);
+        updateUI(false);
+      }
+    })();
+
+    // Toggle button click handler
+    toggleBtn.addEventListener("click", async function () {
+      const currentlyEnabled = await pushManager.isEnabled();
+
+      if (currentlyEnabled) {
+        // Disable notifications
+        if (confirm("Are you sure you want to disable notifications?")) {
+          await disableNotifications();
+        }
+      } else {
+        // Enable notifications
+        await enableNotifications();
+      }
+    });
   });
 </script>
 
@@ -547,6 +893,272 @@
 
   input:checked + .slider:before {
     transform: translateX(22px);
+  }
+  /* Notification Settings Card Styles */
+  .notification-status {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: var(--surface-light);
+    border-radius: var(--border-radius);
+    border: 2px solid var(--surface-border);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .notification-status.enabled {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border-color: var(--primary-green);
+  }
+
+  .status-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: #e9ecef;
+    color: #6c757d;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+  }
+
+  .notification-status.enabled .status-icon {
+    background: var(--primary-green);
+    color: white;
+  }
+
+  .status-info {
+    flex: 1;
+  }
+
+  .status-info h5 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  .status-info p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  /* iOS Warning */
+  .ios-warning {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 1rem;
+  }
+
+  .ios-warning i.fa-apple {
+    font-size: 2rem;
+    color: #856404;
+    flex-shrink: 0;
+  }
+
+  .ios-warning strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #856404;
+  }
+
+  .ios-warning p {
+    margin: 0.5rem 0;
+    color: #856404;
+  }
+
+  .ios-warning ol {
+    margin: 0.5rem 0 0 1rem;
+    padding: 0;
+    color: #856404;
+  }
+
+  .ios-warning li {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+  }
+
+  /* Progress Steps */
+  .progress-steps {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    background: var(--surface-light);
+    border-radius: var(--border-radius);
+  }
+
+  .progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      var(--primary-green),
+      var(--accent-blue)
+    );
+    border-radius: 10px;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  .step-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  .step-item.active {
+    color: var(--primary-green);
+    font-weight: 600;
+  }
+
+  .step-item.completed {
+    color: var(--primary-green);
+  }
+
+  .step-item i {
+    width: 20px;
+    text-align: center;
+  }
+
+  /* Error Display */
+  .error-display {
+    background: #f8d7da;
+    border: 2px solid #dc3545;
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .error-display i {
+    font-size: 1.5rem;
+    color: #721c24;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  .error-display strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #721c24;
+  }
+
+  .error-display p {
+    margin: 0;
+    color: #721c24;
+    font-size: 0.95rem;
+  }
+
+  /* Notification Actions */
+  .notification-actions {
+    margin-bottom: 1.5rem;
+  }
+
+  .notification-actions .btn {
+    width: 100%;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  #toggle-notifications-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Notification Info */
+  .notification-info {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--surface-border);
+  }
+
+  .notification-info h5 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .notification-info ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .notification-info li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  .notification-info li i {
+    color: var(--primary-green);
+    font-size: 0.875rem;
+    width: 16px;
+  }
+
+  /* Loading Animation */
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .btn .fa-spinner {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .notification-status {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .status-info {
+      text-align: center;
+    }
+
+    .ios-warning {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .ios-warning i.fa-apple {
+      margin: 0 auto;
+    }
   }
 
   /* Mobile Responsive */

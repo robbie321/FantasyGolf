@@ -121,7 +121,6 @@ def unsubscribe():
         current_app.logger.error(f"Failed to remove subscription: {e}")
         return jsonify({'error': 'Failed to remove subscription'}), 500
 
-
 @push_bp.route('/test', methods=['POST'])
 @login_required
 def send_test_notification():
@@ -170,7 +169,6 @@ def send_test_notification():
         current_app.logger.error(f"Full traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
-
 @push_bp.route('/vapid-public-key', methods=['GET'])
 def get_vapid_public_key():
     """Get VAPID public key for client-side subscription"""
@@ -191,7 +189,6 @@ def get_vapid_public_key():
     except Exception as e:
         current_app.logger.error(f"Failed to get VAPID public key: {e}")
         return jsonify({'error': 'Failed to get public key'}), 500
-
 
 @push_bp.route('/preferences', methods=['GET', 'POST'])
 @login_required
@@ -232,7 +229,6 @@ def notification_preferences():
             current_app.logger.error(f"Failed to update preferences: {e}")
             return jsonify({'error': 'Failed to update preferences'}), 500
 
-
 # Analytics routes (called from service worker)
 @push_bp.route('/analytics/notification-received', methods=['POST'])
 def log_notification_received():
@@ -245,7 +241,6 @@ def log_notification_received():
     except Exception as e:
         current_app.logger.error(f"Failed to log notification received: {e}")
         return jsonify({'error': 'Failed to log'}), 500
-
 
 @push_bp.route('/analytics/notification-clicked', methods=['POST'])
 def log_notification_clicked():
@@ -273,7 +268,6 @@ def log_notification_clicked():
         current_app.logger.error(f"Failed to log notification clicked: {e}")
         return jsonify({'error': 'Failed to log'}), 500
 
-
 @push_bp.route('/analytics/notification-dismissed', methods=['POST'])
 def log_notification_dismissed():
     """Log when a notification is dismissed"""
@@ -298,7 +292,6 @@ def log_notification_dismissed():
         db.session.rollback()
         current_app.logger.error(f"Failed to log notification dismissed: {e}")
         return jsonify({'error': 'Failed to log'}), 500
-
 
 @push_bp.route('/stats', methods=['GET'])
 @login_required
@@ -343,12 +336,11 @@ def get_notification_stats():
         current_app.logger.error(f"Failed to get notification stats: {e}")
         return jsonify({'error': 'Failed to get stats'}), 500
 
-
-
 # Add this to your push/routes.py temporarily
 @push_bp.route('/debug-subscription', methods=['GET'])
 @login_required
 def debug_subscription():
+
     """Debug push subscription details"""
     try:
         # Get user's subscription
@@ -371,3 +363,223 @@ def debug_subscription():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+
+@push_bp.route('/enable-log', methods=['POST'])
+def log_enable_attempt():
+    """Log notification enablement attempts for debugging and analytics"""
+    try:
+        data = request.get_json()
+
+        # Extract data
+        log_type = data.get('type', 'unknown')  # 'success' or 'error'
+        timestamp = data.get('timestamp')
+        user_agent = data.get('userAgent', '')
+        is_ios = data.get('isIOS', False)
+        is_standalone = data.get('isStandalone', False)
+        details = data.get('details', {})
+
+        # Get user if logged in
+        user_id = current_user.id if current_user.is_authenticated else None
+
+        # Log to application logger with structured data
+        log_entry = {
+            'type': log_type,
+            'user_id': user_id,
+            'timestamp': timestamp,
+            'user_agent': user_agent,
+            'is_ios': is_ios,
+            'is_standalone': is_standalone,
+            'completed_steps': details.get('completedSteps', []),
+            'failed_step': details.get('failedStep'),
+            'error': details.get('error'),
+            'message': details.get('message')
+        }
+
+        if log_type == 'success':
+            current_app.logger.info(f"[PUSH_ENABLE_SUCCESS] User {user_id}: {log_entry}")
+        else:
+            current_app.logger.error(f"[PUSH_ENABLE_ERROR] User {user_id}: {log_entry}")
+
+        # Optionally save to database for analytics
+        # You can create a new model for this or use NotificationLog
+        try:
+            notification_log = NotificationLog(
+                user_id=user_id,
+                notification_type='enable_attempt',
+                title=f'Notification Enable: {log_type}',
+                body=details.get('message', ''),
+                data=json.dumps(log_entry),
+                status='sent' if log_type == 'success' else 'failed',
+                error_message=details.get('error') if log_type == 'error' else None,
+                sent_at=datetime.utcnow()
+            )
+            db.session.add(notification_log)
+            db.session.commit()
+        except Exception as db_error:
+            current_app.logger.error(f"Failed to save enable log to database: {db_error}")
+            db.session.rollback()
+
+        return jsonify({
+            'status': 'logged',
+            'message': 'Enable attempt logged successfully'
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to log enable attempt: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to log enable attempt'
+        }), 500
+
+
+@push_bp.route('/check-status', methods=['GET'])
+@login_required
+def check_notification_status():
+    """Check if user has active push subscription"""
+    try:
+        # Check if user has any active subscriptions
+        subscription = PushSubscription.query.filter_by(
+            user_id=current_user.id
+        ).first()
+
+        if hasattr(subscription, 'is_active'):
+            has_subscription = subscription and subscription.is_active
+        else:
+            has_subscription = bool(subscription)
+
+        return jsonify({
+            'enabled': has_subscription,
+            'subscription_count': PushSubscription.query.filter_by(
+                user_id=current_user.id
+            ).count(),
+            'last_subscription': subscription.created_at.isoformat() if subscription and hasattr(subscription, 'created_at') else None
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to check notification status: {e}")
+        return jsonify({
+            'enabled': False,
+            'error': 'Failed to check status'
+        }), 500
+
+
+@push_bp.route('/troubleshoot', methods=['POST'])
+@login_required
+def troubleshoot_notifications():
+    """Troubleshooting endpoint to help debug notification issues"""
+    try:
+        data = request.get_json() or {}
+
+        # Collect diagnostic information
+        diagnostics = {
+            'user_id': current_user.id,
+            'timestamp': datetime.utcnow().isoformat(),
+            'user_agent': request.headers.get('User-Agent', ''),
+            'reported_issue': data.get('issue', 'Unknown'),
+            'browser_info': data.get('browserInfo', {}),
+            'subscription_info': {}
+        }
+
+        # Check subscriptions
+        subscriptions = PushSubscription.query.filter_by(
+            user_id=current_user.id
+        ).all()
+
+        diagnostics['subscription_info'] = {
+            'count': len(subscriptions),
+            'subscriptions': []
+        }
+
+        for sub in subscriptions:
+            sub_info = {
+                'id': sub.id,
+                'created': sub.created_at.isoformat() if hasattr(sub, 'created_at') else None,
+                'is_active': sub.is_active if hasattr(sub, 'is_active') else True,
+                'endpoint_preview': sub.get_endpoint()[:50] + '...' if hasattr(sub, 'get_endpoint') else 'N/A'
+            }
+            diagnostics['subscription_info']['subscriptions'].append(sub_info)
+
+        # Check VAPID configuration
+        diagnostics['vapid_configured'] = bool(
+            current_app.config.get('VAPID_PRIVATE_KEY') and
+            current_app.config.get('VAPID_PUBLIC_KEY') and
+            current_app.config.get('VAPID_CLAIM_EMAIL')
+        )
+
+        # Log diagnostics
+        current_app.logger.warning(f"[PUSH_TROUBLESHOOT] User {current_user.id}: {diagnostics}")
+
+        # Save to database
+        try:
+            troubleshoot_log = NotificationLog(
+                user_id=current_user.id,
+                notification_type='troubleshoot',
+                title='Notification Troubleshooting',
+                body=data.get('issue', 'Unknown issue'),
+                data=json.dumps(diagnostics),
+                status='pending',
+                sent_at=datetime.utcnow()
+            )
+            db.session.add(troubleshoot_log)
+            db.session.commit()
+        except Exception as db_error:
+            current_app.logger.error(f"Failed to save troubleshoot log: {db_error}")
+            db.session.rollback()
+
+        return jsonify({
+            'status': 'received',
+            'diagnostics': diagnostics,
+            'suggestions': generate_suggestions(diagnostics)
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Troubleshoot endpoint error: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+def generate_suggestions(diagnostics):
+    """Generate troubleshooting suggestions based on diagnostics"""
+    suggestions = []
+
+    # Check subscription count
+    if diagnostics['subscription_info']['count'] == 0:
+        suggestions.append({
+            'issue': 'No active subscriptions',
+            'suggestion': 'Try enabling notifications again using the button above'
+        })
+
+    # Check VAPID
+    if not diagnostics.get('vapid_configured'):
+        suggestions.append({
+            'issue': 'Server configuration issue',
+            'suggestion': 'VAPID keys not properly configured. Contact support.'
+        })
+
+    # Check multiple subscriptions
+    if diagnostics['subscription_info']['count'] > 3:
+        suggestions.append({
+            'issue': 'Multiple subscriptions detected',
+            'suggestion': 'Try disabling and re-enabling notifications to clean up old subscriptions'
+        })
+
+    # Check browser
+    user_agent = diagnostics.get('user_agent', '').lower()
+    if 'safari' in user_agent and 'chrome' not in user_agent:
+        if 'iphone' in user_agent or 'ipad' in user_agent:
+            suggestions.append({
+                'issue': 'iOS Safari detected',
+                'suggestion': 'Make sure the app is added to Home Screen and opened from there'
+            })
+
+    if not suggestions:
+        suggestions.append({
+            'issue': 'No specific issues detected',
+            'suggestion': 'Your notifications appear to be configured correctly. Try sending a test notification.'
+        })
+
+    return suggestions
