@@ -10,7 +10,7 @@ from . import auth_bp, validators
 from .decorators import redirect_if_authenticated, admin_required, user_required
 from ..forms import (RegistrationForm, UserLoginForm, ClubLoginForm,
                      SiteAdminRegistrationForm, ClubRegistrationForm)
-from ..utils import send_email_verification, send_email_verification_success, check_email_verification_required, validate_email_security, generate_verification_token, send_verification_email_graph, verify_token
+from ..utils import send_email_verification, send_email_verification_success, check_email_verification_required, validate_email_security, generate_verification_token, send_verification_email_graph, verify_token, send_email_via_graph
 
 # Helper function to create the serializer
 def get_serializer(secret_key):
@@ -390,7 +390,10 @@ def reset_request():
         return redirect(url_for('main.index'))
 
     if request.method == 'POST':
-        email = request.form.get('email')
+        email = request.form.get('email', '').strip().lower()
+        # Debug logging
+        current_app.logger.info(f"Password reset requested for: {email}")
+
         user = User.query.filter_by(email=email).first()
 
         if user:
@@ -402,6 +405,7 @@ def reset_request():
 
             return redirect(url_for('auth.login_choice'))
         else:
+            current_app.logger.warning(f"No user found for email: {email}")
             # Don't reveal if email exists for security
             flash('If an account with that email exists, a reset link has been sent.', 'info')
             return redirect(url_for('auth.login_choice'))
