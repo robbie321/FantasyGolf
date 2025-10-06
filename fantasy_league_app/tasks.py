@@ -1048,6 +1048,33 @@ def finalize_finished_leagues(self):
                         for score in PlayerScore.query.filter_by(league_id=league.id).all()
                     }
 
+                    if not historical_scores:
+                        logger.info(f"FINALIZE: No historical scores found, archiving current scores for league {league.id}")
+
+                        # Get all unique players in this league
+                        all_players_in_league = set()
+                        for entry in entries:
+                            if entry.player1:
+                                all_players_in_league.add(entry.player1)
+                            if entry.player2:
+                                all_players_in_league.add(entry.player2)
+                            if entry.player3:
+                                all_players_in_league.add(entry.player3)
+
+                        # Archive current scores
+                        for player in all_players_in_league:
+                            historical_score = PlayerScore(
+                                player_id=player.id,
+                                league_id=league.id,
+                                score=player.current_score or 0
+                            )
+                            db.session.add(historical_score)
+                            historical_scores[player.id] = player.current_score or 0
+
+                        db.session.commit()
+                        logger.info(f"FINALIZE: Archived {len(all_players_in_league)} player scores for league {league.id}")
+
+
                     # Verify we have scores
                     if not historical_scores:
                         logger.warning(f"FINALIZE: No historical scores for league {league.id}")
