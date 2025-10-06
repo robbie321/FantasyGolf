@@ -175,10 +175,9 @@ def update_player_scores(self, tour, end_time_iso):
                     for league in active_leagues_on_tour:
                         entries = league.entries
                         for entry in entries:
-                            s1 = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
-                            s2 = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
-                            s3 = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
-                            entry.temp_score = s1 + s2 + s3
+                            if not all([entry.player1_id, entry.player2_id, entry.player3_id]):
+                                logger.warning(f"Entry {entry.id} has missing players")
+
                         entries.sort(key=lambda x: x.temp_score)
                         old_ranks_by_league[league.id] = {entry.user_id: rank + 1 for rank, entry in enumerate(entries)}
 
