@@ -175,9 +175,10 @@ def update_player_scores(self, tour, end_time_iso):
                     for league in active_leagues_on_tour:
                         entries = league.entries
                         for entry in entries:
-                            if not all([entry.player1_id, entry.player2_id, entry.player3_id]):
-                                logger.warning(f"Entry {entry.id} has missing players")
-
+                            s1 = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
+                            s2 = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
+                            s3 = entry.player3.current_score if entry.player3 and entry.player3.current_score is not None else 0
+                            entry.temp_score = s1 + s2 + s3
                         entries.sort(key=lambda x: x.temp_score)
                         old_ranks_by_league[league.id] = {entry.user_id: rank + 1 for rank, entry in enumerate(entries)}
 
@@ -1041,19 +1042,22 @@ def finalize_finished_leagues(self):
                         db.session.add(league)
                         continue
 
-                    # Calculate final scores
+                    # Get historical scores from PlayerScore table
                     historical_scores = {
                         score.player_id: score.score
                         for score in PlayerScore.query.filter_by(league_id=league.id).all()
                     }
 
-                    for entry in entries:
-                        score1 = historical_scores.get(entry.player1_id, 0)
-                        score2 = historical_scores.get(entry.player2_id, 0)
-                        score3 = historical_scores.get(entry.player3_id, 0)
-                        entry.total_score = score1 + score2 + score3
+                    # Verify we have scores
+                    if not historical_scores:
+                        logger.warning(f"FINALIZE: No historical scores for league {league.id}")
+                        continue
+
+                    # ✅ REMOVED: Don't set entry.total_score - it's calculated by @property
+                    # The total_score property will automatically calculate from historical_scores
 
                     # Determine winners
+                    # The total_score property accesses historical scores automatically
                     min_score = min(entry.total_score for entry in entries if entry.total_score is not None)
                     top_entries = [entry for entry in entries if entry.total_score == min_score]
 
@@ -1504,229 +1508,10 @@ def enhance_send_deadline_reminders():
                     user_ids=user_ids,
                     template_name='league_update',
                     template_data={
-                        'message': f'Entry deadline for {league.name} is in 12 hours!'
+                        'message': f'Entry deadline for {league.name} is in 12-24 hours!'
                     },
                     url=f'/league/{league.id}'
                 )
 
     except Exception as e:
         print(f"Failed to send push deadline reminders: {e}")
-
-
-@shared_task
-def send_deadline_urgent_alerts():
-    """Send urgent alerts for leagues with approaching deadlines and filling spots"""
-    app = get_app()
-
-    with app.app_context():
-        logger.info("DEADLINE ALERTS: Starting urgent deadline notifications")
-
-        try:
-            now = datetime.utcnow()
-
-            # Find leagues with deadline in 1-3 hours
-            deadline_start = now + timedelta(hours=1)
-            deadline_end = now + timedelta(hours=3)
-
-            urgent_leagues = League.query.filter(
-                League.entry_deadline >= deadline_start,
-                League.entry_deadline <= deadline_end,
-                League.is_finalized == False
-            ).all()
-
-            notifications_sent = 0
-
-            for league in urgent_leagues:
-                # Calculate spots left
-                max_entries = league.max_entries if hasattr(league, 'max_entries') else 50
-                current_entries = len(league.entries)
-                spots_left = max_entries - current_entries
-
-                # Only alert if filling up (>50% full or <10 spots)
-                if current_entries / max_entries < 0.5 and spots_left > 10:
-                    continue
-
-                # Calculate hours until deadline
-                time_until = league.entry_deadline - now
-                hours_left = int(time_until.total_seconds() / 3600)
-
-                # Find users who might be interested but haven't joined
-                # (users who joined similar leagues recently)
-                similar_league_users = db.session.query(LeagueEntry.user_id).join(League).filter(
-                    League.tour == league.tour,
-                    League.entry_fee == league.entry_fee,
-                    League.id != league.id,
-                    League.start_date >= now - timedelta(days=30)
-                ).distinct().all()
-
-                # Exclude users already in this league
-                already_in = [entry.user_id for entry in league.entries]
-                potential_users = [
-                    user_id[0] for user_id in similar_league_users
-                    if user_id[0] not in already_in
-                ]
-
-                if potential_users:
-                    send_template_notification_task.delay(
-                        user_ids=potential_users[:20],  # Limit to 20 to avoid spam
-                        template_name='deadline_urgent',
-                        template_data={
-                            'league_name': league.name,
-                            'hours': hours_left,
-                            'spots_left': spots_left
-                        },
-                        url=f'/league/{league.id}'
-                    )
-                    notifications_sent += len(potential_users[:20])
-
-            logger.info(f"DEADLINE ALERTS: Sent {notifications_sent} urgent alerts")
-            return f"Sent {notifications_sent} deadline alerts"
-
-        except Exception as e:
-            logger.error(f"DEADLINE ALERTS: Error: {e}")
-            return f"Error: {e}"
-
-
-@shared_task
-def send_friend_joined_notifications():
-    """Notify users when their friends join leagues"""
-    app = get_app()
-
-    with app.app_context():
-        logger.info("FRIEND ALERTS: Starting friend activity notifications")
-
-        try:
-            # Get recent league joins (last 30 minutes)
-            recent_time = datetime.utcnow() - timedelta(minutes=30)
-
-            # You'll need to add a 'created_at' timestamp to LeagueEntry if you don't have one
-            recent_entries = LeagueEntry.query.filter(
-                LeagueEntry.created_at >= recent_time if hasattr(LeagueEntry, 'created_at') else True
-            ).all()
-
-            notifications_sent = 0
-
-            for entry in recent_entries:
-                league = entry.league
-                user = entry.user
-
-                # Find user's friends (you'll need to implement friendship system)
-                # For now, we'll use users in same past leagues as proxy for "friends"
-                friend_ids = db.session.query(LeagueEntry.user_id).join(League).filter(
-                    League.id.in_(
-                        db.session.query(League.id).join(LeagueEntry).filter(
-                            LeagueEntry.user_id == user.id
-                        )
-                    ),
-                    LeagueEntry.user_id != user.id
-                ).distinct().limit(50).all()
-
-                friend_ids = [f[0] for f in friend_ids]
-
-                # Exclude friends already in this league
-                already_in = [e.user_id for e in league.entries]
-                friends_to_notify = [fid for fid in friend_ids if fid not in already_in]
-
-                if friends_to_notify:
-                    send_template_notification_task.delay(
-                        user_ids=friends_to_notify,
-                        template_name='friend_joined',
-                        template_data={
-                            'friend_name': user.full_name,
-                            'league_name': league.name
-                        },
-                        url=f'/league/{league.id}'
-                    )
-                    notifications_sent += len(friends_to_notify)
-
-            logger.info(f"FRIEND ALERTS: Sent {notifications_sent} notifications")
-            return f"Sent {notifications_sent} friend activity alerts"
-
-        except Exception as e:
-            logger.error(f"FRIEND ALERTS: Error: {e}")
-            return f"Error: {e}"
-
-
-@shared_task
-def send_tee_time_notifications():
-    """Send notifications when user's players are about to tee off (20 min before)"""
-    app = get_app()
-
-    with app.app_context():
-        logger.info("TEE TIME ALERTS: Starting tee time notifications")
-
-        try:
-            from datetime import datetime, timedelta
-
-            # Get time window (next 15-25 minutes)
-            now = datetime.utcnow()
-            start_window = now + timedelta(minutes=15)
-            end_window = now + timedelta(minutes=25)
-
-            # Get active leagues
-            active_leagues = League.query.filter(
-                League.is_finalized == False,
-                League.start_date <= now
-            ).all()
-
-            notifications_sent = 0
-
-            for league in active_leagues:
-                # Get tee times for this tour
-                data_golf_client = DataGolfClient()
-                field_data, error = data_golf_client.get_tournament_field_updates(league.tour)
-
-                if error or not field_data:
-                    continue
-
-                current_round = field_data.get('current_round', 1)
-                tee_time_key = f'r{current_round}_teetime'
-
-                # Check each entry's players
-                for entry in league.entries:
-                    players_teeing_off = []
-
-                    for player in [entry.player1, entry.player2, entry.player3]:
-                        if not player:
-                            continue
-
-                        # Find player in field data
-                        for field_player in field_data.get('field', []):
-                            if field_player.get('dg_id') == player.dg_id:
-                                tee_time_str = field_player.get(tee_time_key)
-
-                                if tee_time_str:
-                                    try:
-                                        tee_time = datetime.strptime(tee_time_str, '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
-                                        tee_time_naive = tee_time.replace(tzinfo=None)
-
-                                        # Check if within notification window
-                                        if start_window <= tee_time_naive <= end_window:
-                                            minutes_until = int((tee_time_naive - now).total_seconds() / 60)
-                                            players_teeing_off.append({
-                                                'name': player.full_name(),
-                                                'minutes': minutes_until
-                                            })
-                                    except (ValueError, TypeError):
-                                        continue
-
-                    # Send notification if any players are teeing off soon
-                    if players_teeing_off:
-                        for player_info in players_teeing_off:
-                            send_template_notification_task.delay(
-                                user_ids=[entry.user_id],
-                                template_name='player_teeing_off',
-                                template_data={
-                                    'player_name': player_info['name'],
-                                    'minutes': player_info['minutes']
-                                },
-                                url=f'/league/{league.id}'
-                            )
-                            notifications_sent += 1
-
-            logger.info(f"TEE TIME ALERTS: Sent {notifications_sent} notifications")
-            return f"Sent {notifications_sent} tee time alerts"
-
-        except Exception as e:
-            logger.error(f"TEE TIME ALERTS: Error: {e}")
-            return f"Error: {e}"
