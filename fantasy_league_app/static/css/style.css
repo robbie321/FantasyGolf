@@ -731,9 +731,8 @@ h4 { font-size: 1.1rem; }
 .nav-item.nav-item-cta {
     background: linear-gradient(135deg, #006a4e 0%, #4a7c59 100%);
     color: white;
-    border-radius: 20px;
     padding: 12px 16px;
-    box-shadow: 0 4px 16px rgba(0, 106, 78, 0.4);
+    /* box-shadow: 0 4px 16px rgba(0, 106, 78, 0.4); */
     transform: translateY(-8px);
     min-width: 70px;
 }
@@ -1009,7 +1008,7 @@ h4 { font-size: 1.1rem; }
     bottom: 0;
     left: 0;
     right: 0;
-    height: 76px;
+    height: 86px;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
     display: none;
@@ -1082,7 +1081,7 @@ h4 { font-size: 1.1rem; }
     cursor: pointer;
     padding: 8px 12px;
     border-radius: 16px;
-    font-weight: 600;
+    /* font-weight: 600; */
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     min-width: 60px;
@@ -1360,7 +1359,7 @@ h4 { font-size: 1.1rem; }
 
 @media (max-width: 768px) {
     .dashboard-hero {
-        padding: 2rem 1rem;
+        display: none;
     }
 
     .user-info {
@@ -1506,7 +1505,7 @@ h4 { font-size: 1.1rem; }
 
 @media (max-width: 375px) {
     .mobile-nav {
-        height: 72px;
+        height: 82px;
         padding: 0 4px;
     }
 

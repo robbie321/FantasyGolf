@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Tips Dismissal Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { padding: 10px; margin: 5px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Tips Dismissal Test Page</h1>
+    <p><strong>User:</strong> {{ current_user.email }} (ID: {{ current_user.id }})</p>
+
+    <div class="section">
+        <h2>Current Status</h2>
+        <button onclick="fetchStatus()">Fetch Current Status</button>
+        <pre id="statusOutput"></pre>
+    </div>
+
+    <div class="section">
+        <h2>Dismiss Tip</h2>
+        <input type="text" id="tipIdInput" placeholder="Enter tip ID (e.g., 'test')" value="test">
+        <button onclick="dismissTip()">Dismiss Tip</button>
+        <pre id="dismissOutput"></pre>
+    </div>
+
+    <div class="section">
+        <h2>Debug Database</h2>
+        <button onclick="fetchDebug()">Check Database Value</button>
+        <pre id="debugOutput"></pre>
+    </div>
+
+    <div class="section">
+        <h2>Console Logs</h2>
+        <pre id="consoleLog" style="max-height: 300px; overflow-y: scroll;"></pre>
+    </div>
+
+    <script>
+        // Intercept console.log
+        const originalLog = console.log;
+        const logElement = document.getElementById('consoleLog');
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            logElement.textContent += args.join(' ') + '\n';
+            logElement.scrollTop = logElement.scrollHeight;
+        };
+
+        async function fetchStatus() {
+            console.log('Fetching /api/onboarding/status...');
+            try {
+                const response = await fetch('/api/onboarding/status');
+                console.log('Status response:', response.status);
+
+                const text = await response.text();
+                console.log('Response text:', text.substring(0, 100));
+
+                const data = JSON.parse(text);
+                document.getElementById('statusOutput').textContent = JSON.stringify(data, null, 2);
+                console.log('Status:', data);
+            } catch (error) {
+                document.getElementById('statusOutput').textContent = 'Error: ' + error.message;
+                console.error('Error fetching status:', error);
+            }
+        }
+
+        async function dismissTip() {
+            const tipId = document.getElementById('tipIdInput').value;
+            console.log(`Dismissing tip: "${tipId}"...`);
+            console.log('CSRF Token:', getCsrfToken());
+
+            try {
+                const response = await fetch('/api/onboarding/dismiss-tip', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({ tip_id: tipId })
+                });
+
+                console.log('Dismiss response:', response.status);
+                const text = await response.text();
+                console.log('Response text:', text.substring(0, 100));
+
+                const data = JSON.parse(text);
+                document.getElementById('dismissOutput').textContent = JSON.stringify(data, null, 2);
+                console.log('Dismiss data:', data);
+
+                // Auto-fetch status after dismissal
+                setTimeout(fetchStatus, 500);
+            } catch (error) {
+                document.getElementById('dismissOutput').textContent = 'Error: ' + error.message;
+                console.error('Error dismissing tip:', error);
+            }
+        }
+
+        async function fetchDebug() {
+            console.log('Fetching /api/debug/tips-dismissed...');
+            try {
+                const response = await fetch('/api/debug/tips-dismissed');
+                console.log('Debug response:', response.status);
+
+                const text = await response.text();
+                const data = JSON.parse(text);
+                document.getElementById('debugOutput').textContent = JSON.stringify(data, null, 2);
+                console.log('Debug data:', data);
+            } catch (error) {
+                document.getElementById('debugOutput').textContent = 'Error: ' + error.message;
+                console.error('Error fetching debug:', error);
+            }
+        }
+
+        function getCsrfToken() {
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            return meta ? meta.content : '';
+        }
+
+        // Auto-fetch on load
+        window.addEventListener('load', () => {
+            console.log('Page loaded, fetching initial status...');
+            fetchStatus();
+            fetchDebug();
+        });
+    </script>
+</body>
+</html>

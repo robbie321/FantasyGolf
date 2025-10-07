@@ -706,12 +706,33 @@ def invalidate_user_caches(user_id):
 @login_required
 def get_onboarding_status():
     """Get user's onboarding status"""
+    # Check if current_user is a SiteAdmin or Club (they don't have tutorial_completed)
+    from fantasy_league_app.models import SiteAdmin, Club
+
+    if isinstance(current_user._get_current_object(), (SiteAdmin, Club)):
+        # Return default values for admin/club owner
+        return jsonify({
+            'tutorial_completed': True,
+            'onboarding_step': 'completed',
+            'should_show_tutorial': False,
+            'days_since_signup': 0,
+            'dismissed_tips': []
+        })
+
+    # Ensure tips_dismissed is a valid list
+    tips_dismissed = current_user.tips_dismissed
+    if not isinstance(tips_dismissed, list):
+        tips_dismissed = []
+
+    current_app.logger.info(f"User {current_user.id} onboarding status requested. tips_dismissed: {tips_dismissed}")
+
+    # Normal user response
     return jsonify({
-        'tutorial_completed': current_user.tutorial_completed,
-        'onboarding_step': current_user.onboarding_step,
-        'should_show_tutorial': not current_user.tutorial_completed,
-        'days_since_signup': (datetime.utcnow() - current_user.first_login).days if current_user.first_login else 0,
-        'dismissed_tips': current_user.tips_dismissed if current_user.tips_dismissed else []
+        'tutorial_completed': getattr(current_user, 'tutorial_completed', True),
+        'onboarding_step': getattr(current_user, 'onboarding_step', 'completed'),
+        'should_show_tutorial': not getattr(current_user, 'tutorial_completed', True),
+        'days_since_signup': (datetime.utcnow() - current_user.first_login).days if hasattr(current_user, 'first_login') and current_user.first_login else 0,
+        'dismissed_tips': tips_dismissed
     })
 
 @main_bp.route('/api/onboarding/complete-tutorial', methods=['POST'])
@@ -741,7 +762,18 @@ def dismiss_tip():
         return jsonify({'success': False, 'message': 'Tip ID required'}), 400
 
     try:
+        # Log before dismissal
+        current_app.logger.info(f"User {current_user.id} dismissing tip '{tip_id}'. Current tips_dismissed: {current_user.tips_dismissed}")
+
+        # Dismiss the tip
         current_user.dismiss_tip(tip_id)
+
+        # Refresh the user from database to confirm save
+        db.session.refresh(current_user)
+
+        # Log after dismissal
+        current_app.logger.info(f"User {current_user.id} after dismissal. tips_dismissed: {current_user.tips_dismissed}")
+
         return jsonify({
             'success': True,
             'message': f'Tip {tip_id} dismissed',
@@ -749,10 +781,37 @@ def dismiss_tip():
         })
     except Exception as e:
         current_app.logger.error(f"Error dismissing tip {tip_id}: {str(e)}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
         return jsonify({
             'success': False,
             'message': str(e)
         }), 500
+
+@main_bp.route('/test-tips')
+@login_required
+def test_tips_page():
+    """Test page for debugging tips dismissal"""
+    return render_template('test_tips.html')
+
+@main_bp.route('/api/debug/tips-dismissed')
+@login_required
+def debug_tips_dismissed():
+    """Debug endpoint to check tips_dismissed value directly from DB"""
+    from sqlalchemy import text
+
+    # Query directly from database
+    result = db.session.execute(
+        text("SELECT id, email, tips_dismissed FROM users WHERE id = :user_id"),
+        {"user_id": current_user.id}
+    ).fetchone()
+
+    return jsonify({
+        'current_user_id': current_user.id,
+        'current_user_tips_dismissed': current_user.tips_dismissed,
+        'db_raw_value': result[2] if result else None,
+        'tips_dismissed_type': str(type(current_user.tips_dismissed))
+    })
 
 @main_bp.route('/api/leagues/beginner-friendly')
 @login_required

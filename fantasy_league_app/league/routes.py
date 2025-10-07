@@ -190,7 +190,7 @@ def get_leaderboard_data(league_id):
     league = League.query.get_or_404(league_id)
 
     # Use the cached leaderboard method from the model
-    leaderboard_data = league.get_leaderboard_()
+    leaderboard_data = league.get_leaderboard()
 
     # Add user-specific data
     for entry in leaderboard_data:
@@ -841,7 +841,7 @@ def view_league(league_id):
 
     try:
         # Use cached leaderboard
-        leaderboard = league.get_leaderboard_()
+        leaderboard = league.get_leaderboard()
     except Exception as e:
         leaderboard = []
 
@@ -963,7 +963,7 @@ def club_league_view(league_id):
         return redirect(url_for('main.club_dashboard'))
 
     # Use the cached leaderboard method - same as user view
-    leaderboard_data = league.get_leaderboard_()
+    leaderboard_data = league.get_leaderboard()
 
     return render_template(
         'league/club_league_view.html',

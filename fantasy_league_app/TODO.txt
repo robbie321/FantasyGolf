@@ -1,6 +1,6 @@
 Start App:
 flask --app fantasy_league_app:create_app run
-flask --app fantasy_league_app:create_app db migrate -m "Add onboarding fields"
+flask --app fantasy_league_app:create_app db migrate -m "Add notification fields"
 flask --app fantasy_league_app:create_app db upgrade
 source venv/Scripts/activate
 

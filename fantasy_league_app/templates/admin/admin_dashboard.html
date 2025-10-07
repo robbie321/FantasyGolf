@@ -635,6 +635,61 @@
     color: #856404;
   }
 
+  /* Redis Alerts Section */
+  .redis-alerts {
+    margin-top: 1.5rem;
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+  }
+
+  .redis-alerts .alerts-header {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--dark-gray);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .redis-alerts .alert {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .redis-alerts .alert:last-child {
+    margin-bottom: 0;
+  }
+
+  .redis-alerts .alert-danger {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+  }
+
+  .redis-alerts .alert-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+  }
+
+  .redis-alerts .alert-info {
+    background: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+  }
+
+  .redis-alerts .alert i {
+    font-size: 1.2rem;
+  }
+
   /* Loading animation for refresh button */
   .action-btn .fa-sync-alt {
     transition: transform 0.3s ease;
@@ -869,6 +924,28 @@
             <div class="redis-stat-sublabel">Waiting connections</div>
           </div>
         </div>
+
+        <div class="redis-stat-card" id="memory-card">
+          <div class="redis-stat-icon">
+            <i class="fas fa-memory"></i>
+          </div>
+          <div class="redis-stat-content">
+            <div class="redis-stat-value" id="memory-usage">--</div>
+            <div class="redis-stat-label">Memory Usage</div>
+            <div class="redis-stat-sublabel">Current / Peak</div>
+          </div>
+        </div>
+
+        <div class="redis-stat-card" id="ops-card">
+          <div class="redis-stat-icon">
+            <i class="fas fa-bolt"></i>
+          </div>
+          <div class="redis-stat-content">
+            <div class="redis-stat-value" id="ops-per-sec">--</div>
+            <div class="redis-stat-label">Ops/Second</div>
+            <div class="redis-stat-sublabel">Current throughput</div>
+          </div>
+        </div>
       </div>
 
       <div class="redis-actions">
@@ -898,6 +975,14 @@
       <div class="redis-status-message" id="redis-status-message">
         <i class="fas fa-info-circle"></i>
         Click "Refresh Stats" to load current Redis connection data
+      </div>
+
+      <!-- Redis Alerts -->
+      <div class="redis-alerts" id="redis-alerts" style="display: none;">
+        <div class="alerts-header">
+          <i class="fas fa-bell"></i> <strong>System Alerts</strong>
+        </div>
+        <div id="alerts-container"></div>
       </div>
     </div>
 
@@ -1491,16 +1576,29 @@
   }
 
   function updateRedisUI(data) {
-    const connected = data.connected_clients || 0;
-    const max = data.max_connections || 30;
-    const blocked = data.blocked_clients || 0;
-    const usage = data.usage_percentage || 0;
+    // Extract from nested structure
+    const connectionHealth = data.connection_health || {};
+    const connected = connectionHealth.connected_clients || 0;
+    const max = connectionHealth.max_connections || 30;
+    const blocked = connectionHealth.blocked_clients || 0;
+    const usage = connectionHealth.usage_percentage || 0;
 
-    // Update values
+    // Update connection values
     document.getElementById("connected-clients").textContent = connected;
     document.getElementById("max-connections").textContent = max;
     document.getElementById("blocked-clients").textContent = blocked;
     document.getElementById("usage-percentage").textContent = usage + "%";
+
+    // Update memory and performance stats
+    const memoryHealth = data.memory_health || {};
+    const performance = data.performance || {};
+
+    const memoryUsed = memoryHealth.used_memory_human || '--';
+    const memoryPeak = memoryHealth.used_memory_peak_human || '--';
+    document.getElementById("memory-usage").textContent = `${memoryUsed} / ${memoryPeak}`;
+
+    const opsPerSec = performance.instantaneous_ops_per_sec || 0;
+    document.getElementById("ops-per-sec").textContent = opsPerSec;
 
     // Update usage bar
     const usageBar = document.getElementById("usage-bar-fill");
@@ -1547,6 +1645,27 @@
         usage +
         "%. Monitor closely.";
       statusMessage.className = "redis-status-message warning";
+    }
+
+    // Display alerts if any
+    const alerts = data.alerts || [];
+    const alertsSection = document.getElementById("redis-alerts");
+    const alertsContainer = document.getElementById("alerts-container");
+
+    if (alerts.length > 0) {
+      alertsSection.style.display = "block";
+      alertsContainer.innerHTML = alerts.map(alert => {
+        const alertClass = alert.level === 'CRITICAL' ? 'alert-danger' :
+                          alert.level === 'WARNING' ? 'alert-warning' : 'alert-info';
+        return `
+          <div class="alert ${alertClass}">
+            <i class="fas fa-${alert.level === 'CRITICAL' ? 'exclamation-circle' : alert.level === 'WARNING' ? 'exclamation-triangle' : 'info-circle'}"></i>
+            <span>${alert.message}</span>
+          </div>
+        `;
+      }).join('');
+    } else {
+      alertsSection.style.display = "none";
     }
   }
 

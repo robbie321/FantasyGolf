@@ -53,7 +53,7 @@ class User(db.Model, UserMixin):
     tutorial_completed = db.Column(db.Boolean, default=False)
     onboarding_step = db.Column(db.Integer, default=0)
     first_login = db.Column(db.DateTime, default=datetime.utcnow)
-    tips_dismissed = db.Column(db.JSON, default=list)
+    tips_dismissed = db.Column(db.JSON, default=lambda: [])
 
     #PROFILE ENHANCEMENT:
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -75,26 +75,30 @@ class User(db.Model, UserMixin):
 
     def dismiss_tip(self, tip_id):
         """Dismiss a specific tip"""
-        if self.tips_dismissed is None:
+        import logging
+        from sqlalchemy.orm.attributes import flag_modified
+
+        # Ensure tips_dismissed is a valid list
+        if self.tips_dismissed is None or not isinstance(self.tips_dismissed, list):
             self.tips_dismissed = []
+            flag_modified(self, 'tips_dismissed')
 
         # Make a copy to ensure SQLAlchemy detects the change
-        current_tips = list(self.tips_dismissed)
+        current_tips = list(self.tips_dismissed) if isinstance(self.tips_dismissed, list) else []
 
         if tip_id not in current_tips:
             current_tips.append(tip_id)
             self.tips_dismissed = current_tips
             # Mark the column as modified to ensure SQLAlchemy commits it
-            from sqlalchemy.orm.attributes import flag_modified
             flag_modified(self, 'tips_dismissed')
             db.session.commit()
-            print(f"✅ Tip '{tip_id}' dismissed. Current dismissed tips: {self.tips_dismissed}")
+            logging.info(f"User {self.id}: Tip '{tip_id}' dismissed. Current dismissed tips: {self.tips_dismissed}")
         else:
-            print(f"⚠️ Tip '{tip_id}' was already dismissed")
+            logging.info(f"User {self.id}: Tip '{tip_id}' was already dismissed")
 
     def should_show_tip(self, tip_id):
         """Check if a tip should be shown"""
-        if self.tips_dismissed is None:
+        if self.tips_dismissed is None or not isinstance(self.tips_dismissed, list):
             return True
         return tip_id not in self.tips_dismissed
 
@@ -414,7 +418,6 @@ class League(db.Model):
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
     entry_deadline = db.Column(db.DateTime)
-    winner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
     is_finalized = db.Column(db.Boolean, default=False, nullable=False)
     tie_breaker_actual_answer = db.Column(db.Integer, nullable=True)
@@ -497,28 +500,29 @@ class League(db.Model):
         """Cached prize pool calculation"""
         return self.entry_fee * self.entry_count
 
-    # @cache_result('leaderboards', lambda self: CacheManager.cache_key_for_leaderboard(self.id))
-    def get_leaderboard_(self):
+    @cache_result('leaderboards', lambda self: CacheManager.cache_key_for_leaderboard(self.id))
+    def get_leaderboard(self):
         """Cached leaderboard calculation - handles both live and finalized leagues"""
-        print("=== INSIDE GET_LEADERBOARD METHOD ===")
-        print(f"DEBUG: get_leaderboard() called for league {self.id}")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"get_leaderboard() called for league {self.id}")
         entries = self.entries
-        print(f"DEBUG: Found {len(entries)} entries")
+        logger.info(f"Found {len(entries)} entries")
 
-        # Add this debug for each entry
+        # Log entry details
         for entry in entries:
-            print(f"DEBUG: Entry {entry.id}: user_id={entry.user_id}, user.id={entry.user.id}")
+            logger.debug(f"Entry {entry.id}: user_id={entry.user_id}, user.id={entry.user.id}")
 
         leaderboard_data = []
 
         if self.is_finalized:
             # --- LOGIC FOR FINALIZED LEAGUES - Use historical scores ---
-            print("League is finalized. Fetching historical scores.")
+            logger.info("League is finalized. Fetching historical scores.")
             historical_scores = {
                 hs.player_id: hs.score
                 for hs in PlayerScore.query.filter_by(league_id=self.id).all()
             }
-            print(f"DEBUG: Found {len(entries)} entries")
+            logger.info(f"Found {len(historical_scores)} historical scores")
             for entry in entries:
                 p1_score = historical_scores.get(entry.player1_id, 0)
                 p2_score = historical_scores.get(entry.player2_id, 0)
@@ -547,8 +551,7 @@ class League(db.Model):
                 })
         else:
             # --- LOGIC FOR LIVE LEAGUES - Use current scores ---
-            print("League is active. Calculating live scores.")
-            print(f"DEBUG: Found {len(entries)} entries")
+            logger.info("League is active. Calculating live scores.")
             for entry in entries:
                 score1 = entry.player1.current_score if entry.player1 and entry.player1.current_score is not None else 0
                 score2 = entry.player2.current_score if entry.player2 and entry.player2.current_score is not None else 0
@@ -622,58 +625,6 @@ class League(db.Model):
     def __repr__(self):
         return f'<League {self.name}>'
 
-    @property
-    @cache_result('league_data', lambda self: CacheManager.cache_key_for_league_entries(self.id))
-    def entry_count(self):
-        """Cached entry count to avoid repeated queries"""
-        return LeagueEntry.query.filter_by(league_id=self.id).count()
-
-    @property
-    @cache_result('league_data')
-    def total_prize_pool(self):
-        """Cached prize pool calculation"""
-        return self.entry_fee * self.entry_count
-
-    @cache_result('leaderboards', lambda self: CacheManager.cache_key_for_leaderboard(self.id))
-    def get_leaderboard(self):
-        """Cached leaderboard calculation"""
-        entries = self.entries
-        leaderboard_data = []
-
-        for entry in entries:
-            total_score = 0
-            if entry.player1 and entry.player1.current_score is not None:
-                total_score += entry.player1.current_score
-            if entry.player2 and entry.player2.current_score is not None:
-                total_score += entry.player2.current_score
-            if entry.player3 and entry.player3.current_score is not None:
-                total_score += entry.player3.current_score
-
-            leaderboard_data.append({
-                'entry_id': entry.id,
-                'user_name': entry.user.full_name,
-                'total_score': total_score,
-                'players': [
-                    {'name': entry.player1.full_name(), 'score': entry.player1.current_score},
-                    {'name': entry.player2.full_name(), 'score': entry.player2.current_score},
-                    {'name': entry.player3.full_name(), 'score': entry.player3.current_score}
-                ]
-            })
-
-        # Sort by total score (lowest first in golf)
-        leaderboard_data.sort(key=lambda x: x['total_score'])
-
-        # Add positions
-        for i, entry in enumerate(leaderboard_data):
-            entry['position'] = i + 1
-
-        return leaderboard_data
-
-    def invalidate_cache(self):
-        """Invalidate all cached data for this league"""
-        cache.delete(CacheManager.cache_key_for_league_entries(self.id))
-        cache.delete(CacheManager.cache_key_for_leaderboard(self.id))
-
 class LeagueEntry(db.Model):
     __tablename__ = 'league_entries'
 
@@ -693,7 +644,6 @@ class LeagueEntry(db.Model):
     total_odds = db.Column(db.Float, default=0.0)
     # NEW: Tie-breaker answer for the entry
     tie_breaker_answer = db.Column(db.Integer, nullable=True) # Changed to Integer for numerical answers
-    created_at = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
     league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 

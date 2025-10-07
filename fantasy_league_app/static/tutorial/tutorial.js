@@ -18,6 +18,18 @@ class TutorialManager {
     async getOnboardingStatus() {
         try {
             const response = await fetch('/api/onboarding/status');
+
+            // Check if user is authenticated (response should be JSON)
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                console.log('User not authenticated, skipping tutorial');
+                return { should_show_tutorial: false };
+            }
+
+            if (!response.ok) {
+                return { should_show_tutorial: false };
+            }
+
             return await response.json();
         } catch (error) {
             console.error('Error fetching onboarding status:', error);
