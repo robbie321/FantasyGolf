@@ -89,12 +89,73 @@
             </div>
           </div>
 
+          <!-- Search and Filter Controls -->
+          <div class="league-controls">
+            <div class="search-filter-row">
+              <div class="search-box">
+                <i class="fa-solid fa-search"></i>
+                <input
+                  type="text"
+                  id="league-search"
+                  placeholder="Search leagues by name or code..."
+                  class="search-input"
+                />
+              </div>
+
+              <div class="filter-group">
+                <select id="tour-filter" class="filter-select">
+                  <option value="">All Tours</option>
+                  <option value="PGA">PGA Tour</option>
+                  <option value="LPGA">LPGA</option>
+                  <option value="DP">DP World Tour</option>
+                  <option value="LIV">LIV Golf</option>
+                </select>
+
+                <select id="sort-select" class="filter-select">
+                  <option value="date-desc">Newest First</option>
+                  <option value="date-asc">Oldest First</option>
+                  <option value="entries-desc">Most Participants</option>
+                  <option value="entries-asc">Least Participants</option>
+                  <option value="name-asc">Name A-Z</option>
+                  <option value="name-desc">Name Z-A</option>
+                </select>
+
+                <button id="clear-filters" class="btn btn-outline btn-sm" style="display: none;">
+                  <i class="fa-solid fa-times"></i>
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <div class="bulk-actions-row" id="bulk-actions" style="display: none;">
+              <div class="bulk-actions-info">
+                <input type="checkbox" id="select-all" />
+                <label for="select-all">
+                  <span id="selected-count">0</span> selected
+                </label>
+              </div>
+              <div class="bulk-actions-buttons">
+                <button class="btn btn-outline btn-sm" id="bulk-export">
+                  <i class="fa-solid fa-download"></i>
+                  Export Selected
+                </button>
+                <button class="btn btn-primary btn-sm" id="bulk-communicate">
+                  <i class="fa-solid fa-envelope"></i>
+                  Send Message
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Professional Club Leagues Table -->
           <div class="club-leagues-container">
             <div class="club-leagues-table-wrapper">
               <table class="club-leagues-table" id="club-leagues-table">
                 <thead>
                   <tr>
+                    <th style="width: 40px;">
+                      <input type="checkbox" class="league-checkbox-header" style="display: none;" />
+                    </th>
                     <th>
                       <i class="fa-solid fa-trophy"></i>
                       League Details
@@ -115,7 +176,16 @@
                 </thead>
                 <tbody>
                   {% for league in club_leagues %}
-                  <tr class="league-row" data-status="{{ league['status'] }}">
+                  <tr class="league-row"
+                      data-status="{{ league['status'] }}"
+                      data-league-id="{{ league['id'] }}"
+                      data-league-name="{{ league['name'] }}"
+                      data-league-tour="{{ league.get('tour', 'PGA') }}"
+                      data-league-entries="{{ league['entries'] }}"
+                      data-league-date="{{ league.get('start_date', '') }}">
+                    <td style="width: 40px;">
+                      <input type="checkbox" class="league-checkbox" value="{{ league['id'] }}" />
+                    </td>
                     <td class="league-details-cell">
                       <div class="league-info">
                         <h4 class="league-title">{{ league['name'] }}</h4>
@@ -280,6 +350,39 @@
         </div>
       </section>
 
+      <!-- Templates Section -->
+      <section id="templates-section" class="page-section hidden">
+        <header class="dashboard-header">
+          <div>
+            <h1>
+              <i class="fa-solid fa-layer-group"></i>
+              League Templates
+            </h1>
+            <p class="subtitle">
+              Create and manage reusable league configurations
+            </p>
+          </div>
+          <button class="btn btn-primary" onclick="openTemplateModal()">
+            <i class="fa-solid fa-plus"></i>
+            Create Template
+          </button>
+        </header>
+
+        <div class="templates-grid" id="templates-grid">
+          <!-- Templates will be loaded here -->
+        </div>
+
+        <div id="templates-empty" class="empty-state" style="display: none;">
+          <i class="fa-solid fa-layer-group"></i>
+          <h3>No Templates Yet</h3>
+          <p>Create your first league template to speed up league creation.</p>
+          <button class="btn btn-primary" onclick="openTemplateModal()">
+            <i class="fa-solid fa-plus"></i>
+            Create Your First Template
+          </button>
+        </div>
+      </section>
+
       <!-- Wallet Section -->
       <section id="wallet-section" class="page-section hidden">
         <header class="dashboard-header">
@@ -433,10 +536,407 @@
       {% include 'main/_shared_dashboard_sections.html' with context %}
     </div>
   </main>
+
+  <!-- Communication Modal -->
+  <div id="communication-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>
+          <i class="fa-solid fa-envelope"></i>
+          Send Message to Participants
+        </h2>
+        <button class="modal-close" onclick="closeCommunicationModal()">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert info">
+          <i class="fa-solid fa-info-circle"></i>
+          <div>
+            <strong>Messaging <span id="recipient-count">0</span> league(s)</strong>
+            <span>All participants in selected leagues will receive this message via email.</span>
+          </div>
+        </div>
+
+        <form id="communication-form" action="{{ url_for('main.send_league_message') }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="league_ids" id="league-ids-input" />
+
+          <div class="form-group">
+            <label for="message-template">
+              <i class="fa-solid fa-file-lines"></i>
+              Message Template (Optional)
+            </label>
+            <select id="message-template" class="form-control">
+              <option value="">Custom Message</option>
+              <option value="welcome">Welcome Message</option>
+              <option value="reminder">Tournament Reminder</option>
+              <option value="update">League Update</option>
+            </select>
+            <small class="form-text">Choose a template or write your own message. Use {{league_name}}, {{participant_name}}, {{club_name}}, etc.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="message-subject">
+              <i class="fa-solid fa-heading"></i>
+              Subject *
+            </label>
+            <input
+              type="text"
+              id="message-subject"
+              name="subject"
+              class="form-control"
+              placeholder="Enter email subject..."
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="message-body">
+              <i class="fa-solid fa-align-left"></i>
+              Message *
+            </label>
+            <textarea
+              id="message-body"
+              name="message"
+              class="form-control"
+              rows="8"
+              placeholder="Enter your message..."
+              required
+            ></textarea>
+            <small class="form-text">Available placeholders: {{league_name}}, {{participant_name}}, {{club_name}}, {{league_code}}, {{start_date}}</small>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeCommunicationModal()">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-paper-plane"></i>
+              Send Messages
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template Modal -->
+  <div id="template-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h2>
+          <i class="fa-solid fa-layer-group"></i>
+          <span id="template-modal-title">Create League Template</span>
+        </h2>
+        <button class="modal-close" onclick="closeTemplateModal()">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <form id="template-form" action="{{ url_for('main.save_template') }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="template_id" id="template-id-input" value="" />
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="template-name">
+                <i class="fa-solid fa-tag"></i>
+                Template Name *
+              </label>
+              <input
+                type="text"
+                id="template-name"
+                name="name"
+                class="form-control"
+                placeholder="e.g., Standard PGA Tournament"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="template-description">
+              <i class="fa-solid fa-align-left"></i>
+              Description
+            </label>
+            <textarea
+              id="template-description"
+              name="description"
+              class="form-control"
+              rows="2"
+              placeholder="Optional description for this template..."
+            ></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="template-tour">
+                <i class="fa-solid fa-golf-ball"></i>
+                Tour *
+              </label>
+              <select id="template-tour" name="tour" class="form-control" required>
+                <option value="PGA">PGA Tour</option>
+                <option value="LPGA">LPGA</option>
+                <option value="DP">DP World Tour</option>
+                <option value="LIV">LIV Golf</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="template-entry-fee">
+                <i class="fa-solid fa-euro-sign"></i>
+                Entry Fee (€) *
+              </label>
+              <input
+                type="number"
+                id="template-entry-fee"
+                name="entry_fee"
+                class="form-control"
+                min="0"
+                step="0.01"
+                value="10.00"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="template-max-entries">
+                <i class="fa-solid fa-users"></i>
+                Max Entries
+              </label>
+              <input
+                type="number"
+                id="template-max-entries"
+                name="max_entries"
+                class="form-control"
+                min="1"
+                placeholder="Leave empty for unlimited"
+              />
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h4><i class="fa-solid fa-list"></i> Bucket Picks</h4>
+            <div class="bucket-picks-grid">
+              <div class="form-group">
+                <label for="template-bucket-a">Bucket A</label>
+                <input type="number" id="template-bucket-a" name="bucket_a_picks" class="form-control" min="0" value="2" required />
+              </div>
+              <div class="form-group">
+                <label for="template-bucket-b">Bucket B</label>
+                <input type="number" id="template-bucket-b" name="bucket_b_picks" class="form-control" min="0" value="2" required />
+              </div>
+              <div class="form-group">
+                <label for="template-bucket-c">Bucket C</label>
+                <input type="number" id="template-bucket-c" name="bucket_c_picks" class="form-control" min="0" value="2" required />
+              </div>
+              <div class="form-group">
+                <label for="template-bucket-d">Bucket D</label>
+                <input type="number" id="template-bucket-d" name="bucket_d_picks" class="form-control" min="0" value="2" required />
+              </div>
+              <div class="form-group">
+                <label for="template-bucket-e">Bucket E</label>
+                <input type="number" id="template-bucket-e" name="bucket_e_picks" class="form-control" min="0" value="2" required />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group checkbox-group">
+              <label>
+                <input type="checkbox" id="template-is-public" name="is_public" />
+                <span>Public League</span>
+              </label>
+            </div>
+
+            <div class="form-group checkbox-group">
+              <label>
+                <input type="checkbox" id="template-require-payment" name="require_payment" checked />
+                <span>Require Payment</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="template-tiebreaker">
+              <i class="fa-solid fa-question-circle"></i>
+              Tiebreaker Question
+            </label>
+            <input
+              type="text"
+              id="template-tiebreaker"
+              name="tiebreaker_question"
+              class="form-control"
+              placeholder="e.g., What will the winning score be?"
+            />
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeTemplateModal()">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-save"></i>
+              Save Template
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Professional JavaScript -->
 <script>
+  // Global variables for template management
+  let currentTemplateId = null;
+
+  // Global template functions (must be outside DOMContentLoaded for onclick handlers)
+  function openTemplateModal(templateId = null) {
+      console.log('openTemplateModal called with templateId:', templateId);
+      const modal = document.getElementById('template-modal');
+      const title = document.getElementById('template-modal-title');
+      const form = document.getElementById('template-form');
+
+      console.log('Modal element:', modal);
+      console.log('Title element:', title);
+      console.log('Form element:', form);
+
+      currentTemplateId = templateId;
+
+      if (templateId) {
+          title.textContent = 'Edit League Template';
+          loadTemplateData(templateId);
+      } else {
+          title.textContent = 'Create League Template';
+          form.reset();
+          document.getElementById('template-id-input').value = '';
+      }
+
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+  }
+
+  function closeTemplateModal() {
+      const modal = document.getElementById('template-modal');
+      modal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+      currentTemplateId = null;
+  }
+
+  async function loadTemplateData(templateId) {
+      try {
+          const response = await fetch(`/api/templates/${templateId}`);
+          const template = await response.json();
+
+          document.getElementById('template-id-input').value = template.id;
+          document.getElementById('template-name').value = template.name;
+          document.getElementById('template-description').value = template.description || '';
+          document.getElementById('template-tour').value = template.tour;
+          document.getElementById('template-entry-fee').value = template.entry_fee;
+          document.getElementById('template-max-entries').value = template.max_entries || '';
+          document.getElementById('template-bucket-a').value = template.bucket_picks.a;
+          document.getElementById('template-bucket-b').value = template.bucket_picks.b;
+          document.getElementById('template-bucket-c').value = template.bucket_picks.c;
+          document.getElementById('template-bucket-d').value = template.bucket_picks.d;
+          document.getElementById('template-bucket-e').value = template.bucket_picks.e;
+          document.getElementById('template-is-public').checked = template.is_public;
+          document.getElementById('template-require-payment').checked = template.require_payment;
+          document.getElementById('template-tiebreaker').value = template.tiebreaker_question || '';
+      } catch (error) {
+          console.error('Failed to load template data:', error);
+      }
+  }
+
+  async function editTemplate(templateId) {
+      openTemplateModal(templateId);
+  }
+
+  async function deleteTemplate(templateId, templateName) {
+      if (!confirm(`Are you sure you want to delete "${templateName}"? This cannot be undone.`)) {
+          return;
+      }
+
+      try {
+          const response = await fetch(`/api/templates/${templateId}`, {
+              method: 'DELETE',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': '{{ csrf_token() }}'
+              }
+          });
+
+          if (response.ok) {
+              loadTemplates();
+              alert('Template deleted successfully!');
+          } else {
+              alert('Failed to delete template. Please try again.');
+          }
+      } catch (error) {
+          console.error('Failed to delete template:', error);
+          alert('An error occurred. Please try again.');
+      }
+  }
+
+  async function loadTemplates() {
+      try {
+          const response = await fetch('/api/templates');
+          const templates = await response.json();
+
+          const grid = document.getElementById('templates-grid');
+          const emptyState = document.getElementById('templates-empty');
+
+          if (templates.length === 0) {
+              grid.style.display = 'none';
+              emptyState.style.display = 'flex';
+          } else {
+              grid.style.display = 'grid';
+              emptyState.style.display = 'none';
+
+              grid.innerHTML = templates.map(template => `
+                  <div class="template-card">
+                      <div class="template-card-header">
+                          <h3>${template.name}</h3>
+                          <span class="template-badge">${template.tour}</span>
+                      </div>
+                      <div class="template-card-body">
+                          ${template.description ? `<p class="template-description">${template.description}</p>` : ''}
+                          <div class="template-stats">
+                              <div class="template-stat">
+                                  <i class="fa-solid fa-euro-sign"></i>
+                                  <span>€${template.entry_fee}</span>
+                              </div>
+                              <div class="template-stat">
+                                  <i class="fa-solid fa-list"></i>
+                                  <span>${template.bucket_picks.a + template.bucket_picks.b + template.bucket_picks.c + template.bucket_picks.d + template.bucket_picks.e} picks</span>
+                              </div>
+                              <div class="template-stat">
+                                  <i class="fa-solid fa-clock"></i>
+                                  <span>Used ${template.times_used}x</span>
+                              </div>
+                          </div>
+                      </div>
+                      <div class="template-card-actions">
+                          <button class="btn btn-outline btn-sm" onclick="editTemplate(${template.id})">
+                              <i class="fa-solid fa-edit"></i>
+                              Edit
+                          </button>
+                          <button class="btn btn-danger btn-sm" onclick="deleteTemplate(${template.id}, '${template.name}')">
+                              <i class="fa-solid fa-trash"></i>
+                              Delete
+                          </button>
+                      </div>
+                  </div>
+              `).join('');
+          }
+      } catch (error) {
+          console.error('Failed to load templates:', error);
+      }
+  }
+
   document.addEventListener("DOMContentLoaded", function() {
       console.log("Professional Club Dashboard Initialized");
 
@@ -445,39 +945,231 @@
       const leagueRows = document.querySelectorAll('.league-row');
       const emptyRow = document.querySelector('.empty-leagues-row');
 
-      tabButtons.forEach(button => {
-          button.addEventListener('click', () => {
-              // Update active tab
-              tabButtons.forEach(btn => btn.classList.remove('active'));
-              button.classList.add('active');
+      // Search, filter, and sort elements
+      const searchInput = document.getElementById('league-search');
+      const tourFilter = document.getElementById('tour-filter');
+      const sortSelect = document.getElementById('sort-select');
+      const clearFiltersBtn = document.getElementById('clear-filters');
 
-              // Filter leagues by status
-              const selectedStatus = button.dataset.status;
-              let visibleCount = 0;
+      // Bulk actions elements
+      const selectAllCheckbox = document.getElementById('select-all');
+      const bulkActionsRow = document.getElementById('bulk-actions');
+      const selectedCountSpan = document.getElementById('selected-count');
+      const leagueCheckboxes = document.querySelectorAll('.league-checkbox');
+      const bulkExportBtn = document.getElementById('bulk-export');
+      const bulkCommunicateBtn = document.getElementById('bulk-communicate');
 
-              leagueRows.forEach(row => {
-                  const rowStatus = row.dataset.status;
-                  if (rowStatus === selectedStatus) {
-                      row.style.display = '';
-                      visibleCount++;
-                  } else {
-                      row.style.display = 'none';
-                  }
-              });
+      let currentFilters = {
+          status: 'Live',
+          search: '',
+          tour: '',
+          sort: 'date-desc'
+      };
 
-              // Show/hide empty state
-              if (emptyRow) {
-                  if (visibleCount === 0 && leagueRows.length > 0) {
-                      emptyRow.style.display = '';
-                      emptyRow.querySelector('h4').textContent = `No ${selectedStatus.toLowerCase()} leagues`;
-                      emptyRow.querySelector('p').textContent = `You don't have any ${selectedStatus.toLowerCase()} leagues at the moment.`;
-                  } else if (leagueRows.length === 0) {
-                      emptyRow.style.display = '';
-                  } else {
-                      emptyRow.style.display = 'none';
-                  }
+      // Apply all filters and sorting
+      function applyFilters() {
+          let visibleRows = [];
+
+          leagueRows.forEach(row => {
+              const status = row.dataset.status;
+              const name = row.dataset.leagueName.toLowerCase();
+              const tour = row.dataset.leagueTour.toUpperCase();
+              const searchTerm = currentFilters.search.toLowerCase();
+
+              // Check if row matches all filters
+              const matchesStatus = status === currentFilters.status;
+              const matchesSearch = !searchTerm || name.includes(searchTerm) ||
+                                   row.querySelector('.league-code')?.textContent.toLowerCase().includes(searchTerm);
+              const matchesTour = !currentFilters.tour || tour === currentFilters.tour;
+
+              if (matchesStatus && matchesSearch && matchesTour) {
+                  visibleRows.push(row);
+              } else {
+                  row.style.display = 'none';
               }
           });
+
+          // Sort visible rows
+          sortRows(visibleRows);
+
+          // Show/hide rows
+          visibleRows.forEach(row => row.style.display = '');
+
+          // Update empty state
+          updateEmptyState(visibleRows.length);
+
+          // Show/hide clear filters button
+          const hasActiveFilters = currentFilters.search || currentFilters.tour || currentFilters.sort !== 'date-desc';
+          clearFiltersBtn.style.display = hasActiveFilters ? 'inline-flex' : 'none';
+      }
+
+      function sortRows(rows) {
+          const tbody = document.querySelector('.club-leagues-table tbody');
+
+          rows.sort((a, b) => {
+              const aName = a.dataset.leagueName;
+              const bName = b.dataset.leagueName;
+              const aEntries = parseInt(a.dataset.leagueEntries) || 0;
+              const bEntries = parseInt(b.dataset.leagueEntries) || 0;
+              const aDate = new Date(a.dataset.leagueDate || 0);
+              const bDate = new Date(b.dataset.leagueDate || 0);
+
+              switch(currentFilters.sort) {
+                  case 'name-asc':
+                      return aName.localeCompare(bName);
+                  case 'name-desc':
+                      return bName.localeCompare(aName);
+                  case 'entries-asc':
+                      return aEntries - bEntries;
+                  case 'entries-desc':
+                      return bEntries - aEntries;
+                  case 'date-asc':
+                      return aDate - bDate;
+                  case 'date-desc':
+                  default:
+                      return bDate - aDate;
+              }
+          });
+
+          // Reorder DOM elements
+          rows.forEach(row => tbody.appendChild(row));
+      }
+
+      function updateEmptyState(visibleCount) {
+          if (emptyRow) {
+              if (visibleCount === 0 && leagueRows.length > 0) {
+                  emptyRow.style.display = '';
+                  emptyRow.querySelector('h4').textContent = `No ${currentFilters.status.toLowerCase()} leagues found`;
+                  emptyRow.querySelector('p').textContent = 'Try adjusting your filters or search terms.';
+              } else if (leagueRows.length === 0) {
+                  emptyRow.style.display = '';
+              } else {
+                  emptyRow.style.display = 'none';
+              }
+          }
+      }
+
+      // Tab click handler
+      tabButtons.forEach(button => {
+          button.addEventListener('click', () => {
+              tabButtons.forEach(btn => btn.classList.remove('active'));
+              button.classList.add('active');
+              currentFilters.status = button.dataset.status;
+              applyFilters();
+          });
+      });
+
+      // Search handler
+      searchInput.addEventListener('input', (e) => {
+          currentFilters.search = e.target.value;
+          applyFilters();
+      });
+
+      // Tour filter handler
+      tourFilter.addEventListener('change', (e) => {
+          currentFilters.tour = e.target.value;
+          applyFilters();
+      });
+
+      // Sort handler
+      sortSelect.addEventListener('change', (e) => {
+          currentFilters.sort = e.target.value;
+          applyFilters();
+      });
+
+      // Clear filters handler
+      clearFiltersBtn.addEventListener('click', () => {
+          searchInput.value = '';
+          tourFilter.value = '';
+          sortSelect.value = 'date-desc';
+          currentFilters.search = '';
+          currentFilters.tour = '';
+          currentFilters.sort = 'date-desc';
+          applyFilters();
+      });
+
+      // Bulk selection handlers
+      selectAllCheckbox.addEventListener('change', (e) => {
+          const visibleCheckboxes = Array.from(leagueCheckboxes).filter(cb => {
+              return cb.closest('.league-row').style.display !== 'none';
+          });
+
+          visibleCheckboxes.forEach(cb => {
+              cb.checked = e.target.checked;
+          });
+
+          updateBulkActionsUI();
+      });
+
+      leagueCheckboxes.forEach(checkbox => {
+          checkbox.addEventListener('change', updateBulkActionsUI);
+      });
+
+      function updateBulkActionsUI() {
+          const checkedBoxes = Array.from(leagueCheckboxes).filter(cb => cb.checked);
+          const count = checkedBoxes.length;
+
+          selectedCountSpan.textContent = count;
+
+          if (count > 0) {
+              bulkActionsRow.style.display = 'flex';
+          } else {
+              bulkActionsRow.style.display = 'none';
+              selectAllCheckbox.checked = false;
+          }
+      }
+
+      // Bulk export handler
+      bulkExportBtn.addEventListener('click', () => {
+          const selectedIds = Array.from(leagueCheckboxes)
+              .filter(cb => cb.checked)
+              .map(cb => cb.value);
+
+          if (selectedIds.length === 0) return;
+
+          // Create CSV data
+          let csv = 'League Name,League Code,Tour,Status,Entries,Start Date\n';
+
+          selectedIds.forEach(id => {
+              const row = document.querySelector(`tr[data-league-id="${id}"]`);
+              if (row) {
+                  const name = row.dataset.leagueName;
+                  const code = row.querySelector('.league-code')?.textContent.replace('Code: ', '') || '';
+                  const tour = row.dataset.leagueTour;
+                  const status = row.dataset.status;
+                  const entries = row.dataset.leagueEntries;
+                  const date = row.dataset.leagueDate;
+
+                  csv += `"${name}","${code}","${tour}","${status}","${entries}","${date}"\n`;
+              }
+          });
+
+          // Download CSV
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `leagues_export_${new Date().toISOString().split('T')[0]}.csv`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+
+          // Show success message
+          alert(`Exported ${selectedIds.length} league(s) successfully!`);
+      });
+
+      // Bulk communicate handler - will open modal
+      bulkCommunicateBtn.addEventListener('click', () => {
+          const selectedIds = Array.from(leagueCheckboxes)
+              .filter(cb => cb.checked)
+              .map(cb => cb.value);
+
+          if (selectedIds.length === 0) return;
+
+          // Store selected IDs for communication modal
+          sessionStorage.setItem('selectedLeagueIds', JSON.stringify(selectedIds));
+
+          // Open communication modal
+          openCommunicationModal(selectedIds);
       });
 
       // Copy functionality
@@ -525,6 +1217,112 @@
           });
       });
 
+      // Communication Modal Functions
+      function openCommunicationModal(selectedIds) {
+          const modal = document.getElementById('communication-modal');
+          if (modal) {
+              modal.style.display = 'flex';
+              document.body.style.overflow = 'hidden';
+
+              // Update recipient count
+              const recipientCount = document.getElementById('recipient-count');
+              if (recipientCount) {
+                  recipientCount.textContent = selectedIds.length;
+              }
+
+              // Set league IDs in hidden input
+              const leagueIdsInput = document.getElementById('league-ids-input');
+              if (leagueIdsInput) {
+                  leagueIdsInput.value = JSON.stringify(selectedIds);
+              }
+          }
+      }
+
+      function closeCommunicationModal() {
+          const modal = document.getElementById('communication-modal');
+          if (modal) {
+              modal.style.display = 'none';
+              document.body.style.overflow = 'auto';
+
+              // Reset form
+              document.getElementById('message-subject').value = '';
+              document.getElementById('message-body').value = '';
+              document.getElementById('message-template').value = '';
+          }
+      }
+
+      // Close modal when clicking outside
+      const modal = document.getElementById('communication-modal');
+      if (modal) {
+          modal.addEventListener('click', (e) => {
+              if (e.target === modal) {
+                  closeCommunicationModal();
+              }
+          });
+      }
+
+      // Template selection handler
+      const templateSelect = document.getElementById('message-template');
+      if (templateSelect) {
+          templateSelect.addEventListener('change', (e) => {
+              const templates = {
+                  'welcome': {
+                      subject: 'Welcome to {{league_name}}!',
+                      body: 'Hi {{participant_name}},\n\nWelcome to {{league_name}}! We\'re excited to have you join us for this tournament.\n\nYour league code is: {{league_code}}\n\nGood luck!\n\n{{club_name}}'
+                  },
+                  'reminder': {
+                      subject: 'Reminder: {{league_name}} starts soon',
+                      body: 'Hi {{participant_name}},\n\nThis is a friendly reminder that {{league_name}} starts on {{start_date}}.\n\nMake sure to check your picks before the tournament begins!\n\nBest regards,\n{{club_name}}'
+                  },
+                  'update': {
+                      subject: 'Important Update: {{league_name}}',
+                      body: 'Hi {{participant_name}},\n\nWe have an important update regarding {{league_name}}.\n\n[Your message here]\n\nThank you,\n{{club_name}}'
+                  }
+              };
+
+              const template = templates[e.target.value];
+              if (template) {
+                  document.getElementById('message-subject').value = template.subject;
+                  document.getElementById('message-body').value = template.body;
+              }
+          });
+      }
+
+      // Close modals when clicking outside
+      const templateModal = document.getElementById('template-modal');
+      if (templateModal) {
+          templateModal.addEventListener('click', (e) => {
+              if (e.target === templateModal) {
+                  closeTemplateModal();
+              }
+          });
+      }
+
+      // Load templates when templates section is shown
+      const templatesSection = document.getElementById('templates-section');
+      if (templatesSection) {
+          const observer = new MutationObserver((mutations) => {
+              mutations.forEach((mutation) => {
+                  if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                      if (!templatesSection.classList.contains('hidden')) {
+                          loadTemplates();
+                      }
+                  }
+              });
+          });
+
+          observer.observe(templatesSection, { attributes: true });
+      }
+
+      // Attach event listeners to create template buttons
+      document.querySelectorAll('button[onclick*="openTemplateModal"]').forEach(btn => {
+          btn.addEventListener('click', function(e) {
+              e.preventDefault();
+              console.log('Button clicked via event listener');
+              openTemplateModal();
+          });
+      });
+
       // Initialize with Live tab
       const defaultTab = document.querySelector('#club-league-tabs .tab-button[data-status="Live"]');
       if (defaultTab) {
@@ -532,6 +1330,7 @@
       }
 
       console.log("Club dashboard loaded with", {{ club_leagues|length }}, "total leagues");
+      console.log("openTemplateModal function defined:", typeof openTemplateModal);
   });
 </script>
 
@@ -1079,6 +1878,521 @@
 
   .copy-btn.success {
     animation: successPulse 0.3s ease-out;
+  }
+
+  /* League Controls Styles */
+  .league-controls {
+    background: var(--white);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .search-filter-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .search-box {
+    flex: 1;
+    min-width: 250px;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-box i {
+    position: absolute;
+    left: 1rem;
+    color: var(--text-secondary);
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    font-size: 0.95rem;
+    transition: var(--transition);
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(0, 133, 95, 0.1);
+  }
+
+  .filter-group {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-select {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    background: var(--white);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: var(--transition);
+    min-width: 150px;
+  }
+
+  .filter-select:hover {
+    border-color: var(--primary-green);
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(0, 133, 95, 0.1);
+  }
+
+  .bulk-actions-row {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--surface-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .bulk-actions-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .bulk-actions-info input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+
+  .bulk-actions-buttons {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .league-checkbox,
+  .league-checkbox-header {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary-green);
+  }
+
+  /* Mobile adjustments for controls */
+  @media (max-width: 768px) {
+    .search-filter-row {
+      flex-direction: column;
+    }
+
+    .search-box {
+      width: 100%;
+      min-width: 100%;
+    }
+
+    .filter-group {
+      width: 100%;
+    }
+
+    .filter-select {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .bulk-actions-row {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .bulk-actions-buttons {
+      width: 100%;
+      flex-direction: column;
+    }
+
+    .bulk-actions-buttons button {
+      width: 100%;
+    }
+  }
+
+  /* Communication Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .modal-content {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(30px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .modal-header h2 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .modal-header h2 i {
+    color: var(--primary-green);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    line-height: 1;
+  }
+
+  .modal-close:hover {
+    background: var(--surface-light);
+    color: var(--text-primary);
+  }
+
+  .modal-body {
+    padding: 2rem;
+  }
+
+  .alert.info {
+    background: #e6f7ff;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .form-group label i {
+    color: var(--primary-green);
+    font-size: 0.875rem;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: var(--transition);
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(0, 133, 95, 0.1);
+  }
+
+  textarea.form-control {
+    resize: vertical;
+    min-height: 120px;
+  }
+
+  .form-text {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .modal-footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--surface-border);
+  }
+
+  @media (max-width: 768px) {
+    .modal-content {
+      max-width: 95vw;
+      max-height: 95vh;
+    }
+
+    .modal-header,
+    .modal-body {
+      padding: 1.25rem;
+    }
+
+    .modal-footer {
+      flex-direction: column;
+    }
+
+    .modal-footer button {
+      width: 100%;
+    }
+  }
+
+  /* Template Styles */
+  .templates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .template-card {
+    background: var(--white);
+    border: 2px solid var(--surface-border);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    transition: var(--transition);
+  }
+
+  .template-card:hover {
+    border-color: var(--primary-green);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .template-card-header {
+    padding: 1.25rem;
+    background: var(--surface-light);
+    border-bottom: 1px solid var(--surface-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .template-card-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .template-badge {
+    background: var(--primary-gradient);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .template-card-body {
+    padding: 1.25rem;
+  }
+
+  .template-description {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+
+  .template-stats {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .template-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+
+  .template-stat i {
+    color: var(--primary-green);
+  }
+
+  .template-card-actions {
+    padding: 1rem 1.25rem;
+    background: var(--surface-light);
+    border-top: 1px solid var(--surface-border);
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  .empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: var(--primary-green);
+    opacity: 0.5;
+  }
+
+  .empty-state h3 {
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  .empty-state p {
+    color: var(--text-secondary);
+    font-size: 1.125rem;
+    margin-bottom: 2rem;
+    max-width: 400px;
+  }
+
+  /* Form Styles */
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .form-section {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: var(--surface-light);
+    border-radius: var(--border-radius);
+  }
+
+  .form-section h4 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .form-section h4 i {
+    color: var(--primary-green);
+  }
+
+  .bucket-picks-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+  }
+
+  .checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .checkbox-group input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--primary-green);
+  }
+
+  .modal-large {
+    max-width: 800px;
+  }
+
+  @media (max-width: 768px) {
+    .templates-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .bucket-picks-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .bucket-picks-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
 

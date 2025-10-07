@@ -1224,12 +1224,33 @@ def check_beat_status():
 @admin_bp.route('/force-bucket-update', methods=['POST'])
 @admin_required
 def force_bucket_update():
-    """Manually force the bucket update task for testing"""
+    """Manually force the bucket update task"""
     from ..tasks import update_player_buckets
+    import traceback
 
-    result = update_player_buckets.delay()
-    flash(f'Bucket update task forced: {result.id}', 'info')
-    flash(f'Check result at: /admin/check-task-result/{result.id}', 'info')
+    # Check if we should run synchronously or async
+    run_sync = request.form.get('sync', 'false') == 'true'
+
+    if run_sync:
+        # Run synchronously (immediately, no Celery required)
+        try:
+            flash('Running bucket update synchronously...', 'info')
+            result = update_player_buckets()
+            flash(f'✅ Bucket update completed successfully!', 'success')
+            flash(f'Result: {result}', 'info')
+        except Exception as e:
+            flash(f'❌ Error running bucket update: {str(e)}', 'error')
+            current_app.logger.error(f"Sync bucket update error: {traceback.format_exc()}")
+    else:
+        # Run asynchronously (requires Celery workers)
+        try:
+            result = update_player_buckets.delay()
+            flash(f'Bucket update task queued: {result.id}', 'info')
+            flash(f'Check result at: /admin/check-task-result/{result.id}', 'info')
+            flash('⚠️ Note: Celery workers must be running to process this task', 'warning')
+        except Exception as e:
+            flash(f'❌ Error queuing task: {str(e)}', 'error')
+            flash('💡 Try running synchronously instead (no Celery required)', 'info')
 
     return redirect(url_for('admin.admin_dashboard'))
 

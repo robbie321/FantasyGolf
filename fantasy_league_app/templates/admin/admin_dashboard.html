@@ -48,6 +48,84 @@
     margin-bottom: 1.5rem;
   }
 
+  /* Quick Navigation */
+  .quick-nav {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+  }
+
+  .quick-nav-item {
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    background: white;
+    color: var(--dark-gray);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .quick-nav-item:hover {
+    background: var(--primary-green);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 106, 78, 0.3);
+    text-decoration: none;
+  }
+
+  .quick-nav-item.active {
+    background: linear-gradient(135deg, var(--primary-green), var(--accent-blue));
+    color: white;
+    border-color: var(--primary-green);
+  }
+
+  /* Dashboard Sections */
+  .dashboard-section {
+    display: none;
+    animation: fadeIn 0.5s ease-in;
+  }
+
+  .dashboard-section.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .section-title-bar {
+    background: linear-gradient(135deg, var(--primary-green), var(--accent-blue));
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 106, 78, 0.2);
+  }
+
+  .section-title-bar h2 {
+    margin: 0;
+    font-size: 1.75rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
   .logout-btn {
     position: absolute;
     top: 1rem;
@@ -177,6 +255,200 @@
     margin-bottom: 3rem;
     box-shadow: var(--shadow);
     border-left: 5px solid var(--accent-orange);
+  }
+
+  /* Scheduled Tasks Section */
+  .scheduled-tasks-section {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    box-shadow: var(--shadow);
+  }
+
+  .section-header-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid var(--primary-green);
+  }
+
+  .section-header-main h2 {
+    font-size: 1.75rem;
+    color: var(--dark-gray);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .section-badge {
+    background: linear-gradient(135deg, var(--primary-green), var(--accent-blue));
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .tasks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .task-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid var(--light-gray);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .task-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    border-color: var(--primary-green);
+  }
+
+  .task-card-monitor {
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+  }
+
+  .task-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .task-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .task-info {
+    flex: 1;
+  }
+
+  .task-info h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    color: var(--dark-gray);
+  }
+
+  .task-schedule {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .task-description {
+    font-size: 0.9rem;
+    color: #495057;
+    line-height: 1.5;
+  }
+
+  .task-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .task-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+  }
+
+  .task-btn-primary {
+    background: linear-gradient(135deg, var(--primary-green), var(--accent-blue));
+    color: white;
+  }
+
+  .task-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 106, 78, 0.3);
+    color: white;
+    text-decoration: none;
+  }
+
+  .task-btn-secondary {
+    background: #6c757d;
+    color: white;
+  }
+
+  .task-btn-secondary:hover {
+    background: #5a6268;
+    color: white;
+    text-decoration: none;
+  }
+
+  .task-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .tasks-info-panel {
+    background: var(--light-green);
+    border-radius: 10px;
+    padding: 1.5rem;
+    border-left: 4px solid var(--primary-green);
+  }
+
+  .info-header {
+    font-size: 1.1rem;
+    color: var(--dark-gray);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .info-content {
+    font-size: 0.9rem;
+    color: #495057;
+    line-height: 1.6;
+  }
+
+  .info-content ol, .info-content ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .info-content li {
+    margin-bottom: 0.5rem;
+  }
+
+  .info-content p {
+    margin: 0.75rem 0;
+  }
+
+  .info-content strong {
+    color: var(--primary-green);
   }
 
   .debug-header {
@@ -328,7 +600,7 @@
   .management-card {
     border: 2px solid var(--light-gray);
     border-radius: 10px;
-    padding: 1.5rem;
+    padding: 1rem;
     transition: all 0.3s ease;
     position: relative;
   }
@@ -341,39 +613,41 @@
   .card-header {
     display: flex;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
   }
 
   .card-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     background: var(--primary-green);
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 1rem;
-    font-size: 1.2rem;
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
   }
 
   .card-title {
     font-weight: bold;
     color: var(--dark-gray);
     margin: 0;
+    font-size: 1rem;
   }
 
   .card-description {
     color: #7f8c8d;
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-    line-height: 1.5;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
   }
 
   .card-actions {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+    margin-top: 0.5rem;
   }
 
   .action-btn {
@@ -780,13 +1054,37 @@
       </a>
       <h1><i class="fas fa-crown"></i> Admin Dashboard</h1>
       <p class="subtitle">
-        Welcome back, {{ current_user.username }}! Manage your fantasy league
-        platform.
+        Welcome back, {{ current_user.username }}! Manage your fantasy league platform.
       </p>
+
+      <!-- Quick Navigation -->
+      <div class="quick-nav">
+        <a href="#overview" class="quick-nav-item active" data-section="overview">
+          <i class="fas fa-chart-line"></i> Overview
+        </a>
+        <a href="#tasks" class="quick-nav-item" data-section="tasks">
+          <i class="fas fa-clock"></i> Tasks
+        </a>
+        <a href="#monitoring" class="quick-nav-item" data-section="monitoring">
+          <i class="fas fa-heartbeat"></i> Monitoring
+        </a>
+        <a href="#management" class="quick-nav-item" data-section="management">
+          <i class="fas fa-cogs"></i> Management
+        </a>
+        <a href="#debug" class="quick-nav-item" data-section="debug">
+          <i class="fas fa-bug"></i> Debug
+        </a>
+      </div>
     </div>
 
-    <!-- Stats Dashboard -->
-    <div class="stats-dashboard">
+    <!-- OVERVIEW SECTION -->
+    <div id="overview" class="dashboard-section active">
+      <div class="section-title-bar">
+        <h2><i class="fas fa-chart-line"></i> Platform Overview</h2>
+      </div>
+
+      <!-- Stats Dashboard -->
+      <div class="stats-dashboard">
       <div class="stat-card">
         <div class="stat-icon"><i class="fas fa-users"></i></div>
         <div class="stat-value">{{ stats.total_users }}</div>
@@ -864,8 +1162,17 @@
 
     <!-- Add this right after the stats-dashboard closing </div> and before debug-section -->
 
-    <!-- Redis Connection Monitor -->
-    <div class="redis-monitor-section">
+    </div>
+    <!-- END OVERVIEW SECTION -->
+
+    <!-- MONITORING SECTION -->
+    <div id="monitoring" class="dashboard-section">
+      <div class="section-title-bar">
+        <h2><i class="fas fa-heartbeat"></i> System Monitoring</h2>
+      </div>
+
+      <!-- Redis Connection Monitor -->
+      <div class="redis-monitor-section">
       <div class="monitor-header">
         <h2><i class="fas fa-database"></i> Redis Connection Monitor</h2>
         <span class="monitor-badge live">
@@ -986,8 +1293,17 @@
       </div>
     </div>
 
-    <!-- Debug & Testing Section -->
-    <div class="debug-section">
+    </div>
+    <!-- END MONITORING SECTION -->
+
+    <!-- DEBUG SECTION -->
+    <div id="debug" class="dashboard-section">
+      <div class="section-title-bar">
+        <h2><i class="fas fa-bug"></i> Debug & Testing</h2>
+      </div>
+
+      <!-- Debug & Testing Section -->
+      <div class="debug-section">
       <div class="debug-header">
         <h2><i class="fas fa-bug"></i> Debug & Testing Tools</h2>
         <span class="debug-badge">Developer Tools</span>
@@ -1110,8 +1426,214 @@
       </div>
     </div>
 
-    <!-- Management Sections -->
-    <div class="management-sections">
+    </div>
+    <!-- END DEBUG SECTION -->
+
+    <!-- TASKS SECTION -->
+    <div id="tasks" class="dashboard-section">
+      <div class="section-title-bar">
+        <h2><i class="fas fa-clock"></i> Scheduled Tasks</h2>
+      </div>
+
+      <!-- Scheduled Tasks Section -->
+      <div class="scheduled-tasks-section">
+      <div class="section-header-main">
+        <h2><i class="fas fa-clock"></i> Scheduled Tasks Management</h2>
+        <span class="section-badge">Cron Jobs</span>
+      </div>
+
+      <div class="tasks-grid">
+        <!-- Update Player Buckets -->
+        <div class="task-card">
+          <div class="task-header">
+            <div class="task-icon" style="background: #e67e22;">
+              <i class="fas fa-layer-group"></i>
+            </div>
+            <div class="task-info">
+              <h4>Update Player Buckets</h4>
+              <p class="task-schedule">
+                <i class="fas fa-calendar-alt"></i> Every Monday at 1:30 PM UTC
+              </p>
+            </div>
+          </div>
+          <div class="task-description">
+            Creates new player buckets for upcoming tournaments by fetching field data and betting odds from DataGolf API.
+          </div>
+          <div class="task-actions">
+            <form method="POST" action="{{ url_for('admin.force_bucket_update') }}" style="display: inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <input type="hidden" name="sync" value="true" />
+              <button type="submit" class="task-btn task-btn-primary">
+                <i class="fas fa-bolt"></i> Run Now (Sync)
+              </button>
+            </form>
+            <form method="POST" action="{{ url_for('admin.force_bucket_update') }}" style="display: inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <input type="hidden" name="sync" value="false" />
+              <button type="submit" class="task-btn task-btn-secondary">
+                <i class="fas fa-clock"></i> Queue Task
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Finalize Leagues -->
+        <div class="task-card">
+          <div class="task-header">
+            <div class="task-icon" style="background: #9b59b6;">
+              <i class="fas fa-trophy"></i>
+            </div>
+            <div class="task-info">
+              <h4>Finalize Finished Leagues</h4>
+              <p class="task-schedule">
+                <i class="fas fa-calendar-alt"></i> Every Monday at 10:30 AM UTC
+              </p>
+            </div>
+          </div>
+          <div class="task-description">
+            Finalizes completed leagues, calculates winners, and distributes prizes.
+          </div>
+          <div class="task-actions">
+            <button class="task-btn task-btn-secondary" disabled>
+              <i class="fas fa-lock"></i> Auto Only
+            </button>
+          </div>
+        </div>
+
+        <!-- Score Updates -->
+        <div class="task-card">
+          <div class="task-header">
+            <div class="task-icon" style="background: #e74c3c;">
+              <i class="fas fa-golf-ball"></i>
+            </div>
+            <div class="task-info">
+              <h4>Schedule Score Updates</h4>
+              <p class="task-schedule">
+                <i class="fas fa-calendar-alt"></i> Thu-Sun at 5:00 AM UTC
+              </p>
+            </div>
+          </div>
+          <div class="task-description">
+            Schedules live score updates for active tournaments during tournament days.
+          </div>
+          <div class="task-actions">
+            <form method="POST" action="{{ url_for('admin.trigger_score_update_now') }}" style="display: inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="task-btn task-btn-primary">
+                <i class="fas fa-play"></i> Run Now
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Reset Scores -->
+        <div class="task-card">
+          <div class="task-header">
+            <div class="task-icon" style="background: #3498db;">
+              <i class="fas fa-redo"></i>
+            </div>
+            <div class="task-info">
+              <h4>Reset Player Scores</h4>
+              <p class="task-schedule">
+                <i class="fas fa-calendar-alt"></i> Every Wednesday at 8:00 AM UTC
+              </p>
+            </div>
+          </div>
+          <div class="task-description">
+            Resets all player scores to zero in preparation for the next tournament week.
+          </div>
+          <div class="task-actions">
+            <button class="task-btn task-btn-secondary" disabled>
+              <i class="fas fa-lock"></i> Auto Only
+            </button>
+          </div>
+        </div>
+
+        <!-- Task Monitor -->
+        <div class="task-card task-card-monitor">
+          <div class="task-header">
+            <div class="task-icon" style="background: #27ae60;">
+              <i class="fas fa-heartbeat"></i>
+            </div>
+            <div class="task-info">
+              <h4>Task Monitor</h4>
+              <p class="task-schedule">
+                <i class="fas fa-chart-line"></i> Real-time task monitoring
+              </p>
+            </div>
+          </div>
+          <div class="task-description">
+            View active tasks, locks, and monitor Celery worker status.
+          </div>
+          <div class="task-actions">
+            <a href="{{ url_for('admin.task_monitor') }}" target="_blank" class="task-btn task-btn-primary">
+              <i class="fas fa-external-link-alt"></i> Open Monitor
+            </a>
+            <a href="{{ url_for('admin.celery_inspect') }}" target="_blank" class="task-btn task-btn-secondary">
+              <i class="fas fa-search"></i> Inspect
+            </a>
+          </div>
+        </div>
+
+        <!-- Check Beat Status -->
+        <div class="task-card task-card-monitor">
+          <div class="task-header">
+            <div class="task-icon" style="background: #f39c12;">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="task-info">
+              <h4>Beat Scheduler Status</h4>
+              <p class="task-schedule">
+                <i class="fas fa-clock"></i> Check scheduler health
+              </p>
+            </div>
+          </div>
+          <div class="task-description">
+            Verify that Celery Beat is running and scheduled tasks are configured correctly.
+          </div>
+          <div class="task-actions">
+            <a href="{{ url_for('admin.check_beat_status') }}" target="_blank" class="task-btn task-btn-primary">
+              <i class="fas fa-stethoscope"></i> Check Status
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="tasks-info-panel">
+        <div class="info-header">
+          <i class="fas fa-info-circle"></i> <strong>Troubleshooting Scheduled Tasks</strong>
+        </div>
+        <div class="info-content">
+          <p><strong>If a scheduled task didn't run:</strong></p>
+          <ol>
+            <li><strong>Check Beat Status</strong> - Verify Celery Beat scheduler is running</li>
+            <li><strong>Check Task Monitor</strong> - Look for task locks or errors</li>
+            <li><strong>Run Manually</strong> - Use "Run Now" button to execute immediately</li>
+            <li><strong>Check Logs</strong> - Review Celery worker logs for errors</li>
+            <li><strong>Verify Time</strong> - Ensure server time is correct (UTC)</li>
+          </ol>
+          <p><strong>Common Issues:</strong></p>
+          <ul>
+            <li>Celery Beat not running - Restart the beat scheduler</li>
+            <li>Worker offline - Check if Celery workers are active</li>
+            <li>Task lock stuck - Check Task Monitor for stale locks</li>
+            <li>API rate limits - DataGolf API may be rate-limited</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    </div>
+    <!-- END TASKS SECTION -->
+
+    <!-- MANAGEMENT SECTION -->
+    <div id="management" class="dashboard-section">
+      <div class="section-title-bar">
+        <h2><i class="fas fa-cogs"></i> Platform Management</h2>
+      </div>
+
+      <!-- Management Sections -->
+      <div class="management-sections">
       <!-- Content Management -->
       <div class="management-section">
         <div class="section-header">
@@ -1708,6 +2230,32 @@
     if (autoRefreshInterval) {
       clearInterval(autoRefreshInterval);
     }
+  });
+
+  // Section Navigation
+  const navItems = document.querySelectorAll('.quick-nav-item');
+  const sections = document.querySelectorAll('.dashboard-section');
+
+  navItems.forEach(item => {
+    item.addEventListener('click', function(e) {
+      e.preventDefault();
+
+      // Remove active class from all nav items and sections
+      navItems.forEach(nav => nav.classList.remove('active'));
+      sections.forEach(section => section.classList.remove('active'));
+
+      // Add active class to clicked item
+      this.classList.add('active');
+
+      // Show corresponding section
+      const sectionId = this.getAttribute('data-section');
+      const targetSection = document.getElementById(sectionId);
+      if (targetSection) {
+        targetSection.classList.add('active');
+        // Smooth scroll to section
+        targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
   });
 </script>
 

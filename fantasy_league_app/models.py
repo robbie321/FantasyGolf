@@ -787,3 +787,66 @@ class DailyTaskTracker(db.Model):
 
     def __repr__(self):
         return f'<DailyTaskTracker {self.task_name} on {self.run_date}>'
+
+class LeagueTemplate(db.Model):
+    """Stores league templates for quick creation by club owners."""
+    __tablename__ = 'league_templates'
+    __table_args__ = (
+        db.Index('idx_template_club', 'club_id'),
+        db.Index('idx_template_name', 'name'),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    # League settings
+    tour = db.Column(db.String(20), nullable=False, default='PGA')
+    entry_fee = db.Column(db.Float, nullable=False, default=10.0)
+    max_entries = db.Column(db.Integer, nullable=True)
+    bucket_a_picks = db.Column(db.Integer, nullable=False, default=2)
+    bucket_b_picks = db.Column(db.Integer, nullable=False, default=2)
+    bucket_c_picks = db.Column(db.Integer, nullable=False, default=2)
+    bucket_d_picks = db.Column(db.Integer, nullable=False, default=2)
+    bucket_e_picks = db.Column(db.Integer, nullable=False, default=2)
+    is_public = db.Column(db.Boolean, default=False)
+    require_payment = db.Column(db.Boolean, default=True)
+    tiebreaker_question = db.Column(db.String(500), nullable=True)
+
+    # Payout structure (stored as JSON)
+    payout_structure = db.Column(db.JSON, nullable=True)
+
+    # Metadata
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    times_used = db.Column(db.Integer, default=0)
+
+    # Relationship
+    club = db.relationship('Club', foreign_keys=[club_id], backref='templates')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'tour': self.tour,
+            'entry_fee': self.entry_fee,
+            'max_entries': self.max_entries,
+            'bucket_picks': {
+                'a': self.bucket_a_picks,
+                'b': self.bucket_b_picks,
+                'c': self.bucket_c_picks,
+                'd': self.bucket_d_picks,
+                'e': self.bucket_e_picks
+            },
+            'is_public': self.is_public,
+            'require_payment': self.require_payment,
+            'tiebreaker_question': self.tiebreaker_question,
+            'payout_structure': self.payout_structure,
+            'times_used': self.times_used,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+    def __repr__(self):
+        return f'<LeagueTemplate {self.name} by Club {self.club_id}>'

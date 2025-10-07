@@ -5,6 +5,59 @@ block head %}
   rel="stylesheet"
   href="{{ url_for('static', filename='css/form_style.css') }}"
 />
+<style>
+  .template-selector-container {
+    background: linear-gradient(135deg, #e8f5f1 0%, #f0f9f6 100%);
+    border: 2px solid #00855f;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 133, 95, 0.1);
+  }
+
+  .template-selector-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #00855f;
+    margin-bottom: 1rem;
+  }
+
+  .template-selector-header i {
+    font-size: 1.25rem;
+  }
+
+  #template-selector {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    border: 2px solid #00855f;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  #template-selector:hover {
+    border-color: #006b4d;
+    box-shadow: 0 0 0 3px rgba(0, 133, 95, 0.1);
+  }
+
+  #template-selector:focus {
+    outline: none;
+    border-color: #006b4d;
+    box-shadow: 0 0 0 4px rgba(0, 133, 95, 0.15);
+  }
+
+  .template-selector-container .form-text {
+    color: #2d5f4f;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    font-style: italic;
+  }
+</style>
 {% endblock %} {% block content %}
 <main class="dashboard-content">
   <div class="form-wrapper">
@@ -25,6 +78,19 @@ block head %}
           <h1>Create New League</h1>
           <p>Set up a new fantasy league for your club members.</p>
         </div>
+
+        <!-- Template Selector -->
+        <div class="template-selector-container">
+          <div class="template-selector-header">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>Start from a template</span>
+          </div>
+          <select id="template-selector" class="form-control">
+            <option value="">Create from scratch</option>
+          </select>
+          <small class="form-text">Or fill in the form manually below</small>
+        </div>
+
         <div class="form-section-header">
           <i class="fa-solid fa-trophy"></i>
           <div>
@@ -93,6 +159,100 @@ block head %}
   document.addEventListener("DOMContentLoaded", function () {
     const playerBucketSelect = document.getElementById("player_bucket_id");
     const tourSelect = document.getElementById("tour");
+    const templateSelector = document.getElementById("template-selector");
+
+    // Load templates for the selector
+    async function loadTemplateOptions() {
+      try {
+        const response = await fetch('/api/templates');
+        const templates = await response.json();
+
+        templates.forEach(template => {
+          const option = document.createElement('option');
+          option.value = template.id;
+          option.textContent = `${template.name} (${template.tour} - €${template.entry_fee})`;
+          templateSelector.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Failed to load templates:', error);
+      }
+    }
+
+    // Apply template to form
+    async function applyTemplate(templateId) {
+      if (!templateId) return;
+
+      try {
+        const response = await fetch(`/api/templates/${templateId}`);
+        const template = await response.json();
+
+        // Update form fields
+        document.getElementById('tour').value = template.tour;
+        document.getElementById('entry_fee').value = template.entry_fee;
+        if (template.max_entries && document.getElementById('max_entries')) {
+          document.getElementById('max_entries').value = template.max_entries;
+        }
+
+        // Update bucket picks if these fields exist
+        const bucketFields = {
+          'bucket_a_picks': template.bucket_picks.a,
+          'bucket_b_picks': template.bucket_picks.b,
+          'bucket_c_picks': template.bucket_picks.c,
+          'bucket_d_picks': template.bucket_picks.d,
+          'bucket_e_picks': template.bucket_picks.e
+        };
+
+        Object.keys(bucketFields).forEach(fieldId => {
+          const field = document.getElementById(fieldId);
+          if (field) {
+            field.value = bucketFields[fieldId];
+          }
+        });
+
+        // Update checkboxes if they exist
+        const publicLeagueCheckbox = document.getElementById('is_public');
+        if (publicLeagueCheckbox) {
+          publicLeagueCheckbox.checked = template.is_public;
+        }
+
+        const requirePaymentCheckbox = document.getElementById('require_payment');
+        if (requirePaymentCheckbox) {
+          requirePaymentCheckbox.checked = template.require_payment;
+        }
+
+        // Update tiebreaker question
+        const tiebreakerField = document.getElementById('tiebreaker_question');
+        if (tiebreakerField && template.tiebreaker_question) {
+          tiebreakerField.value = template.tiebreaker_question;
+        }
+
+        // Increment usage counter
+        fetch(`/api/templates/${templateId}/use`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+          }
+        });
+
+        alert(`Template "${template.name}" applied successfully!`);
+      } catch (error) {
+        console.error('Failed to apply template:', error);
+        alert('Failed to load template. Please try again.');
+      }
+    }
+
+    // Template selector change handler
+    if (templateSelector) {
+      templateSelector.addEventListener('change', (e) => {
+        const templateId = e.target.value;
+        if (templateId) {
+          applyTemplate(templateId);
+        }
+      });
+
+      // Load templates on page load
+      loadTemplateOptions();
+    }
 
     if (playerBucketSelect && tourSelect) {
       playerBucketSelect.addEventListener("change", function () {
