@@ -261,6 +261,7 @@ class Club(db.Model, UserMixin):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     password_reset_required = db.Column(db.Boolean, nullable=False, default=False)
     stripe_account_id = db.Column(db.String(255), nullable=True)
+    tips_dismissed = db.Column(db.JSON, default=lambda: [])
 
     def set_password(self, password):
         """Creates a hashed password."""
@@ -269,6 +270,35 @@ class Club(db.Model, UserMixin):
     def check_password(self, password):
         """Checks if the provided password matches the hash."""
         return check_password_hash(self.password_hash, password)
+
+    def dismiss_tip(self, tip_id):
+        """Dismiss a specific tip"""
+        import logging
+        from sqlalchemy.orm.attributes import flag_modified
+
+        # Ensure tips_dismissed is a valid list
+        if self.tips_dismissed is None or not isinstance(self.tips_dismissed, list):
+            self.tips_dismissed = []
+            flag_modified(self, 'tips_dismissed')
+
+        # Make a copy to ensure SQLAlchemy detects the change
+        current_tips = list(self.tips_dismissed) if isinstance(self.tips_dismissed, list) else []
+
+        if tip_id not in current_tips:
+            current_tips.append(tip_id)
+            self.tips_dismissed = current_tips
+            # Mark the column as modified to ensure SQLAlchemy commits it
+            flag_modified(self, 'tips_dismissed')
+            db.session.commit()
+            logging.info(f"User {self.id}: Tip '{tip_id}' dismissed. Current dismissed tips: {self.tips_dismissed}")
+        else:
+            logging.info(f"User {self.id}: Tip '{tip_id}' was already dismissed")
+
+    def should_show_tip(self, tip_id):
+        """Check if a tip should be shown"""
+        if self.tips_dismissed is None or not isinstance(self.tips_dismissed, list):
+            return True
+        return tip_id not in self.tips_dismissed
 
     @property
     def is_club_admin(self):
