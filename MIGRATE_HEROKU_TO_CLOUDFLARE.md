@@ -290,8 +290,8 @@ celery -A fantasy_league_app.celery_app:celery beat --loglevel=info
 3. Scroll to **"Domains"**
 4. Click **"Add Domain"**
 5. Add both:
-   - `fantasyfairways.ie`
-   - `fantasyfairways.co.uk`
+   - `fantasyfairway.ie`
+   - `fantasyfairway.co.uk`
 
 Railway will give you a CNAME target.
 
@@ -339,7 +339,7 @@ Proxy: 🟠 Proxied
 ```bash
 # Edit C:\Windows\System32\drivers\etc\hosts
 # Add this line to test before DNS change:
-[RAILWAY_IP] fantasyfairways.ie
+[RAILWAY_IP] fantasyfairway.ie
 ```
 
 #### Step 16: Gradual Migration
@@ -395,7 +395,7 @@ Change from:
 - `https://your-app.herokuapp.com/webhook/...`
 
 To:
-- `https://fantasyfairways.ie/webhook/...`
+- `https://fantasyfairway.ie/webhook/...`
 
 #### Step 20: Decommission Heroku
 

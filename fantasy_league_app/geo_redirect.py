@@ -27,8 +27,8 @@ class GeoRedirectMiddleware:
         self.app = app
 
         # Domain configuration
-        self.ie_domain = app.config.get('IE_DOMAIN', 'fantasyfairways.ie')
-        self.uk_domain = app.config.get('UK_DOMAIN', 'fantasyfairways.co.uk')
+        self.ie_domain = app.config.get('IE_DOMAIN', 'fantasyfairway.ie')
+        self.uk_domain = app.config.get('UK_DOMAIN', 'fantasyfairway.co.uk')
         self.redirect_enabled = app.config.get('GEO_REDIRECT_ENABLED', True)
 
         # Register before_request handler

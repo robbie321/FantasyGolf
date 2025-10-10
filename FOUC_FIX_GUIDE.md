@@ -379,7 +379,7 @@ Heroku supports HTTP/2 by default with SSL.
 
 Verify:
 ```bash
-curl -I --http2 https://fantasyfairways.ie
+curl -I --http2 https://fantasyfairway.ie
 ```
 
 Look for: `HTTP/2 200`

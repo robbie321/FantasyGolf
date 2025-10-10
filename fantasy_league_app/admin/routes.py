@@ -2348,8 +2348,8 @@ def geo_redirect_test():
     """Test page for geo-redirect functionality"""
     # Get configuration
     redirect_enabled = current_app.config.get('GEO_REDIRECT_ENABLED', True)
-    ie_domain = current_app.config.get('IE_DOMAIN', 'fantasyfairways.ie')
-    uk_domain = current_app.config.get('UK_DOMAIN', 'fantasyfairways.co.uk')
+    ie_domain = current_app.config.get('IE_DOMAIN', 'fantasyfairway.ie')
+    uk_domain = current_app.config.get('UK_DOMAIN', 'fantasyfairway.co.uk')
 
     # Get current request info
     current_domain = request.host.lower()

@@ -100,8 +100,8 @@ class Config:
     TESTING_MODE_FLAG = 'testing_mode.flag'
 
     # Geo-Redirect Configuration
-    IE_DOMAIN = os.environ.get('IE_DOMAIN', 'fantasyfairways.ie')
-    UK_DOMAIN = os.environ.get('UK_DOMAIN', 'fantasyfairways.co.uk')
+    IE_DOMAIN = os.environ.get('IE_DOMAIN', 'fantasyfairway.ie')
+    UK_DOMAIN = os.environ.get('UK_DOMAIN', 'fantasyfairway.co.uk')
     GEO_REDIRECT_ENABLED = os.environ.get('GEO_REDIRECT_ENABLED', 'true').lower() in ('true', '1', 'yes')
 
     # Asset versioning for cache busting (increment when CSS/JS changes)
