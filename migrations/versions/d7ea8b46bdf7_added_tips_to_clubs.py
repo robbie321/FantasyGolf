@@ -21,8 +21,14 @@ def upgrade():
     with op.batch_alter_table('clubs', schema=None) as batch_op:
         batch_op.add_column(sa.Column('tips_dismissed', sa.JSON(), nullable=True))
 
-    with op.batch_alter_table('league_templates', schema=None) as batch_op:
-        batch_op.create_index('idx_template_name', ['name'], unique=False)
+    # Check if index exists before creating it
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    indexes = [idx['name'] for idx in inspector.get_indexes('league_templates')]
+
+    if 'idx_template_name' not in indexes:
+        with op.batch_alter_table('league_templates', schema=None) as batch_op:
+            batch_op.create_index('idx_template_name', ['name'], unique=False)
 
     # ### end Alembic commands ###
 
