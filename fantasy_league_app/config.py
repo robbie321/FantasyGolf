@@ -99,6 +99,14 @@ class Config:
 
     TESTING_MODE_FLAG = 'testing_mode.flag'
 
+    # Geo-Redirect Configuration
+    IE_DOMAIN = os.environ.get('IE_DOMAIN', 'fantasyfairways.ie')
+    UK_DOMAIN = os.environ.get('UK_DOMAIN', 'fantasyfairways.co.uk')
+    GEO_REDIRECT_ENABLED = os.environ.get('GEO_REDIRECT_ENABLED', 'true').lower() in ('true', '1', 'yes')
+
+    # Asset versioning for cache busting (increment when CSS/JS changes)
+    ASSET_VERSION = os.environ.get('ASSET_VERSION', '1.0')
+
     # Cache configuration
     CACHE_KEY_PREFIX = 'ff_'
     CACHE_TIMEOUTS = {
@@ -157,10 +165,6 @@ class Config:
             'task': 'fantasy_league_app.tasks.send_rank_change_notifications',
             'schedule': crontab(minute='*/30'),  # Every 30 minutes during tournaments
         },
-        'cleanup-push-subscriptions-weekly': {
-            'task': 'fantasy_league_app.tasks.cleanup_old_push_subscriptions',
-            'schedule': crontab(hour=2, minute=0, day_of_week='monday'),
-        },
         'check-player-withdrawals-thursday': {
             'task': 'fantasy_league_app.tasks.substitute_withdrawn_players',
             'schedule': crontab(minute='*/15', hour='6-14', day_of_week='thursday'),  # Every 15 min, 6am-2pm UTC on Thursdays
@@ -217,6 +221,9 @@ class DevelopmentConfig(Config):
     # ===== SESSION SECURITY - FALSE FOR DEVELOPMENT =====
     SESSION_COOKIE_SECURE = False  # Allow HTTP in development
     REMEMBER_COOKIE_SECURE = False  # Allow HTTP in development
+
+    # Disable geo-redirect in development
+    GEO_REDIRECT_ENABLED = False
 
     # Override cache timeouts for faster development testing
     CACHE_TIMEOUTS = {

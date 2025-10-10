@@ -1,6 +1,6 @@
 import os
 import stripe
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import mimetypes
 from .cli import register_cli_commands
 
@@ -95,6 +95,21 @@ def create_app(config_name=None):
     from fantasy_league_app.push import init_push
     init_push(app)
 
+    # Initialize geo-redirect middleware
+    from fantasy_league_app.geo_redirect import init_geo_redirect
+    init_geo_redirect(app)
+
+    # Add cache headers for static files to prevent FOUC
+    @app.after_request
+    def add_cache_headers(response):
+        """Add cache headers for static assets"""
+        if request.path.startswith('/static/'):
+            # Cache static files for 1 year (they have version numbers)
+            response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+        elif request.path.endswith(('.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2')):
+            # Cache other assets for 1 week
+            response.headers['Cache-Control'] = 'public, max-age=604800'
+        return response
 
     # Register CLI commands
     register_cli_commands(app)

@@ -10,68 +10,81 @@
     <meta name="apple-mobile-web-app-title" content="Fantasy Golf" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>Fantasy Fairways</title>
-    <!-- Add Google Fonts Link -->
 
+    <!-- Prevent FOUC (Flash of Unstyled Content) -->
+    <style>
+      /* Critical CSS - Prevents blank page flash */
+      html {
+        visibility: visible;
+        opacity: 1;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        background-color: #f9fbfb;
+        visibility: visible !important;
+      }
+      /* Prevent layout shift */
+      .loading-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    </style>
+
+    <!-- Preconnect to external resources for faster loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+
+    <!-- Load critical CSS first (main stylesheet) -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}?v={{ config.get('ASSET_VERSION', '1.0') }}"
+    />
+
+    <!-- Load Google Fonts with display=swap to prevent blocking -->
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
+
+    <!-- Load other CSS files -->
+    <link
+      href="{{ url_for('static', filename='css/fa/css/fontawesome.css') }}?v={{ config.get('ASSET_VERSION', '1.0') }}"
+      rel="stylesheet"
+    />
+    <link
+      href="{{ url_for('static', filename='css/fa/css/brands.css') }}?v={{ config.get('ASSET_VERSION', '1.0') }}"
+      rel="stylesheet"
+    />
+    <link
+      href="{{ url_for('static', filename='css/fa/css/solid.css') }}?v={{ config.get('ASSET_VERSION', '1.0') }}"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/SharedSections/tee-times.css') }}?v={{ config.get('ASSET_VERSION', '1.0') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/player_analytics.css') }}?v={{ config.get('ASSET_VERSION', '1.0') }}"
+    />
+
+    <!-- Flag icons loaded async to not block rendering -->
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css"
+      media="print"
+      onload="this.media='all'"
     />
+
     <link
       rel="manifest"
       href="{{ url_for('static', filename='manifest.json') }}"
     />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}"
-    />
-    <link
-      href="{{ url_for('static', filename='css/fa/css/fontawesome.css') }}"
-      rel="stylesheet"
-    />
-    <link
-      href="{{ url_for('static', filename='css/fa/css/brands.css') }}"
-      rel="stylesheet"
-    />
-    <link
-      href="{{ url_for('static', filename='css/fa/css/solid.css') }}"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/SharedSections/tee-times.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/player_analytics.css') }}"
-    />
-    <!-- <script
-      type="module"
-      src="{{ url_for('static', filename='js/push-manager-ios.js') }}"
-    ></script> -->
-    <script
-      type="module"
-      src="{{ url_for('static', filename='js/push-one-click.js') }}"
-    ></script>
-    <script
-      type="module"
-      src="{{ url_for('static', filename='js/player-analytics.js') }}"
-    ></script>
-    <script
-      type="module"
-      src="{{ url_for('static', filename='js/tee-times.js') }}"
-    ></script>
-
-    <script
-      type="module"
-      src="{{ url_for('static', filename='js/main.js') }}"
-    ></script>
-    <script src="{{ url_for('static', filename='tutorial/tutorial.js') }}"></script>
 
     <!-- Professional Toast Notification Styles -->
     <style>
@@ -578,8 +591,28 @@
     </div>
 
     {% include 'components/player_analytics_modal.html' %} {% include
-    'components/tutorial_overlay.html' %} {% include
-    'components/tips_panel.html' %}
+    'components/tutorial_overlay.html' %}
+    {# Tips panel disabled - not working properly #}
+    {# {% include 'components/tips_panel.html' %} #}
+
+    <!-- Load JavaScript at the end for better performance -->
+    <script
+      type="module"
+      src="{{ url_for('static', filename='js/push-one-click.js') }}?v={{ config.get('ASSET_VERSION', '1.0') }}"
+    ></script>
+    <script
+      type="module"
+      src="{{ url_for('static', filename='js/player-analytics.js') }}?v={{ config.get('ASSET_VERSION', '1.0') }}"
+    ></script>
+    <script
+      type="module"
+      src="{{ url_for('static', filename='js/tee-times.js') }}?v={{ config.get('ASSET_VERSION', '1.0') }}"
+    ></script>
+    <script
+      type="module"
+      src="{{ url_for('static', filename='js/main.js') }}?v={{ config.get('ASSET_VERSION', '1.0') }}"
+    ></script>
+    <script src="{{ url_for('static', filename='tutorial/tutorial.js') }}?v={{ config.get('ASSET_VERSION', '1.0') }}"></script>
   </body>
 </html>
 

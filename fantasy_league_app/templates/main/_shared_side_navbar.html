@@ -52,6 +52,11 @@
       </li>
       {% if current_user.is_club_admin %}
       <li>
+        <a href="{{ url_for('main.club_dashboard') }}#templates-section"
+          ><i class="fa-solid fa-layer-group"></i> Templates</a
+        >
+      </li>
+      <li>
         <a href="{{ url_for('main.club_dashboard') }}#wallet-section"
           ><i class="fa-solid fa-wallet"></i> Wallet</a
         >

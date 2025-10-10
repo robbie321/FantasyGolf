@@ -259,6 +259,13 @@
     async init() {
       console.log("🚀 Initializing Tips Manager...");
 
+      // Check if user is authenticated first
+      const isAuthenticated = await this.checkAuthentication();
+      if (!isAuthenticated) {
+        console.log("⏭️ User not authenticated, skipping tips");
+        return;
+      }
+
       // MUST wait for dismissed tips to load before checking
       await this.loadDismissedTips();
 
@@ -268,6 +275,30 @@
 
       // Then check and show tips
       this.checkAndShowTips();
+    }
+
+    async checkAuthentication() {
+      try {
+        const response = await fetch("/api/onboarding/status");
+
+        // If we get a redirect to login (302) or unauthorized (401), user is not logged in
+        if (response.status === 302 || response.status === 401 || response.status === 403) {
+          return false;
+        }
+
+        // Check if response is JSON (authenticated) or HTML (redirect to login)
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          console.log("⏭️ Response is not JSON, user likely not authenticated");
+          return false;
+        }
+
+        // If response is OK and JSON, user is authenticated
+        return response.ok;
+      } catch (error) {
+        console.error("❌ Error checking authentication:", error);
+        return false;
+      }
     }
 
     async loadDismissedTips() {

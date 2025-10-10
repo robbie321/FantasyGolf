@@ -5,6 +5,63 @@ block head %}
   rel="stylesheet"
   href="{{ url_for('static', filename='css/form_style.css') }}"
 />
+
+<!-- Quill Rich Text Editor -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<style>
+  .template-selector-container {
+    background: linear-gradient(135deg, #e8f5f1 0%, #f0f9f6 100%);
+    border: 2px solid #00855f;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 133, 95, 0.1);
+  }
+
+  .template-selector-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #00855f;
+    margin-bottom: 1rem;
+  }
+
+  .template-selector-header i {
+    font-size: 1.25rem;
+  }
+
+  #template-selector {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    border: 2px solid #00855f;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  #template-selector:hover {
+    border-color: #006b4d;
+    box-shadow: 0 0 0 3px rgba(0, 133, 95, 0.1);
+  }
+
+  #template-selector:focus {
+    outline: none;
+    border-color: #006b4d;
+    box-shadow: 0 0 0 4px rgba(0, 133, 95, 0.15);
+  }
+
+  .template-selector-container .form-text {
+    color: #2d5f4f;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    font-style: italic;
+  }
+</style>
 {% endblock %} {% block content %}
 <main class="dashboard-content">
   <div class="form-wrapper">
@@ -25,6 +82,19 @@ block head %}
           <h1>Create New League</h1>
           <p>Set up a new fantasy league for your club members.</p>
         </div>
+
+        <!-- Template Selector -->
+        <div class="template-selector-container">
+          <div class="template-selector-header">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>Start from a template</span>
+          </div>
+          <select id="template-selector" class="form-control">
+            <option value="">Create from scratch</option>
+          </select>
+          <small class="form-text">Or fill in the form manually below</small>
+        </div>
+
         <div class="form-section-header">
           <i class="fa-solid fa-trophy"></i>
           <div>
@@ -70,9 +140,21 @@ block head %}
         </div>
         <div class="form-grid">
           <div class="form-group">
-            {{ render_field(form.prize_details, rows="4") }}
+            <label for="prize_details">
+              {{ form.prize_details.label }}
+            </label>
+            <div id="prize-details-editor" style="height: 150px; background: white; border: 1px solid #ddd; border-radius: 4px;"></div>
+            <input type="hidden" id="prize_details" name="prize_details" value="{{ form.prize_details.data or '' }}" />
+            <small class="form-text">Add details about prizes, vouchers, pro shop credits, etc.</small>
           </div>
-          <div class="form-group">{{ render_field(form.rules, rows="4") }}</div>
+          <div class="form-group">
+            <label for="rules">
+              {{ form.rules.label }}
+            </label>
+            <div id="rules-editor" style="height: 150px; background: white; border: 1px solid #ddd; border-radius: 4px;"></div>
+            <input type="hidden" id="rules" name="rules" value="{{ form.rules.data or '' }}" />
+            <small class="form-text">Format your league rules with bullets, bold, italics, etc.</small>
+          </div>
           <div class="toggle-switch">
             <div class="label-group">
               <label for="no_favorites_rule">Enforce No Favorites Rule</label>
@@ -90,9 +172,138 @@ block head %}
 </main>
 
 <script>
+  let rulesEditor = null;
+  let prizeDetailsEditor = null;
+
   document.addEventListener("DOMContentLoaded", function () {
     const playerBucketSelect = document.getElementById("player_bucket_id");
     const tourSelect = document.getElementById("tour");
+    const templateSelector = document.getElementById("template-selector");
+
+    // Initialize Quill editor for prize details
+    prizeDetailsEditor = new Quill('#prize-details-editor', {
+      theme: 'snow',
+      modules: {
+        toolbar: [
+          ['bold', 'italic', 'underline'],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          ['clean']
+        ]
+      },
+      placeholder: 'Enter prize details here...'
+    });
+
+    // Initialize Quill editor for rules
+    rulesEditor = new Quill('#rules-editor', {
+      theme: 'snow',
+      modules: {
+        toolbar: [
+          ['bold', 'italic', 'underline'],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          ['clean']
+        ]
+      },
+      placeholder: 'Enter league rules here...'
+    });
+
+    // Load existing content if editing
+    const existingPrizeDetails = document.getElementById('prize_details').value;
+    if (existingPrizeDetails) {
+      prizeDetailsEditor.root.innerHTML = existingPrizeDetails;
+    }
+
+    const existingRules = document.getElementById('rules').value;
+    if (existingRules) {
+      rulesEditor.root.innerHTML = existingRules;
+    }
+
+    // Update hidden inputs on form submission
+    const form = document.querySelector('form');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        const prizeHTML = prizeDetailsEditor.root.innerHTML;
+        document.getElementById('prize_details').value = prizeHTML;
+
+        const rulesHTML = rulesEditor.root.innerHTML;
+        document.getElementById('rules').value = rulesHTML;
+      });
+    }
+
+    // Load templates for the selector
+    async function loadTemplateOptions() {
+      try {
+        const response = await fetch('/api/templates');
+        const templates = await response.json();
+
+        templates.forEach(template => {
+          const option = document.createElement('option');
+          option.value = template.id;
+          const maxEntriesText = template.max_entries ? `${template.max_entries} entries` : 'Unlimited';
+          option.textContent = `${template.name} (€${template.entry_fee} - ${maxEntriesText})`;
+          templateSelector.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Failed to load templates:', error);
+      }
+    }
+
+    // Apply template to form
+    async function applyTemplate(templateId) {
+      if (!templateId) return;
+
+      try {
+        const response = await fetch(`/api/templates/${templateId}`);
+        const template = await response.json();
+
+        // Update form fields with template values
+        const entryFeeField = document.getElementById('entry_fee');
+        if (entryFeeField) {
+          entryFeeField.value = template.entry_fee;
+        }
+
+        const maxEntriesField = document.getElementById('max_entries');
+        if (maxEntriesField && template.max_entries) {
+          maxEntriesField.value = template.max_entries;
+        }
+
+        // Update prize details with HTML from template (load directly into Quill editor)
+        if (prizeDetailsEditor && template.prize_details) {
+          prizeDetailsEditor.root.innerHTML = template.prize_details;
+        }
+
+        // Update rules field with HTML from template (load directly into Quill editor)
+        if (rulesEditor && template.rules) {
+          rulesEditor.root.innerHTML = template.rules;
+        }
+
+        // Increment template usage counter
+        await fetch(`/api/templates/${templateId}/use`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+          }
+        });
+
+        alert(`Template "${template.name}" applied successfully! Other fields like tour and bucket selection are ready for you to fill in.`);
+      } catch (error) {
+        console.error('Failed to apply template:', error);
+        alert('Failed to load template. Please try again.');
+      }
+    }
+
+    // Template selector change handler
+    if (templateSelector) {
+      templateSelector.addEventListener('change', (e) => {
+        const templateId = e.target.value;
+        if (templateId) {
+          applyTemplate(templateId);
+        }
+      });
+
+      // Load templates on page load
+      loadTemplateOptions();
+    }
 
     if (playerBucketSelect && tourSelect) {
       playerBucketSelect.addEventListener("change", function () {

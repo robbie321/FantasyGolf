@@ -4,31 +4,21 @@ from datetime import datetime, timedelta, timezone, date
 from collections import defaultdict
 import requests
 import os
+import hashlib
 from sqlalchemy import func
 from typing import Dict, List, Optional, Any
 from fantasy_league_app.push.models import NotificationLog, NotificationTemplate
-from . import mail, socketio, get_app, cache    # Make sure mail is imported if you use it in other tasks
+from . import socketio, get_app, cache
 from flask_mail import Message
-from flask import current_app
 from fantasy_league_app.push.services import push_service, send_rank_change_notification, send_tournament_start_notification
 from .data_golf_client import DataGolfClient
-
-from collections import defaultdict # Add this import
 from .models import League, Player, PlayerBucket, LeagueEntry, PlayerScore, User, PushSubscription, db, DailyTaskTracker
 from celery import shared_task
 from celery.exceptions import SoftTimeLimitExceeded
 from .stripe_client import process_payouts,  create_payout
 from .utils import send_winner_notification_email, send_push_notification, send_email, send_big_mover_email, send_big_drop_email,send_leader_email, send_leader_lost_email
 from requests.exceptions import RequestException, Timeout,ConnectionError
-
-class CacheManager:
-    @staticmethod
-    def cache_key_for_player_scores(tour):
-        return f"player_scores_{tour}"
-
-    @staticmethod
-    def cache_key_for_leaderboard(league_id):
-        return f"leaderboard_{league_id}"
+from .cache_utils import CacheManager
 
 # Custom exceptions for better error handling
 class TemporaryAPIError(Exception):
@@ -46,6 +36,55 @@ class DatabaseConnectionError(Exception):
 # Set up proper logging for Celery tasks
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+###########################
+# TASK DEDUPLICATION HELPERS
+###########################
+
+def get_task_lock_key(task_name, *args):
+    """
+    Generate unique lock key for task deduplication.
+
+    Args:
+        task_name: Name of the task
+        *args: Arguments passed to the task
+
+    Returns:
+        str: Unique lock key for Redis
+    """
+    args_hash = hashlib.md5(str(args).encode()).hexdigest()
+    return f"task_lock:{task_name}:{args_hash}"
+
+
+def acquire_task_lock(redis_client, lock_key, task_id, timeout=300):
+    """
+    Try to acquire a lock for task execution.
+
+    Args:
+        redis_client: Redis client instance
+        lock_key: The lock key to acquire
+        task_id: Current task ID
+        timeout: Lock timeout in seconds (default 5 minutes)
+
+    Returns:
+        bool: True if lock acquired, False if another task is running
+    """
+    return redis_client.set(lock_key, task_id, nx=True, ex=timeout)
+
+
+def release_task_lock(redis_client, lock_key):
+    """
+    Release a task lock.
+
+    Args:
+        redis_client: Redis client instance
+        lock_key: The lock key to release
+    """
+    try:
+        redis_client.delete(lock_key)
+    except Exception as e:
+        logger.warning(f"Failed to release lock {lock_key}: {e}")
 
 
 ###########################
@@ -131,11 +170,31 @@ def update_player_scores(self, tour, end_time_iso):
     """
     Fetches live scores for a tour, updates the database, calculates rank changes,
     and reschedules itself to run again every 3 minutes until the end_time is reached.
+
+    Uses Redis-based task deduplication to prevent multiple instances from running simultaneously.
     """
+    from fantasy_league_app.extensions import get_redis_client
+
     app = get_app()
+
+    # Generate lock key for this specific task
+    lock_key = get_task_lock_key('update_player_scores', tour, end_time_iso)
+    redis_client = get_redis_client()
+
+    # Try to acquire lock (5 minute timeout)
+    lock_acquired = acquire_task_lock(redis_client, lock_key, self.request.id, timeout=300)
+
+    if not lock_acquired:
+        # Another instance of this exact task is already running
+        existing_task_id = redis_client.get(lock_key)
+        if existing_task_id:
+            existing_task_id = existing_task_id.decode() if isinstance(existing_task_id, bytes) else existing_task_id
+        logger.info(f"Task {self.request.id} skipped - already running as {existing_task_id} for tour '{tour}'")
+        return f"Skipped - duplicate of task {existing_task_id}"
+
     try:
         with app.app_context():
-            logger.info(f"Starting score update for tour '{tour}' (attempt {self.request.retries + 1})")
+            logger.info(f"Starting score update for tour '{tour}' (task {self.request.id}, attempt {self.request.retries + 1})")
 
             # Convert the end_time string back to a timezone-aware datetime object
             end_time = datetime.fromisoformat(end_time_iso).replace(tzinfo=timezone.utc)
@@ -261,20 +320,41 @@ def update_player_scores(self, tour, end_time_iso):
             League.end_date > now_utc).count()
 
             if active_leagues > 0 and now_utc < end_time:
+                # Release current lock before rescheduling
+                release_task_lock(redis_client, lock_key)
+
                 logger.info(f"Rescheduling task for tour '{tour}' - {active_leagues} leagues still active")
-                self.apply_async(args=[tour, end_time_iso], countdown=180)
+                # Schedule with task expiration to prevent stale tasks
+                self.apply_async(
+                    args=[tour, end_time_iso],
+                    countdown=180,  # 3 minutes
+                    expires=end_time  # Task expires at tournament end
+                )
             else:
                 logger.info(f"Stopping updates for tour '{tour}' - no active leagues or past end time")
+                # Lock will auto-expire after timeout
 
             return f"Score update completed for tour {tour}"
 
+    except Exception as e:
+        # Release lock on error
+        release_task_lock(redis_client, lock_key)
+        logger.error(f"Task failed for tour '{tour}': {e}")
+        raise
+
     except PermanentAPIError as e:
+        # Release lock on permanent error
+        release_task_lock(redis_client, lock_key)
         logger.error(f"Permanent error for tour {tour}: {e}")
         return f"Permanent failure for tour {tour}: {str(e)}"
 
-    except Exception as e:
-        logger.error(f"Unexpected error in score update for tour {tour}: {e}")
-        raise  # Let Celery handle the retry
+    finally:
+        # Ensure lock is always released (belt and suspenders approach)
+        try:
+            if lock_acquired:
+                release_task_lock(redis_client, lock_key)
+        except Exception:
+            pass  # Ignore cleanup errors
 
 
 @shared_task(
@@ -286,53 +366,112 @@ def update_player_scores(self, tour, end_time_iso):
 )
 def ensure_live_updates_are_running(self):
     """
-    A supervisor task that runs frequently on tournament days.
+    Enhanced supervisor task with deduplication that runs frequently on tournament days.
     It checks if the main 5 AM scheduler has run and, if not, triggers it.
+    Also verifies that score update tasks are actually running.
     """
+    from fantasy_league_app.extensions import get_redis_client
 
-    # STEP 1: Log that the task is actually running
-    logger.info("=" * 60)
-    logger.info("SUPERVISOR TASK STARTED")
-    logger.info(f"UTC Time: {datetime.utcnow()}")
-    logger.info("=" * 60)
+    # Acquire supervisor lock to prevent multiple supervisors running
+    redis_client = get_redis_client()
+    supervisor_lock_key = 'supervisor_lock:ensure_updates'
 
-    app = get_app()
+    lock_acquired = redis_client.set(supervisor_lock_key, self.request.id, nx=True, ex=120)  # 2 minute lock
+
+    if not lock_acquired:
+        logger.info(f"SUPERVISOR: Another supervisor is running, skipping")
+        return "Skipped - another supervisor running"
+
     try:
-        with app.app_context():
-            logger.info(f"SUPERVISOR: Starting check (attempt {self.request.retries + 1})")
+        # STEP 1: Log that the task is actually running
+        logger.info("=" * 60)
+        logger.info("SUPERVISOR TASK STARTED")
+        logger.info(f"UTC Time: {datetime.utcnow()}")
+        logger.info(f"Task ID: {self.request.id}")
+        logger.info("=" * 60)
 
-            today = date.today()
-            weekday = today.weekday()
+        app = get_app()
+        try:
+            with app.app_context():
+                logger.info(f"SUPERVISOR: Starting check (attempt {self.request.retries + 1})")
 
-            if 3 <= weekday <= 6:  # Tournament days
-                try:
-                    task_ran_today = DailyTaskTracker.query.filter_by(
-                        task_name='schedule_score_updates',
-                        run_date=today
-                    ).first()
+                today = date.today()
+                weekday = today.weekday()
 
-                    if task_ran_today:
-                        logger.info(f"SUPERVISOR: 5 AM job already ran today")
-                    else:
-                        logger.warning(f"SUPERVISOR: Triggering missed 5 AM job")
-                        from .tasks import schedule_score_updates_for_the_week
-                        result = schedule_score_updates_for_the_week.delay()
-                        logger.info(f"SUPERVISOR: Triggered job {result.id}")
+                if 3 <= weekday <= 6:  # Tournament days
+                    try:
+                        task_ran_today = DailyTaskTracker.query.filter_by(
+                            task_name='schedule_score_updates',
+                            run_date=today
+                        ).first()
 
-                except Exception as db_error:
-                    logger.error(f"SUPERVISOR: Database error: {db_error}")
-                    raise DatabaseConnectionError(f"Database query failed: {db_error}")
-            else:
-                logger.info(f"SUPERVISOR: Not a tournament day")
+                        if task_ran_today:
+                            logger.info(f"SUPERVISOR: 5 AM job already ran today")
 
-            return f"Supervisor check completed for {today}"
+                            # Extra check: verify update tasks are actually running
+                            for tour in ['pga', 'euro']:
+                                # Check if there are active leagues for this tour
+                                active_count = League.query.filter(
+                                    League.tour == tour,
+                                    League.is_finalized == False,
+                                    League.start_date <= datetime.utcnow(),
+                                    League.end_date > datetime.utcnow()
+                                ).count()
+
+                                if active_count > 0:
+                                    # Check if a score update task lock exists for this tour
+                                    task_lock_pattern = f"task_lock:update_player_scores:*{tour}*"
+                                    task_locks = list(redis_client.scan_iter(task_lock_pattern))
+
+                                    if not task_locks:
+                                        logger.warning(f"SUPERVISOR: No active task found for {tour} with {active_count} active leagues!")
+                                        logger.warning(f"SUPERVISOR: This may indicate the score update task stopped unexpectedly")
+                                    else:
+                                        logger.info(f"SUPERVISOR: {tour} updates confirmed running ({len(task_locks)} tasks)")
+                        else:
+                            logger.warning(f"SUPERVISOR: Triggering missed 5 AM job")
+                            from .tasks import schedule_score_updates_for_the_week
+                            result = schedule_score_updates_for_the_week.delay()
+                            logger.info(f"SUPERVISOR: Triggered job {result.id}")
+
+                    except Exception as db_error:
+                        logger.error(f"SUPERVISOR: Database error: {db_error}")
+                        raise DatabaseConnectionError(f"Database query failed: {db_error}")
+                else:
+                    logger.info(f"SUPERVISOR: Not a tournament day (weekday={weekday})")
+
+                return f"Supervisor check completed for {today}"
+
+        except SoftTimeLimitExceeded:
+            logger.warning("SUPERVISOR: Task timeout, will retry")
+            raise self.retry(countdown=60)
+        except Exception as e:
+            logger.error(f"SUPERVISOR: Unexpected error: {e}")
+            raise
 
     except SoftTimeLimitExceeded:
         logger.warning("SUPERVISOR: Task timeout, will retry")
+        # Release lock before retry
+        try:
+            redis_client.delete(supervisor_lock_key)
+        except Exception:
+            pass
         raise self.retry(countdown=60)
     except Exception as e:
         logger.error(f"SUPERVISOR: Unexpected error: {e}")
+        # Release lock on error
+        try:
+            redis_client.delete(supervisor_lock_key)
+        except Exception:
+            pass
         raise
+    finally:
+        # Always release the supervisor lock
+        try:
+            redis_client.delete(supervisor_lock_key)
+            logger.info("SUPERVISOR: Lock released")
+        except Exception:
+            pass  # Ignore cleanup errors
 
 
 @shared_task
@@ -512,23 +651,27 @@ def reset_player_scores():  # Removed self parameter
                 db.session.commit()
                 logger.info(f"RESET: Successfully reset {updated_rows} player scores")
 
-                # Send notifications
-                all_users = User.query.filter_by(is_active=True).yield_per(100)
+                # Send notifications - Optimized: fetch only IDs to reduce memory usage
+                user_ids = [u.id for u in User.query.filter_by(is_active=True).with_entities(User.id).all()]
                 notification_count = 0
 
-                for user in all_users:
-                    try:
-                        send_push_notification(
-                            user.id,
-                            "New Week, New Leagues!",
-                            "Player data has been updated. Check out the new leagues for this week's tournaments."
-                        )
-                        notification_count += 1
-                    except Exception as notif_error:
-                        logger.warning(f"RESET: Failed to send notification to user {user.id}: {notif_error}")
-                        continue
+                # Process in batches to avoid overwhelming the system
+                batch_size = 50
+                for i in range(0, len(user_ids), batch_size):
+                    batch = user_ids[i:i + batch_size]
+                    for user_id in batch:
+                        try:
+                            send_push_notification(
+                                user_id,
+                                "New Week, New Leagues!",
+                                "Player data has been updated. Check out the new leagues for this week's tournaments."
+                            )
+                            notification_count += 1
+                        except Exception as notif_error:
+                            logger.warning(f"RESET: Failed to send notification to user {user_id}: {notif_error}")
+                            continue
 
-                logger.info(f"RESET: Sent {notification_count} notifications")
+                logger.info(f"RESET: Sent {notification_count} notifications to {len(user_ids)} users")
                 return f"Reset {updated_rows} scores, sent {notification_count} notifications"
 
             except Exception as db_error:
@@ -538,7 +681,7 @@ def reset_player_scores():  # Removed self parameter
 
     except Exception as e:
         logger.error(f"RESET: Unexpected error: {e}")
-        rais
+        raise
 
 @shared_task
 def send_deadline_reminders():
@@ -1080,13 +1223,24 @@ def finalize_finished_leagues(self):
                         logger.warning(f"FINALIZE: No historical scores for league {league.id}")
                         continue
 
-                    # ✅ REMOVED: Don't set entry.total_score - it's calculated by @property
-                    # The total_score property will automatically calculate from historical_scores
+                    # Calculate total scores from historical_scores
+                    # We can't use entry.total_score property here because league isn't finalized yet
+                    entry_scores = {}
+                    for entry in entries:
+                        total = 0
+                        for player_id in [entry.player1_id, entry.player2_id, entry.player3_id]:
+                            if player_id and player_id in historical_scores:
+                                total += historical_scores[player_id]
+                        entry_scores[entry.id] = total
+
+                    # Check if we have any valid scores
+                    if not entry_scores or all(score == 0 for score in entry_scores.values()):
+                        logger.warning(f"FINALIZE: No valid scores for league {league.id}")
+                        continue
 
                     # Determine winners
-                    # The total_score property accesses historical scores automatically
-                    min_score = min(entry.total_score for entry in entries if entry.total_score is not None)
-                    top_entries = [entry for entry in entries if entry.total_score == min_score]
+                    min_score = min(entry_scores.values())
+                    top_entries = [entry for entry in entries if entry_scores[entry.id] == min_score]
 
                     winners = []
                     if len(top_entries) == 1:
@@ -1123,7 +1277,7 @@ def finalize_finished_leagues(self):
                                 f"""<li>
                                     <strong>Name:</strong> {winner.full_name} <br>
                                     <strong>Email:</strong> {winner.email} <br>
-                                    <strong>Score:</strong> {next((e.total_score for e in top_entries if e.user_id == winner.id), 'N/A')}
+                                    <strong>Score:</strong> {next((entry_scores[e.id] for e in top_entries if e.user_id == winner.id), 'N/A')}
                                 </li>""" for winner in winners
                             ) + "</ul>"
 

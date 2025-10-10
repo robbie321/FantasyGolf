@@ -201,30 +201,114 @@ def manual_finalize_leagues():
 @admin_bp.route('/redis-stats')
 @admin_required
 def redis_stats():
-    """Check Redis connection stats"""
+    """Enhanced Redis connection and performance stats"""
     from fantasy_league_app.extensions import get_redis_client
     import json
 
     try:
         client = get_redis_client()
-        info = client.info('clients')
 
+        # Get comprehensive Redis info
+        client_info = client.info('clients')
+        memory_info = client.info('memory')
+        stats_info = client.info('stats')
+
+        # Get pool configuration
+        pool = client.connection_pool
+        max_connections = pool.max_connections
+
+        # Calculate current usage
+        connected_clients = client_info.get('connected_clients', 0)
+        usage_percentage = round((connected_clients / max_connections) * 100, 1)
+
+        # Build comprehensive stats
         stats = {
-            'connected_clients': info.get('connected_clients', 0),
-            'blocked_clients': info.get('blocked_clients', 0),
-            'max_connections': 100,
-            'usage_percentage': round((info.get('connected_clients', 0) / 100) * 100, 1)
+            # Connection Stats
+            'connection_health': {
+                'connected_clients': connected_clients,
+                'blocked_clients': client_info.get('blocked_clients', 0),
+                'max_connections': max_connections,
+                'usage_percentage': usage_percentage,
+                'client_recent_max_input_buffer': client_info.get('client_recent_max_input_buffer', 0),
+                'client_recent_max_output_buffer': client_info.get('client_recent_max_output_buffer', 0),
+            },
+
+            # Memory Stats
+            'memory_health': {
+                'used_memory_human': memory_info.get('used_memory_human', 'N/A'),
+                'used_memory_peak_human': memory_info.get('used_memory_peak_human', 'N/A'),
+                'mem_fragmentation_ratio': memory_info.get('mem_fragmentation_ratio', 0),
+                'used_memory_rss_human': memory_info.get('used_memory_rss_human', 'N/A'),
+            },
+
+            # Performance Stats
+            'performance': {
+                'total_commands_processed': stats_info.get('total_commands_processed', 0),
+                'instantaneous_ops_per_sec': stats_info.get('instantaneous_ops_per_sec', 0),
+                'rejected_connections': stats_info.get('rejected_connections', 0),
+                'expired_keys': stats_info.get('expired_keys', 0),
+                'evicted_keys': stats_info.get('evicted_keys', 0),
+            },
+
+            # Health Indicators
+            'alerts': []
         }
 
+        # Generate alerts based on thresholds
+        if usage_percentage > 90:
+            stats['alerts'].append({
+                'level': 'CRITICAL',
+                'message': f'Redis connection pool nearly exhausted ({usage_percentage}%)! Consider increasing max_connections.'
+            })
+        elif usage_percentage > 75:
+            stats['alerts'].append({
+                'level': 'WARNING',
+                'message': f'Redis connection usage high ({usage_percentage}%). Monitor closely.'
+            })
+        else:
+            stats['alerts'].append({
+                'level': 'OK',
+                'message': f'Connection pool healthy ({usage_percentage}% usage)'
+            })
+
+        if stats['performance']['rejected_connections'] > 0:
+            stats['alerts'].append({
+                'level': 'CRITICAL',
+                'message': f"{stats['performance']['rejected_connections']} connections were rejected!"
+            })
+
+        if client_info.get('blocked_clients', 0) > 0:
+            stats['alerts'].append({
+                'level': 'WARNING',
+                'message': f"{client_info.get('blocked_clients', 0)} clients are blocked waiting for operations."
+            })
+
+        # Add health status
+        if usage_percentage < 75 and stats['performance']['rejected_connections'] == 0:
+            stats['overall_health'] = 'HEALTHY'
+        elif usage_percentage < 90:
+            stats['overall_health'] = 'WARNING'
+        else:
+            stats['overall_health'] = 'CRITICAL'
+
         return f"<pre>{json.dumps(stats, indent=2)}</pre>"
+
     except Exception as e:
-        import json  # Also add here in case only exception path is taken
+        import json
+        current_app.logger.error(f"Redis stats error: {e}")
         error_response = {
             'error': str(e),
-            'connected_clients': 0,
-            'blocked_clients': 0,
-            'max_connections': 100,
-            'usage_percentage': 0
+            'overall_health': 'ERROR',
+            'connection_health': {
+                'connected_clients': 0,
+                'blocked_clients': 0,
+                'max_connections': 100,
+                'usage_percentage': 0
+            },
+            'alerts': [{
+                'level': 'CRITICAL',
+                'message': f'Failed to retrieve Redis stats: {str(e)}'
+            }]
         }
         return f"<pre>{json.dumps(error_response, indent=2)}</pre>", 500
 
@@ -1140,14 +1224,222 @@ def check_beat_status():
 @admin_bp.route('/force-bucket-update', methods=['POST'])
 @admin_required
 def force_bucket_update():
-    """Manually force the bucket update task for testing"""
+    """Manually force the bucket update task"""
     from ..tasks import update_player_buckets
+    import traceback
 
-    result = update_player_buckets.delay()
-    flash(f'Bucket update task forced: {result.id}', 'info')
-    flash(f'Check result at: /admin/check-task-result/{result.id}', 'info')
+    # Check if we should run synchronously or async
+    run_sync = request.form.get('sync', 'false') == 'true'
+
+    if run_sync:
+        # Run synchronously (immediately, no Celery required)
+        try:
+            flash('Running bucket update synchronously...', 'info')
+            result = update_player_buckets()
+            flash(f'✅ Bucket update completed successfully!', 'success')
+            flash(f'Result: {result}', 'info')
+        except Exception as e:
+            flash(f'❌ Error running bucket update: {str(e)}', 'error')
+            current_app.logger.error(f"Sync bucket update error: {traceback.format_exc()}")
+    else:
+        # Run asynchronously (requires Celery workers)
+        try:
+            result = update_player_buckets.delay()
+            flash(f'Bucket update task queued: {result.id}', 'info')
+            flash(f'Check result at: /admin/check-task-result/{result.id}', 'info')
+            flash('⚠️ Note: Celery workers must be running to process this task', 'warning')
+        except Exception as e:
+            flash(f'❌ Error queuing task: {str(e)}', 'error')
+            flash('💡 Try running synchronously instead (no Celery required)', 'info')
 
     return redirect(url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/task-monitor')
+@admin_required
+def task_monitor():
+    """Monitor active self-rescheduling tasks and their locks"""
+    from fantasy_league_app.extensions import get_redis_client
+    import json
+
+    try:
+        redis_client = get_redis_client()
+
+        # Find all active task locks
+        active_locks = []
+        for key in redis_client.scan_iter("task_lock:*"):
+            key_str = key.decode() if isinstance(key, bytes) else key
+            task_id = redis_client.get(key)
+            ttl = redis_client.ttl(key)
+
+            if task_id:
+                task_id_str = task_id.decode() if isinstance(task_id, bytes) else task_id
+            else:
+                task_id_str = "unknown"
+
+            # Parse the lock key to extract task details
+            parts = key_str.split(':')
+            task_name = parts[1] if len(parts) > 1 else "unknown"
+            task_hash = parts[2] if len(parts) > 2 else "unknown"
+
+            active_locks.append({
+                'lock_key': key_str,
+                'task_name': task_name,
+                'task_id': task_id_str,
+                'ttl_seconds': ttl,
+                'ttl_minutes': round(ttl / 60, 1) if ttl > 0 else 0,
+                'status': 'RUNNING' if ttl > 0 else 'EXPIRED',
+                'hash': task_hash[:8]  # First 8 chars of hash
+            })
+
+        # Find supervisor locks
+        supervisor_locks = []
+        for key in redis_client.scan_iter("supervisor_lock:*"):
+            key_str = key.decode() if isinstance(key, bytes) else key
+            task_id = redis_client.get(key)
+            ttl = redis_client.ttl(key)
+
+            if task_id:
+                task_id_str = task_id.decode() if isinstance(task_id, bytes) else task_id
+            else:
+                task_id_str = "unknown"
+
+            supervisor_locks.append({
+                'lock_key': key_str,
+                'task_id': task_id_str,
+                'ttl_seconds': ttl,
+                'status': 'ACTIVE' if ttl > 0 else 'EXPIRED'
+            })
+
+        # Get stats
+        stats = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'active_task_locks': len([l for l in active_locks if l['status'] == 'RUNNING']),
+            'expired_locks': len([l for l in active_locks if l['status'] == 'EXPIRED']),
+            'supervisor_active': len([l for l in supervisor_locks if l['status'] == 'ACTIVE']) > 0,
+            'tasks': active_locks,
+            'supervisors': supervisor_locks
+        }
+
+        # Build HTML response with better formatting
+        html = f"""
+        <html>
+        <head>
+            <title>Task Monitor</title>
+            <meta http-equiv="refresh" content="10">
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; background: #f5f7fa; }}
+                .header {{ background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }}
+                .stats {{ display: flex; gap: 20px; margin-bottom: 20px; }}
+                .stat-card {{ background: white; padding: 20px; border-radius: 10px; flex: 1; }}
+                .stat-value {{ font-size: 32px; font-weight: bold; color: #006a4e; }}
+                table {{ width: 100%; border-collapse: collapse; background: white; border-radius: 10px; }}
+                th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }}
+                th {{ background-color: #006a4e; color: white; }}
+                .running {{ color: #27ae60; font-weight: bold; }}
+                .expired {{ color: #e74c3c; font-weight: bold; }}
+                .btn {{ background: #006a4e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 5px; }}
+                .btn:hover {{ background: #004d3a; }}
+                pre {{ background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; overflow-x: auto; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>🔍 Task Monitor</h1>
+                <p>Real-time monitoring of Celery tasks and Redis locks</p>
+                <p><em>Auto-refreshes every 10 seconds</em></p>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value">{stats['active_task_locks']}</div>
+                    <div>Active Tasks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{stats['expired_locks']}</div>
+                    <div>Expired Locks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{'✅' if stats['supervisor_active'] else '❌'}</div>
+                    <div>Supervisor Status</div>
+                </div>
+            </div>
+
+            <h2>Active Task Locks</h2>
+            <table>
+                <tr>
+                    <th>Task Name</th>
+                    <th>Task ID</th>
+                    <th>Status</th>
+                    <th>TTL</th>
+                    <th>Hash</th>
+                </tr>
+        """
+
+        for lock in active_locks:
+            status_class = 'running' if lock['status'] == 'RUNNING' else 'expired'
+            html += f"""
+                <tr>
+                    <td>{lock['task_name']}</td>
+                    <td>{lock['task_id'][:16]}...</td>
+                    <td class="{status_class}">{lock['status']}</td>
+                    <td>{lock['ttl_minutes']} min ({lock['ttl_seconds']}s)</td>
+                    <td>{lock['hash']}</td>
+                </tr>
+            """
+
+        html += """
+            </table>
+
+            <h2>Supervisor Locks</h2>
+            <table>
+                <tr>
+                    <th>Lock Key</th>
+                    <th>Task ID</th>
+                    <th>Status</th>
+                    <th>TTL</th>
+                </tr>
+        """
+
+        for lock in supervisor_locks:
+            status_class = 'running' if lock['status'] == 'ACTIVE' else 'expired'
+            html += f"""
+                <tr>
+                    <td>{lock['lock_key']}</td>
+                    <td>{lock['task_id'][:16]}...</td>
+                    <td class="{status_class}">{lock['status']}</td>
+                    <td>{lock['ttl_seconds']}s</td>
+                </tr>
+            """
+
+        html += f"""
+            </table>
+
+            <h2>Raw JSON Data</h2>
+            <pre>{json.dumps(stats, indent=2)}</pre>
+
+            <div style="margin-top: 20px;">
+                <a href="{url_for('admin.admin_dashboard')}" class="btn">← Back to Dashboard</a>
+                <a href="{url_for('admin.redis_stats')}" class="btn">Redis Stats</a>
+                <a href="{url_for('admin.celery_inspect')}" class="btn">Celery Inspect</a>
+            </div>
+        </body>
+        </html>
+        """
+
+        return html
+
+    except Exception as e:
+        current_app.logger.error(f"Task monitor error: {e}")
+        return f"""
+        <html>
+        <body>
+            <h1>Task Monitor Error</h1>
+            <p style="color: red;">Error: {str(e)}</p>
+            <a href="{url_for('admin.admin_dashboard')}">← Back to Dashboard</a>
+        </body>
+        </html>
+        """, 500
+
 
 @admin_bp.route('/heroku-processes')
 @admin_required
@@ -2047,4 +2339,42 @@ def onboarding_analytics():
         completion_rate=(tutorial_completed/total_users*100) if total_users > 0 else 0,
         avg_completion_time=avg_completion_time,
         top_dismissed_tips=sorted(tip_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+    )
+
+
+@admin_bp.route('/geo-redirect-test')
+@admin_required
+def geo_redirect_test():
+    """Test page for geo-redirect functionality"""
+    # Get configuration
+    redirect_enabled = current_app.config.get('GEO_REDIRECT_ENABLED', True)
+    ie_domain = current_app.config.get('IE_DOMAIN', 'fantasyfairways.ie')
+    uk_domain = current_app.config.get('UK_DOMAIN', 'fantasyfairways.co.uk')
+
+    # Get current request info
+    current_domain = request.host.lower()
+
+    # Get client IP
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if client_ip and ',' in client_ip:
+        client_ip = client_ip.split(',')[0].strip()
+
+    # Detect country from headers
+    detected_country = (
+        request.headers.get('CF-IPCountry') or
+        request.headers.get('X-Country') or
+        None
+    )
+
+    # Check for redirect cookie
+    has_redirect_cookie = request.cookies.get('geo_redirected') is not None
+
+    return render_template('admin/geo_redirect_test.html',
+        redirect_enabled=redirect_enabled,
+        ie_domain=ie_domain,
+        uk_domain=uk_domain,
+        current_domain=current_domain,
+        client_ip=client_ip,
+        detected_country=detected_country,
+        has_redirect_cookie=has_redirect_cookie
     )

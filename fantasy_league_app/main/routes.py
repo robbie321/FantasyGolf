@@ -236,6 +236,200 @@ def club_dashboard():
         now=datetime.utcnow()
     )
 
+@main_bp.route('/send_league_message', methods=['POST'])
+@user_required
+@password_reset_required
+def send_league_message():
+    """Send email messages to participants in selected leagues"""
+    if not getattr(current_user, 'is_club_admin', False):
+        flash('You do not have permission to send league messages.', 'error')
+        return redirect(url_for('main.club_dashboard'))
+
+    try:
+        import json
+        from flask_mail import Message
+        from fantasy_league_app.extensions import mail
+
+        # Get form data
+        league_ids_json = request.form.get('league_ids', '[]')
+        league_ids = json.loads(league_ids_json)
+        subject = request.form.get('subject', '').strip()
+        message_body = request.form.get('message', '').strip()
+
+        if not league_ids or not subject or not message_body:
+            flash('Please fill in all required fields.', 'error')
+            return redirect(url_for('main.club_dashboard'))
+
+        # Get leagues and validate ownership
+        leagues = League.query.filter(
+            League.id.in_(league_ids),
+            League.club_id == current_user.id
+        ).all()
+
+        if not leagues:
+            flash('No valid leagues found.', 'error')
+            return redirect(url_for('main.club_dashboard'))
+
+        # Collect all unique participants
+        participants = set()
+        for league in leagues:
+            for entry in league.entries:
+                if entry.user and entry.user.email:
+                    participants.add((entry.user.email, entry.user.first_name, league))
+
+        if not participants:
+            flash('No participants found in selected leagues.', 'warning')
+            return redirect(url_for('main.club_dashboard'))
+
+        # Send emails to each participant
+        sent_count = 0
+        failed_count = 0
+
+        for participant_email, participant_name, league in participants:
+            try:
+                # Replace placeholders
+                personalized_subject = subject.replace('{{league_name}}', league.name)
+                personalized_subject = personalized_subject.replace('{{club_name}}', current_user.club_name)
+
+                personalized_body = message_body.replace('{{participant_name}}', participant_name)
+                personalized_body = personalized_body.replace('{{league_name}}', league.name)
+                personalized_body = personalized_body.replace('{{club_name}}', current_user.club_name)
+                personalized_body = personalized_body.replace('{{league_code}}', league.league_code or 'N/A')
+                personalized_body = personalized_body.replace('{{start_date}}',
+                    league.start_date.strftime('%B %d, %Y') if league.start_date else 'TBD')
+
+                # Create and send email
+                msg = Message(
+                    subject=personalized_subject,
+                    recipients=[participant_email],
+                    body=personalized_body,
+                    sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'noreply@agolffantasy.com')
+                )
+                mail.send(msg)
+                sent_count += 1
+
+            except Exception as e:
+                current_app.logger.error(f"Failed to send email to {participant_email}: {str(e)}")
+                failed_count += 1
+
+        # Flash success/failure messages
+        if sent_count > 0:
+            flash(f'Successfully sent {sent_count} message(s) to participants!', 'success')
+        if failed_count > 0:
+            flash(f'Failed to send {failed_count} message(s). Please check logs.', 'warning')
+
+    except Exception as e:
+        current_app.logger.error(f"Error sending league messages: {str(e)}")
+        flash('An error occurred while sending messages. Please try again.', 'error')
+
+    return redirect(url_for('main.club_dashboard'))
+
+@main_bp.route('/api/templates', methods=['GET'])
+@user_required
+@password_reset_required
+def get_templates():
+    """Get all templates for the current club"""
+    if not getattr(current_user, 'is_club_admin', False):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    from fantasy_league_app.models import LeagueTemplate
+    templates = LeagueTemplate.query.filter_by(club_id=current_user.id).order_by(LeagueTemplate.created_at.desc()).all()
+    return jsonify([template.to_dict() for template in templates])
+
+@main_bp.route('/api/templates/<int:template_id>', methods=['GET'])
+@user_required
+@password_reset_required
+def get_template(template_id):
+    """Get a specific template"""
+    if not getattr(current_user, 'is_club_admin', False):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    from fantasy_league_app.models import LeagueTemplate
+    template = LeagueTemplate.query.filter_by(id=template_id, club_id=current_user.id).first_or_404()
+    return jsonify(template.to_dict())
+
+@main_bp.route('/save_template', methods=['POST'])
+@user_required
+@password_reset_required
+def save_template():
+    """Create or update a league template"""
+    if not getattr(current_user, 'is_club_admin', False):
+        flash('You do not have permission to manage templates.', 'error')
+        return redirect(url_for('main.club_dashboard'))
+
+    from fantasy_league_app.models import LeagueTemplate
+
+    try:
+        template_id = request.form.get('template_id')
+
+        if template_id:
+            # Update existing template
+            template = LeagueTemplate.query.filter_by(id=template_id, club_id=current_user.id).first_or_404()
+        else:
+            # Create new template
+            template = LeagueTemplate(club_id=current_user.id)
+
+        # Update fields
+        template.name = request.form.get('name', '').strip()
+        template.description = request.form.get('description', '').strip()
+        template.entry_fee = float(request.form.get('entry_fee', 10.0))
+        template.max_entries = int(request.form.get('max_entries')) if request.form.get('max_entries') else None
+        template.prize_details = request.form.get('prize_details', '').strip() or None
+        template.rules = request.form.get('rules', '').strip() or None
+
+        if not template_id:
+            db.session.add(template)
+
+        db.session.commit()
+
+        flash(f'Template "{template.name}" saved successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error saving template: {str(e)}")
+        flash('An error occurred while saving the template.', 'error')
+
+    return redirect(url_for('main.club_dashboard'))
+
+@main_bp.route('/api/templates/<int:template_id>', methods=['DELETE'])
+@user_required
+@password_reset_required
+def delete_template(template_id):
+    """Delete a league template"""
+    if not getattr(current_user, 'is_club_admin', False):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    from fantasy_league_app.models import LeagueTemplate
+
+    try:
+        template = LeagueTemplate.query.filter_by(id=template_id, club_id=current_user.id).first_or_404()
+        db.session.delete(template)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting template: {str(e)}")
+        return jsonify({'error': 'Failed to delete template'}), 500
+
+@main_bp.route('/api/templates/<int:template_id>/use', methods=['POST'])
+@user_required
+@password_reset_required
+def use_template(template_id):
+    """Increment template usage counter"""
+    if not getattr(current_user, 'is_club_admin', False):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    from fantasy_league_app.models import LeagueTemplate
+
+    try:
+        template = LeagueTemplate.query.filter_by(id=template_id, club_id=current_user.id).first_or_404()
+        template.times_used += 1
+        db.session.commit()
+        return jsonify({'success': True, 'times_used': template.times_used})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating template usage: {str(e)}")
+        return jsonify({'error': 'Failed to update template'}), 500
+
 @main_bp.route('/profile')
 @user_required
 def my_profile():
@@ -706,12 +900,33 @@ def invalidate_user_caches(user_id):
 @login_required
 def get_onboarding_status():
     """Get user's onboarding status"""
+    # Check if current_user is a SiteAdmin or Club (they don't have tutorial_completed)
+    from fantasy_league_app.models import SiteAdmin, Club
+
+    if isinstance(current_user._get_current_object(), (SiteAdmin, Club)):
+        # Return default values for admin/club owner
+        return jsonify({
+            'tutorial_completed': True,
+            'onboarding_step': 'completed',
+            'should_show_tutorial': False,
+            'days_since_signup': 0,
+            'dismissed_tips': []
+        })
+
+    # Ensure tips_dismissed is a valid list
+    tips_dismissed = current_user.tips_dismissed
+    if not isinstance(tips_dismissed, list):
+        tips_dismissed = []
+
+    current_app.logger.info(f"User {current_user.id} onboarding status requested. tips_dismissed: {tips_dismissed}")
+
+    # Normal user response
     return jsonify({
-        'tutorial_completed': current_user.tutorial_completed,
-        'onboarding_step': current_user.onboarding_step,
-        'should_show_tutorial': not current_user.tutorial_completed,
-        'days_since_signup': (datetime.utcnow() - current_user.first_login).days if current_user.first_login else 0,
-        'dismissed_tips': current_user.tips_dismissed if current_user.tips_dismissed else []
+        'tutorial_completed': getattr(current_user, 'tutorial_completed', True),
+        'onboarding_step': getattr(current_user, 'onboarding_step', 'completed'),
+        'should_show_tutorial': not getattr(current_user, 'tutorial_completed', True),
+        'days_since_signup': (datetime.utcnow() - current_user.first_login).days if hasattr(current_user, 'first_login') and current_user.first_login else 0,
+        'dismissed_tips': tips_dismissed
     })
 
 @main_bp.route('/api/onboarding/complete-tutorial', methods=['POST'])
@@ -741,7 +956,18 @@ def dismiss_tip():
         return jsonify({'success': False, 'message': 'Tip ID required'}), 400
 
     try:
+        # Log before dismissal
+        current_app.logger.info(f"User {current_user.id} dismissing tip '{tip_id}'. Current tips_dismissed: {current_user.tips_dismissed}")
+
+        # Dismiss the tip
         current_user.dismiss_tip(tip_id)
+
+        # Refresh the user from database to confirm save
+        db.session.refresh(current_user)
+
+        # Log after dismissal
+        current_app.logger.info(f"User {current_user.id} after dismissal. tips_dismissed: {current_user.tips_dismissed}")
+
         return jsonify({
             'success': True,
             'message': f'Tip {tip_id} dismissed',
@@ -749,10 +975,37 @@ def dismiss_tip():
         })
     except Exception as e:
         current_app.logger.error(f"Error dismissing tip {tip_id}: {str(e)}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
         return jsonify({
             'success': False,
             'message': str(e)
         }), 500
+
+@main_bp.route('/test-tips')
+@login_required
+def test_tips_page():
+    """Test page for debugging tips dismissal"""
+    return render_template('test_tips.html')
+
+@main_bp.route('/api/debug/tips-dismissed')
+@login_required
+def debug_tips_dismissed():
+    """Debug endpoint to check tips_dismissed value directly from DB"""
+    from sqlalchemy import text
+
+    # Query directly from database
+    result = db.session.execute(
+        text("SELECT id, email, tips_dismissed FROM users WHERE id = :user_id"),
+        {"user_id": current_user.id}
+    ).fetchone()
+
+    return jsonify({
+        'current_user_id': current_user.id,
+        'current_user_tips_dismissed': current_user.tips_dismissed,
+        'db_raw_value': result[2] if result else None,
+        'tips_dismissed_type': str(type(current_user.tips_dismissed))
+    })
 
 @main_bp.route('/api/leagues/beginner-friendly')
 @login_required
