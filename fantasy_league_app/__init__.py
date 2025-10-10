@@ -95,6 +95,9 @@ def create_app(config_name=None):
     from fantasy_league_app.push import init_push
     init_push(app)
 
+    # Initialize geo-redirect middleware
+    from fantasy_league_app.geo_redirect import init_geo_redirect
+    init_geo_redirect(app)
 
     # Register CLI commands
     register_cli_commands(app)

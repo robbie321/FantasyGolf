@@ -832,17 +832,10 @@ class LeagueTemplate(db.Model):
     description = db.Column(db.Text, nullable=True)
 
     # League settings
-    tour = db.Column(db.String(20), nullable=False, default='PGA')
     entry_fee = db.Column(db.Float, nullable=False, default=10.0)
     max_entries = db.Column(db.Integer, nullable=True)
-    bucket_a_picks = db.Column(db.Integer, nullable=False, default=2)
-    bucket_b_picks = db.Column(db.Integer, nullable=False, default=2)
-    bucket_c_picks = db.Column(db.Integer, nullable=False, default=2)
-    bucket_d_picks = db.Column(db.Integer, nullable=False, default=2)
-    bucket_e_picks = db.Column(db.Integer, nullable=False, default=2)
-    is_public = db.Column(db.Boolean, default=False)
-    require_payment = db.Column(db.Boolean, default=True)
-    tiebreaker_question = db.Column(db.String(500), nullable=True)
+    rules = db.Column(db.Text, nullable=True)  # Rich text HTML for league rules
+    prize_details = db.Column(db.Text, nullable=True)  # Rich text HTML for prize details
 
     # Payout structure (stored as JSON)
     payout_structure = db.Column(db.JSON, nullable=True)
@@ -860,19 +853,10 @@ class LeagueTemplate(db.Model):
             'id': self.id,
             'name': self.name,
             'description': self.description,
-            'tour': self.tour,
             'entry_fee': self.entry_fee,
             'max_entries': self.max_entries,
-            'bucket_picks': {
-                'a': self.bucket_a_picks,
-                'b': self.bucket_b_picks,
-                'c': self.bucket_c_picks,
-                'd': self.bucket_d_picks,
-                'e': self.bucket_e_picks
-            },
-            'is_public': self.is_public,
-            'require_payment': self.require_payment,
-            'tiebreaker_question': self.tiebreaker_question,
+            'rules': self.rules,
+            'prize_details': self.prize_details,
             'payout_structure': self.payout_structure,
             'times_used': self.times_used,
             'created_at': self.created_at.isoformat() if self.created_at else None

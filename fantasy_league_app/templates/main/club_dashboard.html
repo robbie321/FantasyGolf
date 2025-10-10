@@ -7,6 +7,10 @@
   rel="stylesheet"
 />
 
+<!-- Quill Rich Text Editor -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
 <!-- Club dashboard data for JavaScript -->
 <script>
   window.clubData = {{ club_data_for_js|tojson }};
@@ -673,19 +677,6 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label for="template-tour">
-                <i class="fa-solid fa-golf-ball"></i>
-                Tour *
-              </label>
-              <select id="template-tour" name="tour" class="form-control" required>
-                <option value="PGA">PGA Tour</option>
-                <option value="LPGA">LPGA</option>
-                <option value="DP">DP World Tour</option>
-                <option value="LIV">LIV Golf</option>
-              </select>
-            </div>
-
-            <div class="form-group">
               <label for="template-entry-fee">
                 <i class="fa-solid fa-euro-sign"></i>
                 Entry Fee (€) *
@@ -718,60 +709,24 @@
             </div>
           </div>
 
-          <div class="form-section">
-            <h4><i class="fa-solid fa-list"></i> Bucket Picks</h4>
-            <div class="bucket-picks-grid">
-              <div class="form-group">
-                <label for="template-bucket-a">Bucket A</label>
-                <input type="number" id="template-bucket-a" name="bucket_a_picks" class="form-control" min="0" value="2" required />
-              </div>
-              <div class="form-group">
-                <label for="template-bucket-b">Bucket B</label>
-                <input type="number" id="template-bucket-b" name="bucket_b_picks" class="form-control" min="0" value="2" required />
-              </div>
-              <div class="form-group">
-                <label for="template-bucket-c">Bucket C</label>
-                <input type="number" id="template-bucket-c" name="bucket_c_picks" class="form-control" min="0" value="2" required />
-              </div>
-              <div class="form-group">
-                <label for="template-bucket-d">Bucket D</label>
-                <input type="number" id="template-bucket-d" name="bucket_d_picks" class="form-control" min="0" value="2" required />
-              </div>
-              <div class="form-group">
-                <label for="template-bucket-e">Bucket E</label>
-                <input type="number" id="template-bucket-e" name="bucket_e_picks" class="form-control" min="0" value="2" required />
-              </div>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group checkbox-group">
-              <label>
-                <input type="checkbox" id="template-is-public" name="is_public" />
-                <span>Public League</span>
-              </label>
-            </div>
-
-            <div class="form-group checkbox-group">
-              <label>
-                <input type="checkbox" id="template-require-payment" name="require_payment" checked />
-                <span>Require Payment</span>
-              </label>
-            </div>
+          <div class="form-group">
+            <label for="template-prize-details">
+              <i class="fa-solid fa-trophy"></i>
+              Prize Details
+            </label>
+            <div id="prize-details-editor" style="height: 150px; background: white; border: 1px solid #ddd; border-radius: 4px;"></div>
+            <input type="hidden" id="template-prize-details" name="prize_details" />
+            <small class="form-text">Add details about prizes, vouchers, pro shop credits, etc.</small>
           </div>
 
           <div class="form-group">
-            <label for="template-tiebreaker">
-              <i class="fa-solid fa-question-circle"></i>
-              Tiebreaker Question
+            <label for="template-rules">
+              <i class="fa-solid fa-gavel"></i>
+              League Rules
             </label>
-            <input
-              type="text"
-              id="template-tiebreaker"
-              name="tiebreaker_question"
-              class="form-control"
-              placeholder="e.g., What will the winning score be?"
-            />
+            <div id="rules-editor" style="height: 200px; background: white; border: 1px solid #ddd; border-radius: 4px;"></div>
+            <input type="hidden" id="template-rules" name="rules" />
+            <small class="form-text">Format your league rules with bullets, bold, italics, etc.</small>
           </div>
 
           <div class="modal-footer">
@@ -793,6 +748,8 @@
 <script>
   // Global variables for template management
   let currentTemplateId = null;
+  let rulesEditor = null;
+  let prizeDetailsEditor = null;
 
   // Global template functions (must be outside DOMContentLoaded for onclick handlers)
   function openTemplateModal(templateId = null) {
@@ -814,10 +771,50 @@
           title.textContent = 'Create League Template';
           form.reset();
           document.getElementById('template-id-input').value = '';
+          if (rulesEditor) {
+              rulesEditor.setContents([]);
+          }
+          if (prizeDetailsEditor) {
+              prizeDetailsEditor.setContents([]);
+          }
+      }
+
+      // Initialize Quill editors if not already done
+      if (!prizeDetailsEditor) {
+          prizeDetailsEditor = new Quill('#prize-details-editor', {
+              theme: 'snow',
+              modules: {
+                  toolbar: [
+                      ['bold', 'italic', 'underline'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['clean']
+                  ]
+              },
+              placeholder: 'Enter prize details here...'
+          });
+      }
+
+      if (!rulesEditor) {
+          rulesEditor = new Quill('#rules-editor', {
+              theme: 'snow',
+              modules: {
+                  toolbar: [
+                      ['bold', 'italic', 'underline'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['clean']
+                  ]
+              },
+              placeholder: 'Enter league rules here...'
+          });
       }
 
       modal.style.display = 'flex';
+      modal.style.visibility = 'visible';
+      modal.style.opacity = '1';
       document.body.style.overflow = 'hidden';
+
+      console.log('Modal should now be visible');
+      console.log('Modal computed display:', window.getComputedStyle(modal).display);
   }
 
   function closeTemplateModal() {
@@ -835,17 +832,18 @@
           document.getElementById('template-id-input').value = template.id;
           document.getElementById('template-name').value = template.name;
           document.getElementById('template-description').value = template.description || '';
-          document.getElementById('template-tour').value = template.tour;
           document.getElementById('template-entry-fee').value = template.entry_fee;
           document.getElementById('template-max-entries').value = template.max_entries || '';
-          document.getElementById('template-bucket-a').value = template.bucket_picks.a;
-          document.getElementById('template-bucket-b').value = template.bucket_picks.b;
-          document.getElementById('template-bucket-c').value = template.bucket_picks.c;
-          document.getElementById('template-bucket-d').value = template.bucket_picks.d;
-          document.getElementById('template-bucket-e').value = template.bucket_picks.e;
-          document.getElementById('template-is-public').checked = template.is_public;
-          document.getElementById('template-require-payment').checked = template.require_payment;
-          document.getElementById('template-tiebreaker').value = template.tiebreaker_question || '';
+
+          // Load prize details into Quill editor
+          if (prizeDetailsEditor && template.prize_details) {
+              prizeDetailsEditor.root.innerHTML = template.prize_details;
+          }
+
+          // Load rules into Quill editor
+          if (rulesEditor && template.rules) {
+              rulesEditor.root.innerHTML = template.rules;
+          }
       } catch (error) {
           console.error('Failed to load template data:', error);
       }
@@ -900,7 +898,6 @@
                   <div class="template-card">
                       <div class="template-card-header">
                           <h3>${template.name}</h3>
-                          <span class="template-badge">${template.tour}</span>
                       </div>
                       <div class="template-card-body">
                           ${template.description ? `<p class="template-description">${template.description}</p>` : ''}
@@ -910,8 +907,8 @@
                                   <span>€${template.entry_fee}</span>
                               </div>
                               <div class="template-stat">
-                                  <i class="fa-solid fa-list"></i>
-                                  <span>${template.bucket_picks.a + template.bucket_picks.b + template.bucket_picks.c + template.bucket_picks.d + template.bucket_picks.e} picks</span>
+                                  <i class="fa-solid fa-users"></i>
+                                  <span>${template.max_entries ? template.max_entries + ' entries' : 'Unlimited'}</span>
                               </div>
                               <div class="template-stat">
                                   <i class="fa-solid fa-clock"></i>
@@ -1322,6 +1319,23 @@
               openTemplateModal();
           });
       });
+
+      // Handle template form submission
+      const templateForm = document.getElementById('template-form');
+      if (templateForm) {
+          templateForm.addEventListener('submit', function(e) {
+              // Get the HTML content from Quill editors and put them in hidden inputs
+              if (prizeDetailsEditor) {
+                  const prizeHTML = prizeDetailsEditor.root.innerHTML;
+                  document.getElementById('template-prize-details').value = prizeHTML;
+              }
+              if (rulesEditor) {
+                  const rulesHTML = rulesEditor.root.innerHTML;
+                  document.getElementById('template-rules').value = rulesHTML;
+              }
+              // Form will submit normally
+          });
+      }
 
       // Initialize with Live tab
       const defaultTab = document.querySelector('#club-league-tabs .tab-button[data-status="Live"]');

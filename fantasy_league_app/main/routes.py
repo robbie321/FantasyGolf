@@ -372,17 +372,10 @@ def save_template():
         # Update fields
         template.name = request.form.get('name', '').strip()
         template.description = request.form.get('description', '').strip()
-        template.tour = request.form.get('tour', 'PGA')
         template.entry_fee = float(request.form.get('entry_fee', 10.0))
         template.max_entries = int(request.form.get('max_entries')) if request.form.get('max_entries') else None
-        template.bucket_a_picks = int(request.form.get('bucket_a_picks', 2))
-        template.bucket_b_picks = int(request.form.get('bucket_b_picks', 2))
-        template.bucket_c_picks = int(request.form.get('bucket_c_picks', 2))
-        template.bucket_d_picks = int(request.form.get('bucket_d_picks', 2))
-        template.bucket_e_picks = int(request.form.get('bucket_e_picks', 2))
-        template.is_public = 'is_public' in request.form
-        template.require_payment = 'require_payment' in request.form
-        template.tiebreaker_question = request.form.get('tiebreaker_question', '').strip() or None
+        template.prize_details = request.form.get('prize_details', '').strip() or None
+        template.rules = request.form.get('rules', '').strip() or None
 
         if not template_id:
             db.session.add(template)

@@ -11,6 +11,24 @@ python -m venv venv
 
 Tasks []
 
+
+drop table on heroku staging db
+
+
+
+##############
+#### CLUB ####
+##############
+[✅] add create a leage button to dashboard
+[✅] show vaild data on the 3 boxes on the club dashboard
+[✅] fix adding wallet on club navbar
+[✅] on the create league page, show date and first tee time of the selected player pool
+[✅] complete design of club league view
+[] display notice to clubs that deadline is 1h before
+[] fix finlise leagues issue on club dashboard
+[] fix deletion of past buckets when update buckets task runs
+[] fix template creation issue
+
 ###############
 ####GENERAL####
 ###############
@@ -67,15 +85,7 @@ Tasks []
 
 
 
-##############
-#### CLUB ####
-##############
-[✅] add create a leage button to dashboard
-[✅] show vaild data on the 3 boxes on the club dashboard
-[✅] fix adding wallet on club navbar
-[✅] on the create league page, show date and first tee time of the selected player pool
-[✅] complete design of club league view
-[] display notice to clubs that deadline is 1h before
+
 
 
 

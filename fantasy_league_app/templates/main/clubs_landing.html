@@ -1,29 +1,240 @@
 {% extends 'base.html' %} {% block content %}
 <style>
   body {
-    background: #6b9e86;
-    background: radial-gradient(
-      circle,
-      rgba(107, 158, 134, 1) 0%,
-      rgba(0, 106, 78, 1) 100%
-    );
+    background: var(--background-light);
   }
-  .page-container {
-    max-width: 800px;
+  .clubs-page-container {
+    max-width: 1200px;
     margin: auto;
     padding: 2rem;
-    border-radius: 8px;
-    color: #333;
+    color: var(--text-dark);
     line-height: 1.6;
   }
-  /* --- FAQ Accordion Styling --- */
+
+  .clubs-hero {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: var(--primary-gradient);
+    color: white;
+    border-radius: var(--border-radius-lg);
+    margin-bottom: 3rem;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .clubs-hero h1 {
+    font-size: 2.5rem;
+    color: white;
+    margin-bottom: 1rem;
+    font-weight: 700;
+  }
+
+  .clubs-hero .subtitle {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.9);
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .feature-card {
+    background: var(--white);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    text-align: center;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-green);
+  }
+
+  .feature-card i {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    color: var(--primary-green);
+  }
+
+  .feature-card h4 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+  }
+
+  .feature-card p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .section-card {
+    background: var(--white);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius-lg);
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .section-card h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    font-size: 1.75rem;
+  }
+
+  .section-card h3 i {
+    color: var(--primary-green);
+  }
+
+  /* Marketing Kit Grid */
+  .marketing-kit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .marketing-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+    background: var(--surface-light);
+    border: 2px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: var(--transition);
+    cursor: pointer;
+  }
+
+  .marketing-item:hover {
+    background: var(--primary-green);
+    color: white;
+    border-color: var(--primary-green);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .marketing-item i:first-child {
+    font-size: 2.5rem;
+    color: var(--primary-green);
+  }
+
+  .marketing-item:hover i {
+    color: white;
+  }
+
+  .marketing-item span {
+    font-weight: 600;
+    font-size: 1.1rem;
+    text-align: center;
+  }
+
+  .marketing-item .fa-download {
+    font-size: 1rem;
+    opacity: 0.7;
+  }
+
+  /* Email Templates Section */
+  .email-templates-grid {
+    display: grid;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .email-template-card {
+    background: var(--surface-light);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    transition: var(--transition);
+  }
+
+  .email-template-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-green);
+  }
+
+  .email-template-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .email-template-header h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    color: var(--text-primary);
+  }
+
+  .email-template-header h4 i {
+    color: var(--primary-green);
+  }
+
+  .download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--primary-green);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+  }
+
+  .download-btn:hover {
+    background: #004d3a;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .email-preview {
+    background: white;
+    padding: 1.5rem;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--surface-border);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .email-preview strong {
+    color: var(--text-primary);
+  }
+
+  /* FAQ Accordion Styling */
   .faq-container {
     margin-top: 1.5rem;
-    border-top: 1px solid var(--border-color);
   }
 
   .faq-item {
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .faq-item:last-child {
+    border-bottom: none;
   }
 
   .faq-question {
@@ -41,10 +252,11 @@
   .faq-question span {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--dark-text);
+    color: var(--text-primary);
   }
 
   .faq-question i {
+    color: var(--primary-green);
     transition: transform 0.3s ease;
   }
 
@@ -60,176 +272,354 @@
 
   .faq-answer p {
     padding: 0 0 1.5rem 0;
-    color: var(--text-light);
+    color: var(--text-secondary);
     line-height: 1.6;
   }
 
-  .marketing-kit-grid {
-    margin-top: 1rem;
+  .cta-section {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: var(--surface-light);
+    border-radius: var(--border-radius-lg);
+    margin: 3rem 0;
+  }
+
+  .cta-section h3 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 2rem;
+  }
+
+  .cta-section p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+  }
+
+  /* Revenue Calculator Table Styling */
+  .revenue-table-container {
+    overflow-x: auto;
+    margin-top: 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .revenue-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--white);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+  }
+
+  .revenue-table thead {
+    background: var(--primary-gradient);
+  }
+
+  .revenue-table thead th {
+    padding: 1.25rem 1.5rem;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: none;
+  }
+
+  .revenue-table thead th:last-child {
+    text-align: right;
+  }
+
+  .revenue-table tbody tr {
+    transition: var(--transition);
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .revenue-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .revenue-table tbody tr:hover {
+    background: var(--surface-light);
+    transform: scale(1.01);
+  }
+
+  .revenue-table tbody td {
+    padding: 1.25rem 1.5rem;
+    color: var(--text-primary);
+    font-size: 1rem;
+    border: none;
+  }
+
+  .revenue-table tbody td:first-child {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .revenue-table tbody td:last-child {
+    text-align: right;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--primary-green);
+  }
+
+  .revenue-table tbody tr:nth-child(even) {
+    background: rgba(0, 106, 78, 0.02);
+  }
+
+  .revenue-table tbody tr:hover:nth-child(even) {
+    background: var(--surface-light);
+  }
+
+  /* Revenue Formula Card */
+  .revenue-formula {
+    background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
+    border: 2px solid #80cbc4;
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    margin: 2rem 0;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .revenue-formula p {
+    font-size: 1.1rem;
+    color: #004d40;
+    font-weight: 600;
+    margin: 0.75rem 0;
+    line-height: 1.8;
+  }
+
+  .revenue-formula strong {
+    color: var(--primary-green);
+    font-size: 1.2rem;
+    background: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--border-radius-sm);
+    box-shadow: 0 2px 4px rgba(0, 106, 78, 0.2);
+  }
+
+  .scenario-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 2rem 0 1rem 0;
     display: flex;
-    flex-direction: row;
-    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .scenario-title i {
+    color: var(--primary-green);
   }
 
   @media (max-width: 768px) {
-    .marketing-kit-grid {
-      flex-direction: column;
+    .clubs-hero h1 {
+      font-size: 2rem;
+    }
+
+    .clubs-page-container {
+      padding: 1rem;
+    }
+
+    .section-card {
+      padding: 1.5rem;
+    }
+
+    .marketing-kit-grid,
+    .features-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .revenue-table thead th,
+    .revenue-table tbody td {
+      padding: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .revenue-formula {
+      padding: 1.5rem;
+    }
+
+    .revenue-formula p {
+      font-size: 1rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .revenue-table thead th,
+    .revenue-table tbody td {
+      padding: 0.75rem 0.5rem;
+      font-size: 0.85rem;
     }
   }
 </style>
 <main class="dashboard-content">
-  <div class="page-container">
-    <header class="page-header">
-      <h1>How It Works for Clubs</h1>
+  <div class="clubs-page-container">
+    <header class="clubs-hero">
+      <h1>Power Your Club's Fundraising</h1>
       <p class="subtitle">
-        Everything you need to know about running successful golf tournaments on
-        Fantasy Fairways.
+        Create engaging golf fantasy leagues that drive revenue and build community.
+        Everything you need to run successful tournaments with ease.
       </p>
     </header>
 
-    <!-- Renamed to use the existing player-profiles-grid style -->
-    <section class="player-profiles-grid">
-      <div class="player-profile-card">
-        <i
-          class="fa-solid fa-trophy"
-          style="
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: var(--primary-green);
-          "
-        ></i>
+    <!-- How It Works Section -->
+    <section class="features-grid">
+      <div class="feature-card">
+        <i class="fa-solid fa-trophy"></i>
         <h4>Create Leagues</h4>
-        <p class="player-meta">
-          Set up tournaments with custom rules and entry fees.
-        </p>
+        <p>Set up tournaments with custom rules, entry fees, and prize structures in minutes.</p>
       </div>
-      <div class="player-profile-card">
-        <i
-          class="fa-solid fa-users"
-          style="
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: var(--primary-green);
-          "
-        ></i>
+      <div class="feature-card">
+        <i class="fa-solid fa-users"></i>
         <h4>Players Join</h4>
-        <p class="player-meta">
-          Members create teams and pay entry fees to participate.
-        </p>
+        <p>Members create teams and pay entry fees securely through our platform.</p>
       </div>
-      <div class="player-profile-card">
-        <i
-          class="fa-solid fa-chart-simple"
-          style="
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: var(--primary-green);
-          "
-        ></i>
+      <div class="feature-card">
+        <i class="fa-solid fa-chart-simple"></i>
         <h4>Track Results</h4>
-        <p class="player-meta">
-          Real-time scoring and automatic leaderboard updates.
-        </p>
+        <p>Real-time scoring with automatic leaderboard updates throughout the tournament.</p>
       </div>
-      <div class="player-profile-card">
-        <i
-          class="fa-solid fa-sack-dollar"
-          style="
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: var(--primary-green);
-          "
-        ></i>
+      <div class="feature-card">
+        <i class="fa-solid fa-sack-dollar"></i>
         <h4>Earn Revenue</h4>
-        <p class="player-meta">
-          Keep a percentage of entry fees as tournament revenue.
-        </p>
+        <p>Keep 100% of entry fees with just a small €2.50 platform fee per participant.</p>
       </div>
     </section>
 
-    <div
-      class="form-card text-center"
-      style="margin-top: 2rem; margin-bottom: 2rem"
-    >
-      <a
-        href="{{ url_for('league.create_league') }}"
-        class="btn btn-primary"
-        style="padding: 1rem 2.5rem; font-size: 1.1rem"
-        >Create Your League Now</a
-      >
+    <!-- CTA Section -->
+    <div class="cta-section">
+      <h3>Ready to Get Started?</h3>
+      <p>Create your first league and start building engagement today</p>
+      <a href="{{ url_for('league.create_league') }}" class="btn btn-primary" style="padding: 1rem 2.5rem; font-size: 1.1rem">
+        Create Your League Now
+      </a>
     </div>
 
-    <div class="form-card">
-      <h3>Marketing Kit</h3>
-      <p class="subtitle">
-        Download our digital assets to promote your league via email or social
-        media.
+    <!-- Email Templates Section -->
+    <div class="section-card">
+      <h3><i class="fa-regular fa-envelope"></i> Email Templates for Club Admins</h3>
+      <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+        Professional email templates to help you promote your league to members. Simply download, customize with your details, and send.
       </p>
-      <div class="marketing-kit-grid">
-        <a
-          href="{{ url_for('static', filename='downloads/email_template.txt') }}"
-          download
-          class="marketing-item"
-        >
-          <i class="fa-regular fa-envelope"></i>
-          <span>Email Template</span>
-          <i class="fa-solid fa-download"></i>
-        </a>
-        <a
-          href="{{ url_for('static', filename='downloads/social_media_graphics.zip') }}"
-          download
-        >
-          <i class="fas fa-image"></i>
-          <span>Social Media Graphics</span>
-        </a>
-        <a
-          href="{{ url_for('static', filename='downloads/club_poster.pdf') }}"
-          download
-        >
-          <i class="fas fa-file-pdf"></i>
-          <span>Digital Poster/Flyer</span>
-        </a>
-        <!-- Add links to your other marketing assets here -->
+
+      <div class="email-templates-grid">
+        <!-- Template 1: League Announcement -->
+        <div class="email-template-card">
+          <div class="email-template-header">
+            <h4><i class="fa-solid fa-bullhorn"></i> League Announcement</h4>
+            <button class="download-btn" onclick="downloadTemplate('announcement')">
+              <i class="fa-solid fa-download"></i> Download
+            </button>
+          </div>
+          <div class="email-preview">
+            <strong>Subject:</strong> Join Our Exclusive Golf Fantasy League!<br><br>
+            Perfect for announcing a new league to your members with all the key details.
+          </div>
+        </div>
+
+        <!-- Template 2: Reminder Email -->
+        <div class="email-template-card">
+          <div class="email-template-header">
+            <h4><i class="fa-solid fa-clock"></i> Registration Reminder</h4>
+            <button class="download-btn" onclick="downloadTemplate('reminder')">
+              <i class="fa-solid fa-download"></i> Download
+            </button>
+          </div>
+          <div class="email-preview">
+            <strong>Subject:</strong> Last Chance to Join - Registration Closing Soon!<br><br>
+            Send this reminder as the registration deadline approaches.
+          </div>
+        </div>
+
+        <!-- Template 3: League Update -->
+        <div class="email-template-card">
+          <div class="email-template-header">
+            <h4><i class="fa-solid fa-trophy"></i> Tournament Started</h4>
+            <button class="download-btn" onclick="downloadTemplate('started')">
+              <i class="fa-solid fa-download"></i> Download
+            </button>
+          </div>
+          <div class="email-preview">
+            <strong>Subject:</strong> The Tournament Has Begun - Track Your Team Live!<br><br>
+            Keep members engaged once the tournament starts.
+          </div>
+        </div>
+
+        <!-- Template 4: Winners Announcement -->
+        <div class="email-template-card">
+          <div class="email-template-header">
+            <h4><i class="fa-solid fa-medal"></i> Winner Announcement</h4>
+            <button class="download-btn" onclick="downloadTemplate('winners')">
+              <i class="fa-solid fa-download"></i> Download
+            </button>
+          </div>
+          <div class="email-preview">
+            <strong>Subject:</strong> Congratulations to Our League Winners!<br><br>
+            Celebrate winners and promote your next league.
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="form-card" style="margin-top: 1.5rem">
-      <h3>
-        <i class="fa-solid fa-chart-line"></i> How Much Could Your Club Raise?
-      </h3>
-      <p>
+    <!-- Marketing Kit Section -->
+    <div class="section-card">
+      <h3><i class="fa-solid fa-palette"></i> Marketing Resources</h3>
+      <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+        Download digital assets to promote your league via email, social media, and around your club.
+      </p>
+      <div class="marketing-kit-grid">
+        <div class="marketing-item" onclick="alert('Social media graphics coming soon!')">
+          <i class="fas fa-image"></i>
+          <span>Social Media Graphics</span>
+          <i class="fa-solid fa-download"></i>
+        </div>
+        <div class="marketing-item" onclick="alert('Poster template coming soon!')">
+          <i class="fas fa-file-pdf"></i>
+          <span>Printable Poster</span>
+          <i class="fa-solid fa-download"></i>
+        </div>
+        <div class="marketing-item" onclick="alert('Logo pack coming soon!')">
+          <i class="fas fa-icons"></i>
+          <span>Logo & Branding</span>
+          <i class="fa-solid fa-download"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Revenue Calculator Section -->
+    <div class="section-card">
+      <h3><i class="fa-solid fa-chart-line"></i> How Much Could Your Club Raise?</h3>
+      <p style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 1.5rem;">
         Your club's fundraising potential is directly in your hands. Our model
         is simple: your club sets the entry fee and keeps 100% of it. We just
         charge a small, flat platform fee of €2.50 per participant to keep the
         service running.
       </p>
-      <div
-        class="formula"
-        style="
-          background-color: #e0f2f1;
-          color: #004d40;
-          border-radius: var(--border-radius);
-          padding: 1rem;
-          text-align: center;
-          margin: 1rem 0;
-          font-weight: 500;
-        "
-      >
-        <p>([Number of Members Joined] x [Entry Fee €]) = Total Pot</p>
+
+      <div class="revenue-formula">
+        <p>💰 ([Number of Members] × [Entry Fee €]) = Total Pot</p>
         <p>
-          Total Pot - ([Number of Members Joined] x €2.50) =
-          <strong>YOUR CLUB'S PROFIT</strong>
+          Total Pot - ([Number of Members] × €2.50) = <strong>YOUR CLUB'S PROFIT</strong>
         </p>
       </div>
-      <h4>Example Scenarios:</h4>
-      <div class="leaderboard-table-container">
-        <table class="leaderboard-table">
+
+      <h4 class="scenario-title">
+        <i class="fa-solid fa-calculator"></i>
+        Example Scenarios:
+      </h4>
+
+      <div class="revenue-table-container">
+        <table class="revenue-table">
           <thead>
             <tr>
               <th>Members Joined</th>
               <th>Entry Fee</th>
               <th>Total Pot</th>
-              <th class="text-right">Your Club's Profit</th>
+              <th>Your Club's Profit</th>
             </tr>
           </thead>
           <tbody>
@@ -237,53 +627,34 @@
               <td>50</td>
               <td>€10</td>
               <td>€500</td>
-              <td
-                class="text-right"
-                style="font-weight: 700; color: var(--primary-green)"
-              >
-                €375.00
-              </td>
+              <td>€375.00</td>
             </tr>
             <tr>
               <td>100</td>
               <td>€10</td>
               <td>€1,000</td>
-              <td
-                class="text-right"
-                style="font-weight: 700; color: var(--primary-green)"
-              >
-                €750.00
-              </td>
+              <td>€750.00</td>
             </tr>
             <tr>
               <td>75</td>
               <td>€20</td>
               <td>€1,500</td>
-              <td
-                class="text-right"
-                style="font-weight: 700; color: var(--primary-green)"
-              >
-                €1,312.50
-              </td>
+              <td>€1,312.50</td>
             </tr>
             <tr>
               <td>150</td>
               <td>€20</td>
               <td>€3,000</td>
-              <td
-                class="text-right"
-                style="font-weight: 700; color: var(--primary-green)"
-              >
-                €2,625.00
-              </td>
+              <td>€2,625.00</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <div class="form-card" style="margin-top: 2rem">
-      <h3>Frequently Asked Questions</h3>
+    <!-- FAQ Section -->
+    <div class="section-card">
+      <h3><i class="fa-solid fa-question-circle"></i> Frequently Asked Questions</h3>
       <div class="faq-container">
         <div class="faq-item">
           <button class="faq-question">
@@ -346,15 +717,162 @@
         question.addEventListener("click", () => {
           question.classList.toggle("active");
           if (question.classList.contains("active")) {
-            // Set max-height to the content's actual height to expand
             answer.style.maxHeight = answer.scrollHeight + "px";
           } else {
-            // Collapse the answer
             answer.style.maxHeight = "0px";
           }
         });
       }
     });
+  }
+
+  // --- Email Template Download Function ---
+  function downloadTemplate(templateType) {
+    const templates = {
+      announcement: {
+        subject: "Join Our Exclusive Golf Fantasy League!",
+        body: `Dear [Member Name],
+
+We're excited to announce a new fantasy golf league at [Your Club Name]!
+
+📅 Tournament: [Tournament Name]
+📍 Dates: [Start Date] - [End Date]
+💰 Entry Fee: €[Amount]
+🏆 Prize Pool: €[Total Prize]
+
+HOW IT WORKS:
+• Pick your dream team of professional golfers
+• Compete against fellow club members
+• Track scores in real-time as the tournament unfolds
+• Win great prizes based on your team's performance
+
+READY TO JOIN?
+Visit: [Your League URL]
+Registration closes: [Deadline Date]
+
+Questions? Reply to this email or contact us at [Contact Info].
+
+Good luck and may the best team win!
+
+Best regards,
+[Your Name]
+[Your Club Name]
+
+---
+Powered by Fantasy Fairways - www.fantasyfairways.ie`
+      },
+      reminder: {
+        subject: "Last Chance to Join - Registration Closing Soon!",
+        body: `Dear [Member Name],
+
+This is a friendly reminder that registration for our [Tournament Name] fantasy league closes in [X days/hours]!
+
+⏰ Registration Deadline: [Deadline Date & Time]
+💰 Entry Fee: €[Amount]
+🏆 Prize Pool: €[Total Prize]
+
+Don't miss your chance to:
+✓ Compete for fantastic prizes
+✓ Test your golf knowledge against club members
+✓ Add excitement to watching professional golf
+
+SPOTS FILLING FAST!
+We currently have [X] entries and space for [Y] more players.
+
+👉 Join now: [Your League URL]
+
+See you on the leaderboard!
+
+Best regards,
+[Your Name]
+[Your Club Name]
+
+---
+Powered by Fantasy Fairways - www.fantasyfairways.ie`
+      },
+      started: {
+        subject: "The Tournament Has Begun - Track Your Team Live!",
+        body: `Dear [Member Name],
+
+The [Tournament Name] has officially started and so has our fantasy league!
+
+🏌️ Track your team's progress live at: [Your League URL]
+
+CURRENT STANDINGS:
+🥇 1st Place: [Leader Name] - [Score]
+🥈 2nd Place: [Second Name] - [Score]
+🥉 3rd Place: [Third Name] - [Score]
+
+Your current position: [User Position]
+
+STAY ENGAGED:
+• Scores update in real-time throughout the tournament
+• Check the leaderboard regularly to see how you're doing
+• Share your progress with fellow members
+
+The competition is heating up - every shot counts!
+
+Good luck and enjoy the tournament!
+
+Best regards,
+[Your Name]
+[Your Club Name]
+
+---
+Powered by Fantasy Fairways - www.fantasyfairways.ie`
+      },
+      winners: {
+        subject: "Congratulations to Our League Winners!",
+        body: `Dear [Member Name],
+
+The [Tournament Name] fantasy league has concluded and we have our winners!
+
+🏆 FINAL STANDINGS:
+
+🥇 1st Place: [Winner Name] - Prize: €[Amount]
+🥈 2nd Place: [Second Name] - Prize: €[Amount]
+🥉 3rd Place: [Third Name] - Prize: €[Amount]
+
+Congratulations to all our winners! Your prizes will be distributed [timeframe/method].
+
+THANK YOU FOR PARTICIPATING!
+We had [X] members compete, creating a total prize pool of €[Total].
+
+Your final position: [User Position]
+Your final score: [User Score]
+
+NEXT LEAGUE COMING SOON:
+Stay tuned for our next fantasy league announcement. We're planning to run leagues for [upcoming tournaments].
+
+Thank you for making this such a success!
+
+Best regards,
+[Your Name]
+[Your Club Name]
+
+P.S. We'd love your feedback! Reply to this email with your thoughts on how we can make the next league even better.
+
+---
+Powered by Fantasy Fairways - www.fantasyfairways.ie`
+      }
+    };
+
+    const template = templates[templateType];
+    if (!template) {
+      alert('Template not found');
+      return;
+    }
+
+    const fullTemplate = `Subject: ${template.subject}\n\n${template.body}`;
+    const blob = new Blob([fullTemplate], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${templateType}_email_template.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   }
 </script>
 {% endblock %}

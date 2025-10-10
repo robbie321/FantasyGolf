@@ -2340,3 +2340,41 @@ def onboarding_analytics():
         avg_completion_time=avg_completion_time,
         top_dismissed_tips=sorted(tip_counts.items(), key=lambda x: x[1], reverse=True)[:5]
     )
+
+
+@admin_bp.route('/geo-redirect-test')
+@admin_required
+def geo_redirect_test():
+    """Test page for geo-redirect functionality"""
+    # Get configuration
+    redirect_enabled = current_app.config.get('GEO_REDIRECT_ENABLED', True)
+    ie_domain = current_app.config.get('IE_DOMAIN', 'fantasyfairways.ie')
+    uk_domain = current_app.config.get('UK_DOMAIN', 'fantasyfairways.co.uk')
+
+    # Get current request info
+    current_domain = request.host.lower()
+
+    # Get client IP
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if client_ip and ',' in client_ip:
+        client_ip = client_ip.split(',')[0].strip()
+
+    # Detect country from headers
+    detected_country = (
+        request.headers.get('CF-IPCountry') or
+        request.headers.get('X-Country') or
+        None
+    )
+
+    # Check for redirect cookie
+    has_redirect_cookie = request.cookies.get('geo_redirected') is not None
+
+    return render_template('admin/geo_redirect_test.html',
+        redirect_enabled=redirect_enabled,
+        ie_domain=ie_domain,
+        uk_domain=uk_domain,
+        current_domain=current_domain,
+        client_ip=client_ip,
+        detected_country=detected_country,
+        has_redirect_cookie=has_redirect_cookie
+    )

@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .geo-test-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 2rem;
+  }
+
+  .test-card {
+    background: var(--white);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .test-card h3 {
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .test-card h3 i {
+    color: var(--primary-green);
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .info-item {
+    background: var(--surface-light);
+    padding: 1.25rem;
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary-green);
+  }
+
+  .info-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .info-value {
+    font-size: 1.125rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-family: monospace;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .status-enabled {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .status-disabled {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .test-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--surface-border);
+  }
+
+  .test-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--primary-green);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    margin-right: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .test-button:hover {
+    background: #004d3a;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .test-button.secondary {
+    background: var(--surface-border);
+    color: var(--text-primary);
+  }
+
+  .test-button.secondary:hover {
+    background: var(--text-secondary);
+    color: white;
+  }
+
+  .code-block {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    font-family: monospace;
+    font-size: 0.875rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+
+  .warning-box {
+    background: #fef3c7;
+    border: 2px solid #f59e0b;
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
+    margin: 1.5rem 0;
+  }
+
+  .warning-box h4 {
+    color: #92400e;
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .warning-box p {
+    color: #78350f;
+    margin: 0;
+  }
+</style>
+
+<main class="dashboard-content">
+  <div class="geo-test-container">
+    <h1 style="color: var(--text-primary); margin-bottom: 2rem;">
+      <i class="fa-solid fa-globe"></i> Geo-Redirect Testing
+    </h1>
+
+    <!-- Current Status -->
+    <div class="test-card">
+      <h3><i class="fa-solid fa-info-circle"></i> Current Status</h3>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Redirect Status</div>
+          <div class="info-value">
+            <span class="status-badge {{ 'status-enabled' if redirect_enabled else 'status-disabled' }}">
+              {{ 'ENABLED' if redirect_enabled else 'DISABLED' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-label">Current Domain</div>
+          <div class="info-value">{{ current_domain }}</div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-label">Your IP</div>
+          <div class="info-value">{{ client_ip }}</div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-label">Detected Country</div>
+          <div class="info-value">{{ detected_country or 'Not Detected' }}</div>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">IE Domain</div>
+          <div class="info-value">{{ ie_domain }}</div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-label">UK Domain</div>
+          <div class="info-value">{{ uk_domain }}</div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-label">Redirect Cookie</div>
+          <div class="info-value">{{ 'Set' if has_redirect_cookie else 'Not Set' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuration -->
+    <div class="test-card">
+      <h3><i class="fa-solid fa-cog"></i> Configuration</h3>
+
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+        Configure these environment variables in production:
+      </p>
+
+      <div class="code-block">
+IE_DOMAIN={{ ie_domain }}
+UK_DOMAIN={{ uk_domain }}
+GEO_REDIRECT_ENABLED={{ 'true' if redirect_enabled else 'false' }}
+      </div>
+
+      <div class="warning-box">
+        <h4><i class="fa-solid fa-exclamation-triangle"></i> Production Setup Required</h4>
+        <p>Make sure both domains point to the same server and CloudFlare is configured with geo-location headers.</p>
+      </div>
+    </div>
+
+    <!-- Testing Tools -->
+    <div class="test-card">
+      <h3><i class="fa-solid fa-flask"></i> Testing Tools</h3>
+
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+        Test the redirect functionality with different scenarios:
+      </p>
+
+      <div class="test-section">
+        <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Manual Cookie Control</h4>
+        <button class="test-button" onclick="clearRedirectCookie()">
+          <i class="fa-solid fa-trash"></i> Clear Redirect Cookie
+        </button>
+        <button class="test-button secondary" onclick="setRedirectCookie()">
+          <i class="fa-solid fa-cookie"></i> Set Redirect Cookie
+        </button>
+      </div>
+
+      <div class="test-section">
+        <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Test URLs (cURL Examples)</h4>
+        <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+          Use these commands to test geo-redirect from command line:
+        </p>
+
+        <div class="code-block">
+# Test UK user on IE domain (should redirect to .co.uk)
+curl -H "CF-IPCountry: GB" -L {{ request.url_root }}
+
+# Test IE user on UK domain (should redirect to .ie)
+curl -H "CF-IPCountry: IE" -L {{ request.url_root }}
+
+# Test US user (should not redirect)
+curl -H "CF-IPCountry: US" -L {{ request.url_root }}
+        </div>
+      </div>
+
+      <div class="test-section">
+        <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Request Headers</h4>
+        <div class="code-block">
+{% for header, value in request.headers %}{{ header }}: {{ value }}
+{% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Documentation -->
+    <div class="test-card">
+      <h3><i class="fa-solid fa-book"></i> Documentation</h3>
+      <p style="color: var(--text-secondary);">
+        For full setup instructions, see <code style="background: var(--surface-light); padding: 0.25rem 0.5rem; border-radius: 4px;">GEO_REDIRECT_SETUP.md</code> in the project root.
+      </p>
+    </div>
+  </div>
+</main>
+
+<script>
+function clearRedirectCookie() {
+  document.cookie = 'geo_redirected=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  showToast('Redirect cookie cleared', 'success');
+  setTimeout(() => location.reload(), 1000);
+}
+
+function setRedirectCookie() {
+  const maxAge = 30 * 24 * 60 * 60; // 30 days
+  document.cookie = `geo_redirected=1; max-age=${maxAge}; path=/; samesite=Lax`;
+  showToast('Redirect cookie set', 'success');
+  setTimeout(() => location.reload(), 1000);
+}
+
+function showToast(message, type) {
+  // Simple toast notification
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    background: ${type === 'success' ? '#10b981' : '#ef4444'};
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    font-weight: 600;
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+</script>
+
+{% endblock %}

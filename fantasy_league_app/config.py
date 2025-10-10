@@ -99,6 +99,11 @@ class Config:
 
     TESTING_MODE_FLAG = 'testing_mode.flag'
 
+    # Geo-Redirect Configuration
+    IE_DOMAIN = os.environ.get('IE_DOMAIN', 'fantasyfairways.ie')
+    UK_DOMAIN = os.environ.get('UK_DOMAIN', 'fantasyfairways.co.uk')
+    GEO_REDIRECT_ENABLED = os.environ.get('GEO_REDIRECT_ENABLED', 'true').lower() in ('true', '1', 'yes')
+
     # Cache configuration
     CACHE_KEY_PREFIX = 'ff_'
     CACHE_TIMEOUTS = {
@@ -213,6 +218,9 @@ class DevelopmentConfig(Config):
     # ===== SESSION SECURITY - FALSE FOR DEVELOPMENT =====
     SESSION_COOKIE_SECURE = False  # Allow HTTP in development
     REMEMBER_COOKIE_SECURE = False  # Allow HTTP in development
+
+    # Disable geo-redirect in development
+    GEO_REDIRECT_ENABLED = False
 
     # Override cache timeouts for faster development testing
     CACHE_TIMEOUTS = {
