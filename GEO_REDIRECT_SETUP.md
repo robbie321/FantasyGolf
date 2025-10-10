@@ -1,12 +1,12 @@
 # Geo-Redirect Setup Guide
 
-This guide explains how to set up geo-based domain redirection for Fantasy Fairways, directing UK users to `fantasyfairways.co.uk` and Irish users to `fantasyfairways.ie`.
+This guide explains how to set up geo-based domain redirection for Fantasy Fairways, directing UK users to `fantasyfairway.co.uk` and Irish users to `fantasyfairway.ie`.
 
 ## Overview
 
 The geo-redirect system automatically detects a user's country and redirects them to the appropriate domain:
-- **UK users** (GB) → `fantasyfairways.co.uk`
-- **Irish users** (IE) → `fantasyfairways.ie`
+- **UK users** (GB) → `fantasyfairway.co.uk`
+- **Irish users** (IE) → `fantasyfairway.ie`
 - **Other users** → Can access either domain (no redirect)
 
 ## How It Works
@@ -24,8 +24,8 @@ Add these to your production environment (e.g., Heroku Config Vars):
 
 ```bash
 # Domain Configuration
-IE_DOMAIN=fantasyfairways.ie
-UK_DOMAIN=fantasyfairways.co.uk
+IE_DOMAIN=fantasyfairway.ie
+UK_DOMAIN=fantasyfairway.co.uk
 
 # Enable/Disable Geo-Redirect (default: true)
 GEO_REDIRECT_ENABLED=true
@@ -44,15 +44,15 @@ GEO_REDIRECT_ENABLED=true
 
 ### 1. Point Both Domains to Your Server
 
-Both `fantasyfairways.ie` and `fantasyfairways.co.uk` should point to the same server/hosting platform.
+Both `fantasyfairway.ie` and `fantasyfairway.co.uk` should point to the same server/hosting platform.
 
 #### For Heroku:
 ```bash
 # Add both domains to your Heroku app
-heroku domains:add fantasyfairways.ie
-heroku domains:add www.fantasyfairways.ie
-heroku domains:add fantasyfairways.co.uk
-heroku domains:add www.fantasyfairways.co.uk
+heroku domains:add fantasyfairway.ie
+heroku domains:add www.fantasyfairway.ie
+heroku domains:add fantasyfairway.co.uk
+heroku domains:add www.fantasyfairway.co.uk
 ```
 
 #### DNS Records:
@@ -70,8 +70,8 @@ CloudFlare provides the `CF-IPCountry` header which makes geo-detection very acc
 4. The geo-redirect will automatically use CloudFlare's country detection
 
 **CloudFlare Configuration:**
-- fantasyfairways.ie → Proxy enabled
-- fantasyfairways.co.uk → Proxy enabled
+- fantasyfairway.ie → Proxy enabled
+- fantasyfairway.co.uk → Proxy enabled
 
 ### 3. SSL Certificates
 
@@ -95,15 +95,15 @@ You can test the redirect by simulating different countries:
 **2. Using cURL:**
 ```bash
 # Simulate UK user on .ie domain
-curl -H "CF-IPCountry: GB" https://fantasyfairways.ie/
+curl -H "CF-IPCountry: GB" https://fantasyfairway.ie/
 
 # Simulate IE user on .co.uk domain
-curl -H "CF-IPCountry: IE" https://fantasyfairways.co.uk/
+curl -H "CF-IPCountry: IE" https://fantasyfairway.co.uk/
 ```
 
 **3. Using VPN:**
-- Connect to UK VPN, visit fantasyfairways.ie → should redirect to .co.uk
-- Connect to IE VPN, visit fantasyfairways.co.uk → should redirect to .ie
+- Connect to UK VPN, visit fantasyfairway.ie → should redirect to .co.uk
+- Connect to IE VPN, visit fantasyfairway.co.uk → should redirect to .ie
 
 ### Verify Redirect Cookie
 
@@ -165,8 +165,8 @@ def should_redirect(self, country, current_domain):
 
     # Add more countries as needed
     # elif country == 'US':
-    #     if 'fantasyfairways.com' not in current_domain:
-    #         return 'fantasyfairways.com'
+    #     if 'fantasyfairway.com' not in current_domain:
+    #         return 'fantasyfairway.com'
 
     return None
 ```
@@ -216,18 +216,18 @@ Consider adding canonical tags to prevent duplicate content issues:
 
 ```html
 <!-- On .co.uk pages -->
-<link rel="canonical" href="https://fantasyfairways.co.uk/..." />
+<link rel="canonical" href="https://fantasyfairway.co.uk/..." />
 
 <!-- On .ie pages -->
-<link rel="canonical" href="https://fantasyfairways.ie/..." />
+<link rel="canonical" href="https://fantasyfairway.ie/..." />
 ```
 
 ### hreflang Tags
 Add hreflang tags to help search engines understand geo-targeting:
 
 ```html
-<link rel="alternate" hreflang="en-gb" href="https://fantasyfairways.co.uk/" />
-<link rel="alternate" hreflang="en-ie" href="https://fantasyfairways.ie/" />
+<link rel="alternate" hreflang="en-gb" href="https://fantasyfairway.co.uk/" />
+<link rel="alternate" hreflang="en-ie" href="https://fantasyfairway.ie/" />
 ```
 
 ## Future Enhancements

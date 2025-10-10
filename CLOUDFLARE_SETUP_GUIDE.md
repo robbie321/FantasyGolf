@@ -1,6 +1,6 @@
 # CloudFlare Setup Guide for Hosting Ireland Domains
 
-This guide will walk you through moving your `fantasyfairways.ie` and `fantasyfairways.co.uk` domains from Hosting Ireland to CloudFlare for geo-detection and CDN benefits.
+This guide will walk you through moving your `fantasyfairway.ie` and `fantasyfairway.co.uk` domains from Hosting Ireland to CloudFlare for geo-detection and CDN benefits.
 
 ## Overview
 
@@ -31,12 +31,12 @@ This guide will walk you through moving your `fantasyfairways.ie` and `fantasyfa
 
 ---
 
-## Part 2: Add Your First Domain (fantasyfairways.ie)
+## Part 2: Add Your First Domain (fantasyfairway.ie)
 
 ### Step 2: Add Site to CloudFlare
 
 1. In CloudFlare dashboard, click **"Add a Site"**
-2. Enter your domain: `fantasyfairways.ie`
+2. Enter your domain: `fantasyfairway.ie`
 3. Click **"Add Site"**
 4. Select the **"Free"** plan (€0/month)
 5. Click **"Continue"**
@@ -60,8 +60,8 @@ CloudFlare will now scan your existing DNS records from Hosting Ireland.
 For each DNS record shown:
 
 **✅ Records to PROXY (Orange Cloud):**
-- `A` record for `@` (fantasyfairways.ie) → Click to enable **orange cloud** ☁️
-- `A` record for `www` (www.fantasyfairways.ie) → Click to enable **orange cloud** ☁️
+- `A` record for `@` (fantasyfairway.ie) → Click to enable **orange cloud** ☁️
+- `A` record for `www` (www.fantasyfairway.ie) → Click to enable **orange cloud** ☁️
 
 **⚠️ Records to NOT proxy (Grey Cloud):**
 - `MX` records (email) → Keep **grey cloud** ☁️
@@ -86,7 +86,7 @@ For each DNS record shown:
 If CloudFlare didn't detect all your records:
 
 1. Log in to **Hosting Ireland control panel**
-2. Go to **DNS Management** for fantasyfairways.ie
+2. Go to **DNS Management** for fantasyfairway.ie
 3. Write down ALL your DNS records
 4. In CloudFlare, click **"Add Record"** to manually add any missing ones
 
@@ -128,19 +128,19 @@ The exact steps vary depending on your control panel type:
 
 **Option A: cPanel/WHM**
 1. Go to **"Domains"** or **"Domain Management"**
-2. Find `fantasyfairways.ie`
+2. Find `fantasyfairway.ie`
 3. Click **"Manage"** or **"DNS"**
 
 **Option B: Hosting Ireland Custom Panel**
 1. Go to **"My Domains"**
-2. Click on `fantasyfairways.ie`
+2. Click on `fantasyfairway.ie`
 3. Look for **"Nameservers"** or **"DNS Settings"**
 
 **Option C: Email/Phone Support**
 If you can't find it:
 - Call Hosting Ireland: +353 1 820 2580
 - Email: support@hostingireland.ie
-- Say: "I need to update the nameservers for fantasyfairways.ie"
+- Say: "I need to update the nameservers for fantasyfairway.ie"
 
 ### Step 9: Change Nameservers
 
@@ -173,14 +173,14 @@ If you can't find it:
 
 ---
 
-## Part 4: Add Your Second Domain (fantasyfairways.co.uk)
+## Part 4: Add Your Second Domain (fantasyfairway.co.uk)
 
 ### Step 11: Add Second Site to CloudFlare
 
 Now repeat the process for your UK domain:
 
 1. In CloudFlare dashboard, click **"Add a Site"** again
-2. Enter: `fantasyfairways.co.uk`
+2. Enter: `fantasyfairway.co.uk`
 3. Click **"Add Site"**
 4. Select **"Free"** plan
 5. Click **"Continue"**
@@ -198,7 +198,7 @@ Follow the same steps as above:
 
 1. Log in to Hosting Ireland again
 2. Go to **"My Domains"**
-3. Find `fantasyfairways.co.uk`
+3. Find `fantasyfairway.co.uk`
 4. Update nameservers to the new CloudFlare ones
    ```
    Nameserver 1: [New CloudFlare NS for .co.uk]
@@ -212,9 +212,9 @@ Follow the same steps as above:
 
 ### Step 14: Enable SSL/TLS
 
-**For fantasyfairways.ie:**
+**For fantasyfairway.ie:**
 
-1. In CloudFlare dashboard, select `fantasyfairways.ie`
+1. In CloudFlare dashboard, select `fantasyfairway.ie`
 2. Go to **SSL/TLS** (left sidebar)
 3. Set mode to **"Full (strict)"** if you have SSL on your server
    - OR **"Flexible"** if you don't have SSL yet
@@ -224,7 +224,7 @@ Follow the same steps as above:
    - ✅ **Automatic HTTPS Rewrites**
    - ✅ **HTTP Strict Transport Security (HSTS)** *(optional but recommended)*
 
-**Repeat for fantasyfairways.co.uk**
+**Repeat for fantasyfairway.co.uk**
 
 ### Step 15: Verify Proxy is Enabled
 
@@ -243,7 +243,7 @@ Once nameservers are active, test that CloudFlare is providing geo headers:
 
 **Using cURL:**
 ```bash
-curl -I https://fantasyfairways.ie
+curl -I https://fantasyfairway.ie
 ```
 
 Look for:
@@ -264,10 +264,10 @@ If you see `cf-ipcountry`, it's working! ✅
 
 1. Add both domains to your Heroku app:
    ```bash
-   heroku domains:add fantasyfairways.ie
-   heroku domains:add www.fantasyfairways.ie
-   heroku domains:add fantasyfairways.co.uk
-   heroku domains:add www.fantasyfairways.co.uk
+   heroku domains:add fantasyfairway.ie
+   heroku domains:add www.fantasyfairway.ie
+   heroku domains:add fantasyfairway.co.uk
+   heroku domains:add www.fantasyfairway.co.uk
    ```
 
 2. Get the DNS target Heroku provides (looks like `xyz.herokudns.com`)
@@ -298,8 +298,8 @@ In your production environment (Heroku):
 
 ```bash
 heroku config:set GEO_REDIRECT_ENABLED=true
-heroku config:set IE_DOMAIN=fantasyfairways.ie
-heroku config:set UK_DOMAIN=fantasyfairways.co.uk
+heroku config:set IE_DOMAIN=fantasyfairway.ie
+heroku config:set UK_DOMAIN=fantasyfairway.co.uk
 ```
 
 ### Step 20: Deploy and Test
@@ -316,7 +316,7 @@ heroku config:set UK_DOMAIN=fantasyfairways.co.uk
 
 ```bash
 # Check if nameservers are updated (on Windows)
-nslookup -type=ns fantasyfairways.ie
+nslookup -type=ns fantasyfairway.ie
 
 # Should show CloudFlare nameservers
 ```
@@ -324,8 +324,8 @@ nslookup -type=ns fantasyfairways.ie
 ### Test 2: Check SSL
 
 Visit both domains in browser:
-- https://fantasyfairways.ie
-- https://fantasyfairways.co.uk
+- https://fantasyfairway.ie
+- https://fantasyfairway.co.uk
 
 Both should show:
 - 🔒 Padlock icon (secure)
@@ -336,10 +336,10 @@ Both should show:
 
 ```bash
 # Test IE domain
-curl -I https://fantasyfairways.ie
+curl -I https://fantasyfairway.ie
 
 # Test UK domain
-curl -I https://fantasyfairways.co.uk
+curl -I https://fantasyfairway.co.uk
 ```
 
 Both should return `cf-ipcountry` header.
@@ -348,13 +348,13 @@ Both should return `cf-ipcountry` header.
 
 **Using VPN:**
 1. Connect to UK VPN
-2. Visit `https://fantasyfairways.ie`
-3. Should redirect to `https://fantasyfairways.co.uk`
+2. Visit `https://fantasyfairway.ie`
+3. Should redirect to `https://fantasyfairway.co.uk`
 
 **Using cURL:**
 ```bash
 # Simulate UK user visiting .ie domain
-curl -H "CF-IPCountry: GB" -L https://fantasyfairways.ie
+curl -H "CF-IPCountry: GB" -L https://fantasyfairway.ie
 
 # Should redirect to .co.uk
 ```
@@ -448,12 +448,12 @@ Email must go direct to Hosting Ireland, not through CloudFlare.
 ## Summary Checklist
 
 - [ ] Sign up for CloudFlare account
-- [ ] Add fantasyfairways.ie to CloudFlare
+- [ ] Add fantasyfairway.ie to CloudFlare
 - [ ] Review and configure DNS records (.ie)
 - [ ] Enable orange cloud for @ and www (.ie)
 - [ ] Get CloudFlare nameservers (.ie)
 - [ ] Update nameservers in Hosting Ireland (.ie)
-- [ ] Add fantasyfairways.co.uk to CloudFlare
+- [ ] Add fantasyfairway.co.uk to CloudFlare
 - [ ] Review and configure DNS records (.co.uk)
 - [ ] Enable orange cloud for @ and www (.co.uk)
 - [ ] Get CloudFlare nameservers (.co.uk)
