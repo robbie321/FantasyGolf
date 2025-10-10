@@ -1223,13 +1223,24 @@ def finalize_finished_leagues(self):
                         logger.warning(f"FINALIZE: No historical scores for league {league.id}")
                         continue
 
-                    # ✅ REMOVED: Don't set entry.total_score - it's calculated by @property
-                    # The total_score property will automatically calculate from historical_scores
+                    # Calculate total scores from historical_scores
+                    # We can't use entry.total_score property here because league isn't finalized yet
+                    entry_scores = {}
+                    for entry in entries:
+                        total = 0
+                        for player_id in [entry.player1_id, entry.player2_id, entry.player3_id]:
+                            if player_id and player_id in historical_scores:
+                                total += historical_scores[player_id]
+                        entry_scores[entry.id] = total
+
+                    # Check if we have any valid scores
+                    if not entry_scores or all(score == 0 for score in entry_scores.values()):
+                        logger.warning(f"FINALIZE: No valid scores for league {league.id}")
+                        continue
 
                     # Determine winners
-                    # The total_score property accesses historical scores automatically
-                    min_score = min(entry.total_score for entry in entries if entry.total_score is not None)
-                    top_entries = [entry for entry in entries if entry.total_score == min_score]
+                    min_score = min(entry_scores.values())
+                    top_entries = [entry for entry in entries if entry_scores[entry.id] == min_score]
 
                     winners = []
                     if len(top_entries) == 1:
@@ -1266,7 +1277,7 @@ def finalize_finished_leagues(self):
                                 f"""<li>
                                     <strong>Name:</strong> {winner.full_name} <br>
                                     <strong>Email:</strong> {winner.email} <br>
-                                    <strong>Score:</strong> {next((e.total_score for e in top_entries if e.user_id == winner.id), 'N/A')}
+                                    <strong>Score:</strong> {next((entry_scores[e.id] for e in top_entries if e.user_id == winner.id), 'N/A')}
                                 </li>""" for winner in winners
                             ) + "</ul>"
 

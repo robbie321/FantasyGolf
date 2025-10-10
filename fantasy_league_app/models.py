@@ -737,10 +737,34 @@ class LeagueEntry(db.Model):
 
     @property
     def total_score(self):
-        """Calculate total score dynamically from player scores."""
-        scores = [self.player1.current_score, self.player2.current_score, self.player3.current_score]
-        valid_scores = [score for score in scores if score is not None]
-        return sum(valid_scores) if valid_scores else None
+        """
+        Calculate total score dynamically.
+        For finalized leagues, use archived PlayerScore.
+        For active leagues, use current_score from Player.
+        """
+        from fantasy_league_app.models import PlayerScore
+
+        # Check if this league is finalized
+        if self.league and self.league.is_finalized:
+            # Use archived scores from PlayerScore table
+            total = 0
+            player_ids = [self.player1_id, self.player2_id, self.player3_id]
+
+            for player_id in player_ids:
+                if player_id:
+                    archived_score = PlayerScore.query.filter_by(
+                        player_id=player_id,
+                        league_id=self.league_id
+                    ).first()
+                    if archived_score:
+                        total += archived_score.score or 0
+
+            return total if total > 0 else None
+        else:
+            # Use current scores for active leagues
+            scores = [self.player1.current_score, self.player2.current_score, self.player3.current_score]
+            valid_scores = [score for score in scores if score is not None]
+            return sum(valid_scores) if valid_scores else None
 
     @property
     def display_entry_name(self):
