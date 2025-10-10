@@ -1,6 +1,6 @@
 import os
 import stripe
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import mimetypes
 from .cli import register_cli_commands
 
